@@ -18,23 +18,92 @@
             android:id="@+id/layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:orientation="vertical"/>
     </ScrollView>
 
-    <ImageButton
+    <Button
         android:id="@+id/addButton"
-        android:layout_width="59dp"
-        android:layout_height="54dp"
-        android:background="#D5D6D6"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/bottom_nav_bg"
         android:onClick="createTextView"
+        android:textColor="#00B0FF"
+        android:textSize="20sp"
+        android:text="Добавить"
         android:scaleType="fitStart"
         android:src="@drawable/ic_add_button"
         android:tooltipText="text"
+        android:gravity="bottom"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.843"
+        app:layout_constraintHorizontal_bias="0.9"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.961" />
+        app:layout_constraintVertical_bias="0.97"/>
+
+    <LinearLayout
+        android:id="@+id/createEventPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#E8E4E4"
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <EditText
+            android:id="@+id/dateInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:background="#3000B0FF"
+            android:hint="Дата"
+            android:padding="10dp" />
+
+        <EditText
+            android:id="@+id/timeInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:background="#3000B0FF"
+            android:hint="Время"
+            android:padding="10dp" />
+
+        <EditText
+            android:id="@+id/placeInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:background="#4500B0FF"
+            android:hint="Место"
+            android:padding="10dp" />
+
+        <EditText
+            android:id="@+id/eventInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:background="#3000B0FF"
+            android:gravity="top"
+            android:hint="Описание"
+            android:lines="8"
+            android:padding="10dp" />
+
+        <Button
+            android:id="@+id/saveButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/bottom_nav_bg"
+            android:padding="10dp"
+            android:text="Сохранить"
+            android:textColor="#00B0FF"
+            android:textSize="20sp" />
+
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.Color
 import android.os.Bundle
+import android.view.View
+import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -39,15 +41,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     //TODO: добавить возможность менять цвет в настройки
-    private fun createText(text: String, color: Int): TextView {
+    fun createText(text: String, color: Int): TextView {
         val textView = TextView(this)
         textView.setBackgroundColor(Color.GREEN)
         textView.textSize = 22F
         textView.text = text
+        //textView.setPadding(20,20,20,30)
         textView.setLayoutParams(
             LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
             )
         )
 
@@ -84,12 +87,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 Toast.makeText(applicationContext,"Ошибка! Необходимо выбрать что-то одно",Toast.LENGTH_LONG).show()
             } else {
-                if (langList[0] == 0) {
-                    //Делаем задачу
-                } else {
-                    //Делаем событие
-                    fragment.getText(createText("HELLO!", R.color.green))
-                }
+                fragment.createNewText(langList[0])
             }
         }
 
