@@ -6,7 +6,11 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.CheckBox
+import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -40,21 +44,36 @@ class MainActivity : AppCompatActivity() {
         return this
     }
 
-    //TODO: добавить возможность менять цвет в настройки
-    fun createText(text: String, color: Int): TextView {
-        val textView = TextView(this)
-        textView.setBackgroundColor(Color.GREEN)
-        textView.textSize = 22F
-        textView.text = text
-        //textView.setPadding(20,20,20,30)
-        textView.setLayoutParams(
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            )
-        )
+    fun createError(text: String){
+        Toast.makeText(applicationContext,text,Toast.LENGTH_LONG).show()
+    }
 
+    //TODO: добавить возможность менять цвет в настройки
+    fun createText(text: String): TextView {
+        val textView = TextView(this)
+        textView.text = text
+        textView.textSize = 22F
         return textView
+    }
+
+    fun createRelativeLayout(): RelativeLayout{
+        val relativeLayout = RelativeLayout(this)
+        val params = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
+                                                 RelativeLayout.LayoutParams.WRAP_CONTENT)
+        params.setMargins(5,5,5,10)
+        relativeLayout.setLayoutParams(params)
+        relativeLayout.setPadding(0,0,0,10)
+        return relativeLayout
+    }
+
+    fun createEditText(): EditText {
+        val editText = EditText(this)
+        return editText
+    }
+
+    fun createCheckBox(): CheckBox{
+        val checkBox = CheckBox(this)
+        return checkBox
     }
 
     fun showDialog(fragment: HomeFragment){
@@ -85,7 +104,7 @@ class MainActivity : AppCompatActivity() {
                         stringBuilder.append(", ")
                     }
                 }
-                Toast.makeText(applicationContext,"Ошибка! Необходимо выбрать что-то одно",Toast.LENGTH_LONG).show()
+                createError("Ошибка! Необходимо выбрать что-то одно")
             } else {
                 fragment.createNewText(langList[0])
             }

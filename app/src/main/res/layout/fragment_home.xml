@@ -5,20 +5,19 @@
     android:id="@+id/conLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:onClick="onClick"
     tools:context=".HomeFragment">
 
 
     <ScrollView
         android:id="@+id/scrView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content">
 
         <LinearLayout
             android:id="@+id/layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"/>
+            android:orientation="vertical" />
     </ScrollView>
 
     <Button
@@ -41,6 +40,100 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.97"/>
 
+    <RelativeLayout
+        android:id="@+id/createTaskPanel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="#E8E4E4"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <EditText
+            android:id="@+id/dateTaskInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+
+            android:layout_margin="10dp"
+            android:background="@color/edit_text"
+            android:hint="Дата"
+            android:inputType="date"
+            android:padding="10dp" />
+
+        <EditText
+            android:id="@+id/timeTaskInout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/dateTaskInput"
+            android:layout_margin="10dp"
+            android:background="@color/edit_text"
+            android:hint="Время"
+            android:inputType="time"
+            android:padding="10dp" />
+
+        <EditText
+            android:id="@+id/nameTaskInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/timeTaskInout"
+            android:layout_margin="10dp"
+            android:background="@color/edit_text"
+            android:hint="Название"
+            android:padding="10dp" />
+
+        <ScrollView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/nameTaskInput">
+
+            <RelativeLayout
+                android:id="@+id/pointsPlace"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#E8E4E4"
+                android:orientation="vertical">
+
+                <EditText
+                    android:id="@+id/point0"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:background="@color/edit_text"
+                    android:hint="Пункт"
+                    android:padding="10dp" />
+
+                <Button
+                    android:id="@+id/addNewPoint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/point0"
+                    android:layout_alignEnd="@id/point0"
+                    android:layout_margin="10dp"
+                    android:backgroundTint="@color/bottom_nav_bg"
+                    android:padding="10dp"
+                    android:text="Добавить пункт"
+                    android:textColor="#00B0FF"
+                    android:textSize="15sp" />
+
+                <Button
+                    android:id="@+id/saveTask"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/point0"
+                    android:layout_alignStart="@id/point0"
+                    android:layout_margin="10dp"
+                    android:backgroundTint="@color/bottom_nav_bg"
+                    android:padding="10dp"
+                    android:text="Сохранить"
+                    android:textColor="#00B0FF"
+                    android:textSize="15sp" />
+            </RelativeLayout>
+        </ScrollView>
+    </RelativeLayout>
+
     <LinearLayout
         android:id="@+id/createEventPanel"
         android:layout_width="match_parent"
@@ -58,8 +151,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
-            android:background="#3000B0FF"
+            android:background="@color/edit_text"
             android:hint="Дата"
+            android:inputType="date"
             android:padding="10dp" />
 
         <EditText
@@ -67,8 +161,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
-            android:background="#3000B0FF"
+            android:background="@color/edit_text"
             android:hint="Время"
+            android:inputType="time"
             android:padding="10dp" />
 
         <EditText
@@ -76,7 +171,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
-            android:background="#4500B0FF"
+            android:background="@color/edit_text"
             android:hint="Место"
             android:padding="10dp" />
 
@@ -85,7 +180,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
-            android:background="#3000B0FF"
+            android:background="@color/edit_text"
             android:gravity="top"
             android:hint="Описание"
             android:lines="8"

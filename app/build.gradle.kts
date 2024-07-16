@@ -10,7 +10,7 @@ android {
     defaultConfig {
         applicationId = "com.example.helper1"
         minSdk = 28
-        targetSdk = 34
+        targetSdk = 33
         versionCode = 1
         versionName = "1.0"
 

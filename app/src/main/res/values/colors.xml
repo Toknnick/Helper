@@ -2,7 +2,10 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="green">#008000</color>
+    <color name="green">#51C857</color>
+    <color name="not_completed_task">#EFFF04</color>
+    <color name="completed_task">#909A03</color>
+    <color name="edit_text">#3000B0FF</color>
 
     <color name="bottom_nav_bg">#FEDBD0</color>
     <color name="bottom_nav_item">#8C706D</color>
