@@ -16,16 +16,20 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.commit
+import androidx.fragment.app.replace
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.NavigationUI.setupWithNavController
 import com.example.helper1.databinding.ActivityMainBinding
 
+@Suppress("DEPRECATION")
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
     private lateinit var fragment: HomeFragment
     private lateinit var fm: FragmentManager
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,10 +38,33 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         fm = supportFragmentManager
 
+        binding.bottomNavigationView.setOnNavigationItemSelectedListener {
+            when(it.itemId){
+                R.id.roomsFragment -> {}
+                R.id.homeFragment -> {
+                    fm.commit {
+                        replace<HomeFragment>(R.id.framLayout)}
+                }
+                R.id.settingsFragment -> {
+                    fm.beginTransaction().replace(R.id.framLayout, SettingsFragment.newInstance()).commit()
+                }
+            }
+            true
+        }
+
+        binding.bottomNavigationView.selectedItemId = R.id.homeFragment
+
+
+        /*fm = supportFragmentManager
+
         val navHostFragment = fm.findFragmentById(R.id.mainContainer) as NavHostFragment
         navController = navHostFragment.navController
         val bottomNavigationView = binding.bottomNavigationView
-        setupWithNavController(bottomNavigationView,navController)
+        setupWithNavController(bottomNavigationView,navController)*/
+    }
+
+    fun getHomeFragment(fragment: HomeFragment){
+        this.fragment = fragment
     }
 
     fun getContext():Context{

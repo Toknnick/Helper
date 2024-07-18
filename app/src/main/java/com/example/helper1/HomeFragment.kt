@@ -313,4 +313,9 @@ class HomeFragment :  Fragment(){
             mainActivity.createError("Ошибка! Нельзя удалить этот пункт!")
         }
     }
+
+    companion object{
+        @JvmStatic
+        fun newInstance() = HomeFragment()
+    }
 }
