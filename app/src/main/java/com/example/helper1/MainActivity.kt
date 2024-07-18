@@ -45,7 +45,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun createError(text: String){
-        Toast.makeText(applicationContext,text,Toast.LENGTH_LONG).show()
+        Toast.makeText(applicationContext,text,Toast.LENGTH_SHORT).show()
     }
 
     //TODO: добавить возможность менять цвет в настройки

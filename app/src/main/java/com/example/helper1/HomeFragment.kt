@@ -6,6 +6,7 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.PixelCopy.Request
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewParent
@@ -16,6 +17,7 @@ import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.view.forEach
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView.Orientation
 import com.example.helper1.databinding.FragmentHomeBinding
@@ -54,6 +56,7 @@ class HomeFragment :  Fragment(){
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         mainActivity = (activity as MainActivity)
+        addParamToButtons(binding.point0)
 
         binding.addButton.setOnClickListener{
             mainActivity.showDialog(this)
@@ -67,6 +70,9 @@ class HomeFragment :  Fragment(){
         binding.addNewPoint.setOnClickListener{
             addNewPoint()
         }
+        binding.deletePoint.setOnClickListener{
+            deletePoint()
+        }
     }
 
     fun createNewText(item: Int){
@@ -77,11 +83,7 @@ class HomeFragment :  Fragment(){
             binding.addButton.isEnabled = false
         } else {
             //Делаем событие
-            binding.dateInput.setText("")
-            binding.timeInput.setText("")
-            binding.placeInput.setText("")
-            binding.eventInput.setText("")
-
+            clearEventPanel()
             binding.createEventPanel.visibility = View.VISIBLE
             binding.addButton.isEnabled = false
         }
@@ -102,6 +104,20 @@ class HomeFragment :  Fragment(){
             mainActivity.createError("Ошибка! Нет названия!")
             return
         }
+
+        var i = 1
+        while (countOfPoint > i) {
+            if(binding.point0.text.toString().trim().isEmpty()) {
+                mainActivity.createError("Ошибка! У вас есть пустой пункт!")
+                return
+            }else if (countOfPoint > 1 &&
+                      binding.pointsPlace.findViewById<EditText>(i + 232320).text.toString().trim().isEmpty()) {
+                mainActivity.createError("Ошибка! У вас есть пустой пункт!")
+                return
+            }
+            i+=1
+        }
+
         val layout = mainActivity.createRelativeLayout()
 
         //Добавляем заголовок
@@ -143,6 +159,7 @@ class HomeFragment :  Fragment(){
         binding.layout.addView(layout)
         binding.addButton.isEnabled = true
         binding.createTaskPanel.visibility = View.GONE
+        clearTaskPanel()
     }
 
     private fun addNewEventIntoScrollView() {
@@ -182,8 +199,7 @@ class HomeFragment :  Fragment(){
 
     private  fun addParamsToEditText(editText: EditText){
         val params = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
-            RelativeLayout.LayoutParams.WRAP_CONTENT)
-
+                                                 RelativeLayout.LayoutParams.WRAP_CONTENT)
         //Установить новый пункт
         params.setMargins(30,30,30,30)
         editText.setLayoutParams(params)
@@ -242,11 +258,12 @@ class HomeFragment :  Fragment(){
             textView.setBackgroundResource(R.drawable.border_not_completed_task)
     }
 
-
     private fun addParamToButtons(editText: EditText) {
         val btn1Params = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
                                                      RelativeLayout.LayoutParams.WRAP_CONTENT)
         val btn2Params = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
+                                                     RelativeLayout.LayoutParams.WRAP_CONTENT)
+        val btn3Params = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
                                                      RelativeLayout.LayoutParams.WRAP_CONTENT)
 
         btn1Params.addRule(RelativeLayout.ALIGN_START,editText.id)
@@ -256,5 +273,44 @@ class HomeFragment :  Fragment(){
         btn2Params.addRule(RelativeLayout.ALIGN_END,editText.id)
         btn2Params.addRule(RelativeLayout.BELOW, editText.id)
         binding.addNewPoint.setLayoutParams(btn2Params)
+
+        btn3Params.addRule(RelativeLayout.BELOW, editText.id)
+        btn3Params.rightMargin = 20
+        btn3Params.addRule(RelativeLayout.LEFT_OF, binding.addNewPoint.id)
+        binding.deletePoint.setLayoutParams(btn3Params)
+    }
+
+    private fun clearEventPanel(){
+        binding.dateInput.setText("")
+        binding.timeInput.setText("")
+        binding.placeInput.setText("")
+        binding.eventInput.setText("")
+    }
+
+    private fun clearTaskPanel(){
+        binding.dateTaskInput.setText("")
+        binding.timeTaskInout.setText("")
+        binding.nameTaskInput.setText("")
+        binding.point0.setText("")
+        addParamToButtons(binding.point0)
+
+        while (countOfPoint > 1){
+            binding.pointsPlace.removeView(binding.createTaskPanel.findViewById<EditText>(countOfPoint + 232320-1))
+            countOfPoint -= 1
+        }
+    }
+
+    private fun deletePoint() {
+        if (countOfPoint > 2) {
+            binding.pointsPlace.removeView(binding.pointsPlace.findViewById<EditText>(countOfPoint + 232320-1))
+            countOfPoint -= 1
+            addParamToButtons(binding.pointsPlace.findViewById(countOfPoint + 232320-1))
+        }else if(countOfPoint > 1){
+            binding.pointsPlace.removeView(binding.pointsPlace.findViewById<EditText>(countOfPoint + 232320-1))
+            countOfPoint -= 1
+            addParamToButtons(binding.point0)
+        }else{
+            mainActivity.createError("Ошибка! Нельзя удалить этот пункт!")
+        }
     }
 }

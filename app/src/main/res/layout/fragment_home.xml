@@ -119,6 +119,18 @@
                     android:textSize="15sp" />
 
                 <Button
+                    android:id="@+id/deletePoint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/point0"
+                    android:layout_margin="10dp"
+                    android:backgroundTint="@color/bottom_nav_bg"
+                    android:padding="10dp"
+                    android:text="Удалить пункт"
+                    android:textColor="#00B0FF"
+                    android:textSize="15sp" />
+
+                <Button
                     android:id="@+id/saveTask"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
