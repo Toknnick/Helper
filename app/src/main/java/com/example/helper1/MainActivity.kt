@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
@@ -19,88 +20,41 @@ import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.commit
 import androidx.fragment.app.replace
 import androidx.navigation.NavController
+import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.NavigationUI.setupWithNavController
+import androidx.navigation.ui.setupWithNavController
 import com.example.helper1.databinding.ActivityMainBinding
 
-@Suppress("DEPRECATION")
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
-    private lateinit var navController: NavController
-    private lateinit var fragment: HomeFragment
     private lateinit var fm: FragmentManager
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
         setContentView(binding.root)
+
+        val navController = findNavController(R.id.mainContainer)
+        val bottomNavigationView = binding.bottomNavigationView
+        bottomNavigationView.setupWithNavController(navController)
         fm = supportFragmentManager
 
-        binding.bottomNavigationView.setOnNavigationItemSelectedListener {
-            when(it.itemId){
+        navController.addOnDestinationChangedListener { controller, destination, bundle ->
+            when(destination.id) {
                 R.id.roomsFragment -> {}
-                R.id.homeFragment -> {
-                    fm.commit {
-                        replace<HomeFragment>(R.id.framLayout)}
-                }
-                R.id.settingsFragment -> {
-                    fm.beginTransaction().replace(R.id.framLayout, SettingsFragment.newInstance()).commit()
-                }
+                R.id.homeFragment -> {}
+                R.id.settingsFragment -> {}
             }
-            true
         }
 
         binding.bottomNavigationView.selectedItemId = R.id.homeFragment
 
-
-        /*fm = supportFragmentManager
-
-        val navHostFragment = fm.findFragmentById(R.id.mainContainer) as NavHostFragment
-        navController = navHostFragment.navController
-        val bottomNavigationView = binding.bottomNavigationView
-        setupWithNavController(bottomNavigationView,navController)*/
-    }
-
-    fun getHomeFragment(fragment: HomeFragment){
-        this.fragment = fragment
-    }
-
-    fun getContext():Context{
-        return this
     }
 
     fun createError(text: String){
         Toast.makeText(applicationContext,text,Toast.LENGTH_SHORT).show()
-    }
-
-    //TODO: добавить возможность менять цвет в настройки
-    fun createText(text: String): TextView {
-        val textView = TextView(this)
-        textView.text = text
-        textView.textSize = 22F
-        return textView
-    }
-
-    fun createRelativeLayout(): RelativeLayout{
-        val relativeLayout = RelativeLayout(this)
-        val params = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
-                                                 RelativeLayout.LayoutParams.WRAP_CONTENT)
-        params.setMargins(5,5,5,10)
-        relativeLayout.setLayoutParams(params)
-        relativeLayout.setPadding(0,0,0,10)
-        return relativeLayout
-    }
-
-    fun createEditText(): EditText {
-        val editText = EditText(this)
-        return editText
-    }
-
-    fun createCheckBox(): CheckBox{
-        val checkBox = CheckBox(this)
-        return checkBox
     }
 
     fun showDialog(fragment: HomeFragment){
