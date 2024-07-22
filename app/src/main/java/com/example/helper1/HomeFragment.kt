@@ -15,10 +15,8 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.example.helper1.databinding.FragmentHomeBinding
 import android.text.Editable
-import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.Date
 
 data class Event(
     var data: String,
@@ -31,7 +29,8 @@ data class Task(
     var data: String,
     var time: String,
     var name: String,
-    var points: List<Pair<String, Boolean>>
+    var points: List<String>,
+    var checkBoxes : List<Boolean>
 )
 
 class HomeFragment :  Fragment() {
@@ -44,18 +43,28 @@ class HomeFragment :  Fragment() {
     private val ENENT_ID = 10000
     private val TASK_ID = 232320
 
+    private lateinit var dbHelper: DBHelper
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        dbHelper = DBHelper(requireContext())
+        //requireContext().deleteDatabase(dbHelper.databaseName)
+        events = dbHelper.getEvents()
+        tasks = dbHelper.getTasks()
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentHomeBinding.inflate(inflater)
+        binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         mainActivity = (activity as MainActivity)
-        addParamToButtons(binding.point0)
+        addParamsToButtons(binding.point0)
 
         binding.addButton.setOnClickListener {
             mainActivity.showDialog(this)
@@ -80,6 +89,22 @@ class HomeFragment :  Fragment() {
         changeTimeEditText(binding.timeTaskInout)
     }
 
+    override fun onResume() {
+        super.onResume()
+        createAllEventsAndTasks()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        val tasssskkkkssss = dbHelper.getTasks()
+        val eventssssssss = dbHelper.getEvents()
+        //dbHelper.close()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+    }
+
     fun createNewText(item: Int) {
         if (item == 0) {
             //Делаем задачу
@@ -101,17 +126,26 @@ class HomeFragment :  Fragment() {
             return
         }
 
+        if (!isHasTime(binding.timeInput.text.toString())){
+            mainActivity.createError("Ошибка! Некорректное время!")
+            return
+        }
+
         var i = 0
         if (events.isNotEmpty())
             i = events.size
 
         //Сохраняем в БД
-        events += Event(
-            stringToDate(binding.dateInput.text.toString()), binding.timeInput.text.toString(),
-            binding.placeInput.text.toString(), binding.eventInput.text.toString()
+        val event = Event(
+            stringToDate(binding.dateInput.text.toString()),
+            binding.timeInput.text.toString(),
+            binding.placeInput.text.toString(),
+            binding.eventInput.text.toString()
         )
+        events += event
 
         createNewEvent(i)
+        dbHelper.insertEvent(event)
 
         binding.addButton.isEnabled = true
         binding.createEventPanel.visibility = View.GONE
@@ -120,6 +154,11 @@ class HomeFragment :  Fragment() {
     private fun addNewTaskIntoScrollView() {
         if(!isHasDate(binding.dateTaskInput.text.toString())){
             mainActivity.createError("Ошибка! Некорректная дата!")
+            return
+        }
+
+        if (!isHasTime(binding.timeTaskInout.text.toString())){
+            mainActivity.createError("Ошибка! Некорректное время!")
             return
         }
         var i = 1
@@ -139,48 +178,57 @@ class HomeFragment :  Fragment() {
         }
 
         //Добавляем пункты
-        var points: List<Pair<String, Boolean>> = ArrayList()
-        points += Pair(binding.point0.text.toString(), false)
+        var points: List<String> = ArrayList()
+        var checkBoxes: List<Boolean> = ArrayList()
+        clearEditText(binding.point0)
+        points += binding.point0.text.toString()
+        checkBoxes += false
 
         var j = 0
         while (countOfPoint > j) {
-            if (points.size != countOfPoint)
-                points += Pair(
-                    binding.pointsPlace.findViewById<EditText>(j + TASK_ID + 1).text.toString(),
-                    false
-                )
+            if (points.size != countOfPoint) {
+                clearEditText(binding.pointsPlace.findViewById(j + TASK_ID + 1))
+                points += binding.pointsPlace.findViewById<EditText>(j + TASK_ID + 1).text.toString().trim()
+                checkBoxes += false
+            }
             j += 1
         }
 
         //Сохраняем в БД
-        tasks += Task(
-            stringToDate(binding.dateTaskInput.text.toString()), binding.timeInput.text.toString(),
-            binding.nameTaskInput.text.toString(), points
+        val task = Task(
+            stringToDate(binding.dateTaskInput.text.toString()),
+            binding.timeTaskInout.text.toString(),
+            binding.nameTaskInput.text.toString(),
+            points,
+            checkBoxes
         )
-        createNewTask(points)
+        tasks += task
+        createNewTask(points,checkBoxes,tasks.size-1)
+        dbHelper.insertTask(task)
+
         binding.addButton.isEnabled = true
         binding.createTaskPanel.visibility = View.GONE
 
     }
 
     @SuppressLint("ResourceType")
-    private fun createNewTask(points: List<Pair<String, Boolean>>) {
+    private fun createNewTask(points: List<String>,checkBoxes : List<Boolean>, i:Int) {
         val layout = createRelativeLayout()
         val nameTextView: TextView
 
-        if (binding.nameTaskInput.text.isEmpty())
+        if (tasks[i].name.isEmpty())
             nameTextView = createText("Нет названия")
         else
-            nameTextView = createText(binding.nameTaskInput.text.toString(), true)
+            nameTextView = createText(tasks[i].name, true)
         layout.addView(nameTextView)
         nameTextView.id = 666
         nameTextView.textSize = 23F
         nameTextView.gravity = Gravity.CENTER
 
         var j = 0
-        while (countOfPoint > j) {
-            val textView = createText(points[j].first)
-            addParamsToNewPoint(textView, layout, j)
+        while (points.size > j) {
+            val textView = createText(points[j])
+            addParamsToNewPoint(textView, layout, j,checkBoxes[j])
             j += 1
         }
 
@@ -216,7 +264,7 @@ class HomeFragment :  Fragment() {
         //Подвинуть пункт
         addParamsToEditText(editText)
         //Подвинуть кнопки
-        addParamToButtons(editText)
+        addParamsToButtons(editText)
         countOfPoint += 1
     }
 
@@ -279,7 +327,7 @@ class HomeFragment :  Fragment() {
     }
 
     @SuppressLint("ResourceType")
-    private fun addParamsToNewPoint(textView: TextView, relLayout: RelativeLayout, j: Int) {
+    private fun addParamsToNewPoint(textView: TextView, relLayout: RelativeLayout, j: Int, isChecked : Boolean) {
         val checkBox = CheckBox(context)
         val params = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.WRAP_CONTENT,
@@ -308,27 +356,26 @@ class HomeFragment :  Fragment() {
         params.setMargins(10, 10, 0, 10)
         textView.setLayoutParams(params)
         textView.maxWidth = (Resources.getSystem().displayMetrics.widthPixels * 0.9f).toInt()
-        textView.setBackgroundResource(R.drawable.border_not_completed_task)
-        textView.id = j + 121210
 
+
+        checkBox.isChecked = isChecked
+        if(!isChecked)
+            textView.setBackgroundResource(R.drawable.border_not_completed_task)
+        else
+            textView.setBackgroundResource(R.drawable.border_completed_task)
+
+        textView.id = j + 121210
         checkBoxParams.addRule(RelativeLayout.RIGHT_OF, textView.id)
         checkBox.setLayoutParams(checkBoxParams)
 
         checkBox.setOnClickListener {
-            changeBackgroundOfPoint(textView, checkBox)
+            changeBackgroundOfPoint(textView, checkBox,tasks.size-1,j)
         }
 
         relLayout.addView(checkBox)
     }
 
-    private fun changeBackgroundOfPoint(textView: TextView, checkBox: CheckBox) {
-        if (checkBox.isChecked)
-            textView.setBackgroundResource(R.drawable.border_completed_task)
-        else
-            textView.setBackgroundResource(R.drawable.border_not_completed_task)
-    }
-
-    private fun addParamToButtons(editText: EditText) {
+    private fun addParamsToButtons(editText: EditText) {
         val btn1Params = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.WRAP_CONTENT,
             RelativeLayout.LayoutParams.WRAP_CONTENT
@@ -351,9 +398,24 @@ class HomeFragment :  Fragment() {
         binding.addNewPoint.setLayoutParams(btn2Params)
 
         btn3Params.addRule(RelativeLayout.BELOW, editText.id)
-        btn3Params.rightMargin = 20
+        //btn3Params.rightMargin = 20
         btn3Params.addRule(RelativeLayout.LEFT_OF, binding.addNewPoint.id)
         binding.deletePoint.setLayoutParams(btn3Params)
+    }
+
+    private fun changeBackgroundOfPoint(textView: TextView, checkBox: CheckBox, i: Int, j: Int) {
+        val newCheckBoxes = tasks[i].checkBoxes.toMutableList()
+
+        if (checkBox.isChecked) {
+            textView.setBackgroundResource(R.drawable.border_completed_task)
+            newCheckBoxes[j] = true
+        }else{
+            textView.setBackgroundResource(R.drawable.border_not_completed_task)
+            newCheckBoxes[j] = false
+        }
+
+        tasks[i].checkBoxes = newCheckBoxes
+        dbHelper.updateTaskCheckBoxes(i+1, newCheckBoxes)
     }
 
     private fun clearEventPanel() {
@@ -368,7 +430,7 @@ class HomeFragment :  Fragment() {
         binding.timeTaskInout.setText("")
         binding.nameTaskInput.setText("")
         binding.point0.setText("")
-        addParamToButtons(binding.point0)
+        addParamsToButtons(binding.point0)
 
         while (countOfPoint > 1) {
             binding.pointsPlace.removeView(
@@ -380,15 +442,20 @@ class HomeFragment :  Fragment() {
         }
     }
 
+    private fun clearEditText(editText: EditText): EditText{
+        editText.text.toString().trim()
+        return editText
+    }
+
     private fun deletePoint() {
         if (countOfPoint > 2) {
             binding.pointsPlace.removeView(binding.pointsPlace.findViewById<EditText>(countOfPoint + TASK_ID - 1))
             countOfPoint -= 1
-            addParamToButtons(binding.pointsPlace.findViewById(countOfPoint + TASK_ID - 1))
+            addParamsToButtons(binding.pointsPlace.findViewById(countOfPoint + TASK_ID - 1))
         } else if (countOfPoint > 1) {
             binding.pointsPlace.removeView(binding.pointsPlace.findViewById<EditText>(countOfPoint + TASK_ID - 1))
             countOfPoint -= 1
-            addParamToButtons(binding.point0)
+            addParamsToButtons(binding.point0)
         } else {
             mainActivity.createError("Ошибка! Нельзя удалить этот пункт!")
         }
@@ -444,6 +511,7 @@ class HomeFragment :  Fragment() {
                 wasDeleted = count > after
             }
 
+            @SuppressLint("SetTextI18n")
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 val text = s.toString()
                 if ((text.length == 2 || text.length == 5) && !wasDeleted) {
@@ -491,8 +559,16 @@ class HomeFragment :  Fragment() {
         return boolean
     }
 
+    private fun isHasTime(time:String): Boolean{
+        var boolean = false
+        if (time.length == 5 ||time.isEmpty())
+            boolean = true
+
+        return boolean
+    }
+
     private fun stringToDate(string: String) : String{
-        var newString : String = ""
+        var newString= ""
 
         if (string.length == 8)
             newString = string.replace(Regex("(\\d{2})$"), "20$1")
@@ -500,5 +576,19 @@ class HomeFragment :  Fragment() {
             newString = LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
 
         return newString
+    }
+
+    private fun createAllEventsAndTasks(){
+        var i = 0
+        while (i < tasks.size){
+            createNewTask(tasks[i].points,tasks[i].checkBoxes,i)
+            i+=1
+        }
+
+        i = 0
+        while (i < events.size){
+            createNewEvent(i)
+            i+=1
+        }
     }
 }

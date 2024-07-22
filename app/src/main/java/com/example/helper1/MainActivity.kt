@@ -48,9 +48,6 @@ class MainActivity : AppCompatActivity() {
                 R.id.settingsFragment -> {}
             }
         }
-
-        binding.bottomNavigationView.selectedItemId = R.id.homeFragment
-
     }
 
     fun createError(text: String){

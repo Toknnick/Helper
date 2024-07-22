@@ -124,6 +124,7 @@
                     android:layout_height="wrap_content"
                     android:layout_below="@id/point0"
                     android:layout_margin="10dp"
+                    android:layout_toLeftOf="@id/addNewPoint"
                     android:backgroundTint="@color/bottom_nav_bg"
                     android:padding="10dp"
                     android:text="Удалить пункт"
