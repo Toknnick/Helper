@@ -78,6 +78,43 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null,
         return tasks
     }
 
+    fun getEventsByDate(date: String): List<Event> {
+        val db = readableDatabase
+        val cursor = db.query("events", null, "data = ?", arrayOf(date), null, null, null)
+        val events = ArrayList<Event>()
+        while (cursor.moveToNext()) {
+            val event = Event(
+                cursor.getString(1),
+                cursor.getString(2),
+                cursor.getString(3),
+                cursor.getString(4)
+            )
+            events.add(event)
+        }
+        cursor.close()
+        db.close()
+        return events
+    }
+
+    fun getTasksByDate(date: String): List<Task> {
+        val db = readableDatabase
+        val cursor = db.query("tasks", null, "data = ?", arrayOf(date), null, null, null)
+        val tasks = ArrayList<Task>()
+        while (cursor.moveToNext()) {
+            val task = Task(
+                cursor.getString(1),
+                cursor.getString(2),
+                cursor.getString(3),
+                cursor.getString(4).split(",").toList(),
+                cursor.getString(5).split(",").map { it.toBoolean() }.toList()
+            )
+            tasks.add(task)
+        }
+        cursor.close()
+        db.close()
+        return tasks
+    }
+
     fun updateTaskCheckBoxes(taskId: Int, checkBoxes: List<Boolean>) {
         val db = writableDatabase
         val contentValues = ContentValues()

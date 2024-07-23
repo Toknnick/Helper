@@ -11,7 +11,15 @@
     <ScrollView
         android:id="@+id/scrView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="50dp"
+        android:layout_marginTop="3dp"
+        app:layout_constraintBottom_toTopOf="@+id/addButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.666"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0">
 
         <LinearLayout
             android:id="@+id/layout"
@@ -25,20 +33,36 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:backgroundTint="@color/bottom_nav_bg"
+        android:gravity="bottom"
+        android:layout_marginBottom="5dp"
         android:onClick="createTextView"
-        android:textColor="#00B0FF"
-        android:textSize="20sp"
-        android:text="Добавить"
         android:scaleType="fitStart"
         android:src="@drawable/ic_add_button"
+        android:text="Добавить"
+        android:textColor="#00B0FF"
+        android:textSize="20sp"
         android:tooltipText="text"
-        android:gravity="bottom"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.9"
+        app:layout_constraintHorizontal_bias="0.94"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.97"/>
+        app:layout_constraintVertical_bias="0.994" />
+
+    <Button
+        android:id="@+id/dataPickerButton"
+        style="?android:spinnerStyle"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:text="01.01.2000"
+        android:textColor="@color/black"
+        android:textSize="22sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.066"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/addButton"
+        app:layout_constraintVertical_bias="0.0" />
 
     <RelativeLayout
         android:id="@+id/createTaskPanel"
@@ -51,13 +75,25 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
+        <Button
+            android:id="@+id/backTaskButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/bottom_nav_bg"
+            android:padding="10dp"
+            android:text="Назад"
+            android:textColor="#00B0FF"
+            android:textSize="15sp" />
+
         <EditText
             android:id="@+id/dateTaskInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-
+            android:layout_alignParentEnd="true"
             android:layout_margin="10dp"
+            android:layout_toRightOf="@id/backTaskButton"
             android:background="@color/edit_text"
             android:hint="Дата"
             android:inputType="date"
@@ -147,7 +183,7 @@
         </ScrollView>
     </RelativeLayout>
 
-    <LinearLayout
+    <RelativeLayout
         android:id="@+id/createEventPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -159,11 +195,25 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
+        <Button
+            android:id="@+id/backEventButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/bottom_nav_bg"
+            android:padding="10dp"
+            android:text="Назад"
+            android:textColor="#00B0FF"
+            android:textSize="15sp" />
+
         <EditText
             android:id="@+id/dateInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
+            android:layout_alignParentEnd="true"
+            android:layout_toRightOf="@id/backEventButton"
             android:background="@color/edit_text"
             android:hint="Дата"
             android:inputType="date"
@@ -173,6 +223,7 @@
             android:id="@+id/timeInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_below="@id/dateInput"
             android:layout_margin="10dp"
             android:background="@color/edit_text"
             android:hint="Время"
@@ -183,6 +234,7 @@
             android:id="@+id/placeInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_below="@id/timeInput"
             android:layout_margin="10dp"
             android:background="@color/edit_text"
             android:hint="Место"
@@ -191,6 +243,7 @@
         <EditText
             android:id="@+id/eventInput"
             android:layout_width="match_parent"
+            android:layout_below="@id/placeInput"
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
             android:background="@color/edit_text"
@@ -203,6 +256,7 @@
             android:id="@+id/saveButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_below="@id/eventInput"
             android:layout_gravity="left"
             android:layout_margin="10dp"
             android:backgroundTint="@color/bottom_nav_bg"
@@ -212,6 +266,6 @@
             android:textSize="20sp" />
 
 
-    </LinearLayout>
+    </RelativeLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
