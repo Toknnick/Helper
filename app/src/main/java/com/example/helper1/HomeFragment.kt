@@ -9,11 +9,12 @@ import android.graphics.Color
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.RelativeLayout
@@ -46,6 +47,7 @@ class HomeFragment : Fragment() {
     private lateinit var binding: FragmentHomeBinding
     private lateinit var mainActivity: MainActivity
     private lateinit var datePickerDialog: DatePickerDialog
+    private lateinit var deleteButton : Button
     private var chosenDate: String = ""
     private var events: List<Event> = ArrayList()
     private var tasks: List<Task> = ArrayList()
@@ -53,7 +55,8 @@ class HomeFragment : Fragment() {
 
     private val ENENT_ID = 10000
     private val TASK_ID = 232320
-    private val TEXTVIEW_ID = 11111111
+    private val REL_LAYOUT_ID = 145632223
+    private val TEXT_VIEW_NOTHING_TO_DO_ID = 11111111
 
     private lateinit var dbHelper: DBHelper
 
@@ -191,7 +194,9 @@ class HomeFragment : Fragment() {
             return
         }
         while (countOfPoint > i) {
-             if (countOfPoint > 1 && binding.pointsPlace.findViewById<EditText>(i + TASK_ID).text.toString().trim().isEmpty()) {
+            if (countOfPoint > 1 && binding.pointsPlace.findViewById<EditText>(i + TASK_ID).text.toString()
+                    .trim().isEmpty()
+            ) {
                 createError("Ошибка! У вас есть пустой пункт!")
                 return
             }
@@ -216,8 +221,10 @@ class HomeFragment : Fragment() {
             j += 1
         }
 
-        if(binding.timeInput.text.toString().trim().isEmpty()){
-            binding.timeInput.setText(LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")))
+        if (binding.timeInput.text.toString().trim().isEmpty()) {
+            binding.timeInput.setText(
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
+            )
         }
 
         //Сохраняем в БД
@@ -240,11 +247,11 @@ class HomeFragment : Fragment() {
 
     @SuppressLint("ResourceType")
     private fun createNewTask(points: List<String>, checkBoxes: List<Boolean>, i: Int) {
-        if (binding.layout.findViewById<TextView>(TEXTVIEW_ID) != null) {
-            binding.layout.removeView(binding.layout.findViewById(TEXTVIEW_ID))
+        if (binding.layout.findViewById<TextView>(TEXT_VIEW_NOTHING_TO_DO_ID) != null) {
+            binding.layout.removeView(binding.layout.findViewById(TEXT_VIEW_NOTHING_TO_DO_ID))
         }
 
-        val layout = createRelativeLayout()
+        val layout = createRelativeLayout(i)
         val nameTextView: TextView
 
         if (tasks[i].name.isEmpty())
@@ -265,11 +272,12 @@ class HomeFragment : Fragment() {
 
         layout.setBackgroundResource(R.drawable.border_task)
         binding.layout.addView(layout)
+        setupLongClickListeners(layout,i)
     }
 
     private fun createNewEvent(i: Int) {
-        if (binding.layout.findViewById<TextView>(TEXTVIEW_ID) != null) {
-            binding.layout.removeView(binding.layout.findViewById(TEXTVIEW_ID))
+        if (binding.layout.findViewById<TextView>(TEXT_VIEW_NOTHING_TO_DO_ID) != null) {
+            binding.layout.removeView(binding.layout.findViewById(TEXT_VIEW_NOTHING_TO_DO_ID))
         }
 
         val textView: TextView
@@ -278,20 +286,19 @@ class HomeFragment : Fragment() {
             textView = createText(
                 "Время: " + events[i].time + System.lineSeparator() +
                         "Место: " + events[i].place + System.lineSeparator() +
-                        events[i].event
-            )
+                        events[i].event,false, true)
         } else if (events[i].time != "") {
             textView = createText(
                 "Время: " + events[i].time + System.lineSeparator() +
-                        events[i].event
-            )
+                        events[i].event,false, true)
         } else {
-            textView = createText(events[i].event)
+            textView = createText(events[i].event,false,true)
         }
 
         textView.setBackgroundResource(R.drawable.border_event)
         textView.id = i + ENENT_ID
         binding.layout.addView(textView)
+        setupLongClickListeners(textView,i)
     }
 
     private fun addNewPoint() {
@@ -305,7 +312,7 @@ class HomeFragment : Fragment() {
 
     //TODO: добавить возможность менять цветa в настройках
     @SuppressLint("ResourceAsColor")
-    private fun createText(text: String, isNameText: Boolean = false): TextView {
+    private fun createText(text: String, isNameText: Boolean = false, isNeedBelow:Boolean = false): TextView {
         val textView = TextView(context)
         val params = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.MATCH_PARENT,
@@ -318,6 +325,25 @@ class HomeFragment : Fragment() {
             params.setMargins(1, 1, 1, 1)
         }
 
+        if(isNeedBelow) {
+            textView.id = 1488632223 + events.size
+            if (binding.layout.childCount == 0 || (binding.layout.childCount == 1 && binding.layout.getChildAt(
+                    0
+                ) == deleteButton)
+            ) {
+                params.addRule(RelativeLayout.ALIGN_PARENT_START)
+            } else if (binding.layout.getChildAt(binding.layout.childCount - 1) != deleteButton) {
+                params.addRule(
+                    RelativeLayout.BELOW,
+                    binding.layout.getChildAt(binding.layout.childCount - 1).id
+                )
+            } else {
+                params.addRule(
+                    RelativeLayout.BELOW,
+                    binding.layout.getChildAt(binding.layout.childCount - 2).id
+                )
+            }
+        }
         textView.setTextColor(R.color.text_color_button)
         textView.setLayoutParams(params)
         textView.text = text
@@ -325,18 +351,48 @@ class HomeFragment : Fragment() {
         return textView
     }
 
-    private fun createRelativeLayout(): RelativeLayout {
+    @SuppressLint("ResourceAsColor")
+    private fun createButton(){
+        deleteButton = Button(requireContext())
+        val params = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.WRAP_CONTENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+        params.setMargins(5, 5, 5, 5)
+        deleteButton.setLayoutParams(params)
+        deleteButton.setBackgroundResource(R.color.bottom_nav_bg)
+        deleteButton.setTextColor(R.color.text_color_button)
+        deleteButton.text = "Удалить"
+        deleteButton.textSize = 22F
+        deleteButton.visibility = View.GONE
+    }
+
+    private fun createRelativeLayout(id: Int): RelativeLayout {
         val layout = RelativeLayout(context)
+        layout.id = REL_LAYOUT_ID + id
         val params = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.MATCH_PARENT,
             RelativeLayout.LayoutParams.WRAP_CONTENT
         )
-        params.setMargins(5, 5, 5, 10)
+        params.setMargins(5, 5, 5, 5)
+
+
+        if(binding.layout.childCount == 0 || (binding.layout.childCount == 1 && binding.layout.getChildAt(0) == deleteButton)){
+            params.addRule(RelativeLayout.ALIGN_PARENT_START)
+        }else if(binding.layout.getChildAt(binding.layout.childCount - 1) != deleteButton){
+            params.addRule(RelativeLayout.BELOW,
+                           binding.layout.getChildAt(binding.layout.childCount - 1).id)
+        }else{
+            params.addRule(RelativeLayout.BELOW,
+                binding.layout.getChildAt(binding.layout.childCount - 2).id)
+        }
+
         layout.setLayoutParams(params)
         layout.setPadding(0, 0, 0, 10)
         return layout
     }
 
+    @SuppressLint("ResourceAsColor")
     private fun addParamsToEditText(editText: EditText) {
         val params = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.MATCH_PARENT,
@@ -350,6 +406,7 @@ class HomeFragment : Fragment() {
         editText.id = countOfPoint + TASK_ID
         editText.setPadding(10, 10, 10, 40)
         binding.pointsPlace.addView(editText)
+        editText.setTextColor(R.color.text_color_button)
 
         //Подвинуть новый пункт
         if (countOfPoint == 1) {
@@ -411,7 +468,7 @@ class HomeFragment : Fragment() {
         checkBox.setLayoutParams(checkBoxParams)
 
         checkBox.setOnClickListener {
-            changeBackgroundOfPoint(textView, checkBox, tasks.size - 1, j)
+            changeBackgroundOfPoint(textView, checkBox, relLayout.id - REL_LAYOUT_ID , j)
         }
 
         relLayout.addView(checkBox)
@@ -631,7 +688,87 @@ class HomeFragment : Fragment() {
         return newString
     }
 
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupLongClickListeners(view: View,id: Int){
+        view.setOnLongClickListener{
+            val params = RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT
+            )
+            params.setMargins(5, 5, 5, 5)
+            if (binding.layout.indexOfChild(view) != binding.layout.childCount - 1 || (binding.layout.indexOfChild(
+                    view) != binding.layout.childCount - 2 && binding.layout.getChildAt(binding.layout.childCount - 1) != deleteButton)
+            ) {
+                params.addRule(RelativeLayout.BELOW,view.id)
+                params.addRule(RelativeLayout.ALIGN_LEFT, view.id)
+            }else{
+                params.addRule(RelativeLayout.ABOVE,view.id)
+                params.addRule(RelativeLayout.ALIGN_LEFT, view.id)
+            }
+            deleteButton.setLayoutParams(params)
+            deleteButton.visibility = View.VISIBLE
+
+        deleteButton.setOnClickListener {
+            when(view){
+                is TextView -> {
+                    dbHelper.deleteEvent(events[id])
+                }
+                is RelativeLayout ->{
+                    dbHelper.deleteTask(tasks[id])
+                }
+            }
+
+            var index = binding.layout.indexOfChild(view)
+            index +=1
+
+            if(index < binding.layout.childCount) {
+                val params = RelativeLayout.LayoutParams(
+                    RelativeLayout.LayoutParams.MATCH_PARENT,
+                    RelativeLayout.LayoutParams.WRAP_CONTENT
+                )
+
+                if (index == 1 || (index == 2 && binding.layout.getChildAt(0) == deleteButton)) {
+                    params.addRule(RelativeLayout.ALIGN_PARENT_START)
+                } else if (binding.layout.getChildAt(binding.layout.childCount - 2) != deleteButton) {
+                    params.addRule(
+                        RelativeLayout.BELOW,
+                        binding.layout.getChildAt(binding.layout.childCount - 2).id
+                    )
+                } else {
+                    params.addRule(
+                        RelativeLayout.BELOW,
+                        binding.layout.getChildAt(binding.layout.childCount - 3).id
+                    )
+                }
+
+                binding.layout.getChildAt(index).setLayoutParams(params)
+
+            }
+
+            checkToNothingToDo()
+            binding.layout.removeView(view)
+            deleteButton.visibility = View.GONE
+        }
+            true
+        }
+
+        setTouchListener(view,deleteButton)
+        setTouchListener(binding.layout, deleteButton)
+        setTouchListener(binding.conLayout, deleteButton)
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setTouchListener(view: View, deleteButton: Button) {
+        view.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                deleteButton.visibility = View.GONE
+            }
+            false
+        }
+    }
+
     private fun createAllEventsAndTasks() {
+        createButton()
         var i = 0
         while (i < tasks.size) {
             createNewTask(tasks[i].points, tasks[i].checkBoxes, i)
@@ -643,13 +780,24 @@ class HomeFragment : Fragment() {
             createNewEvent(i)
             i += 1
         }
+        binding.layout.addView(deleteButton)
+        checkToNothingToDo()
+    }
 
-        if (binding.layout.childCount == 0) {
+    private fun checkToNothingToDo() {
+        if (binding.layout.childCount == 1) {
             val textView = createText("На этот день ничего не запланировано")
             textView.setTextColor(Color.GRAY)
-            textView.id = TEXTVIEW_ID
+            textView.id = TEXT_VIEW_NOTHING_TO_DO_ID
             binding.layout.addView(textView)
         }
+    }
+
+    private fun changeScrollView() {
+        events = dbHelper.getEventsByDate(chosenDate)
+        tasks = dbHelper.getTasksByDate(chosenDate)
+        binding.layout.removeAllViews()
+        createAllEventsAndTasks()
     }
 
     @SuppressLint("SetTextI18n")
@@ -727,12 +875,5 @@ class HomeFragment : Fragment() {
         }
 
         builder.show()
-    }
-
-    private fun changeScrollView() {
-        events = dbHelper.getEventsByDate(chosenDate)
-        tasks = dbHelper.getTasksByDate(chosenDate)
-        binding.layout.removeAllViews()
-        createAllEventsAndTasks()
     }
 }

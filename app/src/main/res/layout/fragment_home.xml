@@ -23,25 +23,11 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.0">
 
-        <LinearLayout
+        <RelativeLayout
             android:id="@+id/layout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" >
-
-            <Button
-                android:id="@+id/deleteViewInScrollView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="left"
-                android:layout_margin="10dp"
-                android:backgroundTint="@color/bottom_nav_bg"
-                android:text="Удалить"
-                android:textColor="@color/text_color_button"
-                android:textSize="20sp"
-                android:visibility="gone"
-                tools:ignore="MissingConstraints" />
-        </LinearLayout>
+            android:layout_height="match_parent"
+            android:orientation="vertical" />
     </ScrollView>
 
     <Button
@@ -70,7 +56,6 @@
         style="?android:spinnerStyle"
         android:layout_width="200dp"
         android:layout_height="wrap_content"
-        android:text="01.01.2024"
         android:textColor="@color/black"
         android:textSize="22sp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -78,7 +63,8 @@
         app:layout_constraintHorizontal_bias="0.066"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/addButton"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintVertical_bias="0.0"
+        android:textColorLink="@color/text_color_button"/>
 
     <RelativeLayout
         android:id="@+id/createTaskPanel"
