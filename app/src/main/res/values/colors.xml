@@ -7,8 +7,10 @@
     <color name="completed_task">#909A03</color>
     <color name="edit_text">#3000B0FF</color>
 
+    <color name="main_background">#D2FFFFFF</color>
+    <color name="panel_background">#E8E4E4</color>
     <color name="bottom_nav_bg">#FEDBD0</color>
     <color name="bottom_nav_item">#8C706D</color>
     <color name="nav_selected_item">#220006</color>
-    <color name="fragment_bg_color">#FDF8F4</color>
+    <color name="text_color_button">#00B0FF</color>
 </resources>

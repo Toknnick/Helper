@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -21,6 +22,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.helper1.databinding.FragmentHomeBinding
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
@@ -44,7 +46,7 @@ class HomeFragment : Fragment() {
     private lateinit var binding: FragmentHomeBinding
     private lateinit var mainActivity: MainActivity
     private lateinit var datePickerDialog: DatePickerDialog
-    private lateinit var choosedDate: String
+    private var chosenDate: String = ""
     private var events: List<Event> = ArrayList()
     private var tasks: List<Task> = ArrayList()
     private var countOfPoint = 1
@@ -58,6 +60,7 @@ class HomeFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         dbHelper = DBHelper(requireContext())
+        dbHelper.updateChosenDate(LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
         //requireContext().deleteDatabase(dbHelper.databaseName)
     }
 
@@ -66,7 +69,6 @@ class HomeFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         binding = FragmentHomeBinding.inflate(inflater, container, false)
-        initDatePicker()
         return binding.root
     }
 
@@ -74,6 +76,7 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         mainActivity = (activity as MainActivity)
         addParamsToButtons(binding.point0)
+        initDatePicker()
 
         binding.addButton.setOnClickListener {
             showDialog()
@@ -108,14 +111,13 @@ class HomeFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        binding.dataPickerButton.text =
-            LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
-        choosedDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+        chosenDate = dbHelper.getChosenDate()
+        binding.dataPickerButton.text = chosenDate
         changeScrollView()
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
+    override fun onDestroy() {
+        super.onDestroy()
         dbHelper.close()
     }
 
@@ -147,6 +149,7 @@ class HomeFragment : Fragment() {
 
         if (binding.eventInput.text.toString().trim().isEmpty()) {
             createError("Ошибка! Нет описания!")
+            return
         }
 
         var i = 0
@@ -162,9 +165,12 @@ class HomeFragment : Fragment() {
         )
         events += event
 
-        if (choosedDate == event.data)
+        createError("Созданно на " + event.data)
+
+        if (chosenDate == event.data)
             createNewEvent(i)
 
+        hideEventPanel()
         dbHelper.insertEvent(event)
     }
 
@@ -178,16 +184,14 @@ class HomeFragment : Fragment() {
             createError("Ошибка! Некорректное время!")
             return
         }
-        var i = 1
 
+        var i = 1
+        if (binding.point0.text.toString().trim().isEmpty()) {
+            createError("Ошибка! У вас есть пустой пункт!")
+            return
+        }
         while (countOfPoint > i) {
-            if (binding.point0.text.toString().trim().isEmpty()) {
-                createError("Ошибка! У вас есть пустой пункт!")
-                return
-            } else if (countOfPoint > 1 &&
-                binding.pointsPlace.findViewById<EditText>(i + TASK_ID).text.toString().trim()
-                    .isEmpty()
-            ) {
+             if (countOfPoint > 1 && binding.pointsPlace.findViewById<EditText>(i + TASK_ID).text.toString().trim().isEmpty()) {
                 createError("Ошибка! У вас есть пустой пункт!")
                 return
             }
@@ -212,6 +216,10 @@ class HomeFragment : Fragment() {
             j += 1
         }
 
+        if(binding.timeInput.text.toString().trim().isEmpty()){
+            binding.timeInput.setText(LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")))
+        }
+
         //Сохраняем в БД
         val task = Task(
             stringToDate(binding.dateTaskInput.text.toString()),
@@ -222,9 +230,11 @@ class HomeFragment : Fragment() {
         )
         tasks += task
 
-        if (choosedDate == task.data)
+        if (chosenDate == task.data)
             createNewTask(points, checkBoxes, tasks.size - 1)
 
+        createError("Созданно на " + task.data)
+        hideTaskPanel()
         dbHelper.insertTask(task)
     }
 
@@ -294,6 +304,7 @@ class HomeFragment : Fragment() {
     }
 
     //TODO: добавить возможность менять цветa в настройках
+    @SuppressLint("ResourceAsColor")
     private fun createText(text: String, isNameText: Boolean = false): TextView {
         val textView = TextView(context)
         val params = RelativeLayout.LayoutParams(
@@ -307,6 +318,7 @@ class HomeFragment : Fragment() {
             params.setMargins(1, 1, 1, 1)
         }
 
+        textView.setTextColor(R.color.text_color_button)
         textView.setLayoutParams(params)
         textView.text = text
         textView.textSize = 22F
@@ -445,7 +457,7 @@ class HomeFragment : Fragment() {
         }
 
         tasks[i].checkBoxes = newCheckBoxes
-        dbHelper.updateTaskCheckBoxes(i + 1, newCheckBoxes)
+        dbHelper.updateTaskCheckBoxes(tasks[i], newCheckBoxes)
     }
 
     private fun clearEventPanel() {
@@ -582,7 +594,6 @@ class HomeFragment : Fragment() {
         Toast.makeText(requireContext(), text, Toast.LENGTH_SHORT).show()
     }
 
-
     private fun isHasDate(date: String): Boolean {
         var boolean = false
         if (date.length == 8 || date.length == 10 || date.isEmpty())
@@ -623,17 +634,13 @@ class HomeFragment : Fragment() {
     private fun createAllEventsAndTasks() {
         var i = 0
         while (i < tasks.size) {
-            if (choosedDate == tasks[i].data)
-                createNewTask(tasks[i].points, tasks[i].checkBoxes, i)
-
+            createNewTask(tasks[i].points, tasks[i].checkBoxes, i)
             i += 1
         }
 
         i = 0
         while (i < events.size) {
-            if (choosedDate == events[i].data)
-                createNewEvent(i)
-
+            createNewEvent(i)
             i += 1
         }
 
@@ -645,12 +652,11 @@ class HomeFragment : Fragment() {
         }
     }
 
-
     @SuppressLint("SetTextI18n")
     @Suppress("DEPRECATION", "NAME_SHADOWING")
     private fun initDatePicker() {
         val dateSetListener =
-            OnDateSetListener { datePicker, year, month, day ->
+            OnDateSetListener { _, year, month, day ->
                 var month = month
                 month += 1
                 val date: String
@@ -661,7 +667,8 @@ class HomeFragment : Fragment() {
                     date = "$day.0$month.$year"
 
                 binding.dataPickerButton.text = date
-                choosedDate = date
+                chosenDate = date
+                dbHelper.updateChosenDate(chosenDate)
                 changeScrollView()
             }
 
@@ -687,7 +694,7 @@ class HomeFragment : Fragment() {
 
         builder.setMultiChoiceItems(
             langArray, selectedEvent
-        ) { dialogInterface, i, b ->
+        ) { _, i, b ->
             if (b) {
                 langList.add(i)
                 langList.sort()
@@ -698,7 +705,7 @@ class HomeFragment : Fragment() {
 
         builder.setPositiveButton(
             "OK"
-        ) { dialogInterface, i -> // Initialize string builder
+        ) { _, _ -> // Initialize string builder
             if (langList.size != 1) {
                 val stringBuilder = StringBuilder()
                 for (j in langList.indices) {
@@ -715,7 +722,7 @@ class HomeFragment : Fragment() {
 
         builder.setNegativeButton(
             "Cancel"
-        ) { dialogInterface, i -> // dismiss dialog
+        ) { dialogInterface, _ -> // dismiss dialog
             dialogInterface.dismiss()
         }
 
@@ -723,36 +730,9 @@ class HomeFragment : Fragment() {
     }
 
     private fun changeScrollView() {
-        events = dbHelper.getEvents()
-        tasks = dbHelper.getTasks()
+        events = dbHelper.getEventsByDate(chosenDate)
+        tasks = dbHelper.getTasksByDate(chosenDate)
         binding.layout.removeAllViews()
         createAllEventsAndTasks()
     }
-
-    /*fun onBindViewHolder(holder: MyAdapter.MyViewHolder, position: Int) {
-        val note: Note = notesList.get(position)
-        holder.titleOutput.setText(note.getTitle())
-        holder.descriptionOutput.setText(note.getDescription())
-
-        val formatedTime: String = DateFormat.getDateTimeInstance().format(note.getCreatedTime())
-        holder.timeOutput.setText(formatedTime)
-
-        holder.itemView.setOnLongClickListener(OnLongClickListener { v ->
-            val menu: PopupMenu = PopupMenu(context, v)
-            menu.getMenu().add("DELETE")
-            menu.setOnMenuItemClickListener { item ->
-                if (item.title == "DELETE") {
-                    //delete the note
-                    val realm: Realm = Realm.getDefaultInstance()
-                    realm.beginTransaction()
-                    note.deleteFromRealm()
-                    realm.commitTransaction()
-                    Toast.makeText(context, "Note deleted", Toast.LENGTH_SHORT).show()
-                }
-                true
-            }
-            menu.show()
-            true
-        })
-    }*/
 }
