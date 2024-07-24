@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -696,8 +697,8 @@ class HomeFragment : Fragment() {
                 RelativeLayout.LayoutParams.WRAP_CONTENT
             )
             params.setMargins(5, 5, 5, 5)
-            if (binding.layout.indexOfChild(view) != binding.layout.childCount - 1 || (binding.layout.indexOfChild(
-                    view) != binding.layout.childCount - 2 && binding.layout.getChildAt(binding.layout.childCount - 1) != deleteButton)
+            if ((binding.layout.indexOfChild(view) != binding.layout.childCount - 1
+                        || binding.layout.childCount == 2)
             ) {
                 params.addRule(RelativeLayout.BELOW,view.id)
                 params.addRule(RelativeLayout.ALIGN_LEFT, view.id)
@@ -718,35 +719,9 @@ class HomeFragment : Fragment() {
                 }
             }
 
-            var index = binding.layout.indexOfChild(view)
-            index +=1
-
-            if(index < binding.layout.childCount) {
-                val params = RelativeLayout.LayoutParams(
-                    RelativeLayout.LayoutParams.MATCH_PARENT,
-                    RelativeLayout.LayoutParams.WRAP_CONTENT
-                )
-
-                if (index == 1 || (index == 2 && binding.layout.getChildAt(0) == deleteButton)) {
-                    params.addRule(RelativeLayout.ALIGN_PARENT_START)
-                } else if (binding.layout.getChildAt(binding.layout.childCount - 2) != deleteButton) {
-                    params.addRule(
-                        RelativeLayout.BELOW,
-                        binding.layout.getChildAt(binding.layout.childCount - 2).id
-                    )
-                } else {
-                    params.addRule(
-                        RelativeLayout.BELOW,
-                        binding.layout.getChildAt(binding.layout.childCount - 3).id
-                    )
-                }
-
-                binding.layout.getChildAt(index).setLayoutParams(params)
-
-            }
-
-            checkToNothingToDo()
             binding.layout.removeView(view)
+            checkToNothingToDo()
+            changeScrollView()
             deleteButton.visibility = View.GONE
         }
             true
