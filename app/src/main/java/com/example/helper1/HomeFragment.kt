@@ -25,24 +25,28 @@ import androidx.fragment.app.Fragment
 import com.example.helper1.databinding.FragmentHomeBinding
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
+interface Timable {
+    var time: String
+}
 
 data class Event(
     var data: String,
-    var time: String,
+    override var time: String,
     var place: String,
     var event: String
-)
+): Timable
 
 data class Task(
     var data: String,
-    var time: String,
+    override var time: String,
     var name: String,
     var points: List<String>,
     var checkBoxes: List<Boolean>
-)
+): Timable
 
 class HomeFragment : Fragment() {
     private lateinit var binding: FragmentHomeBinding
@@ -159,20 +163,20 @@ class HomeFragment : Fragment() {
         var i = 0
         if (events.isNotEmpty())
             i = events.size
-
         //Сохраняем в БД
         val event = Event(
             stringToDate(binding.dateInput.text.toString()),
-            binding.timeInput.text.toString(),
+            stringToTime(binding.timeInput.text.toString()),
             binding.placeInput.text.toString(),
             binding.eventInput.text.toString()
         )
-        events += event
 
         createError("Созданно на " + event.data)
 
-        if (chosenDate == event.data)
-            createNewEvent(i)
+        if (chosenDate == event.data) {
+            events += event
+            createAllEventsAndTasks()
+        }
 
         hideEventPanel()
         dbHelper.insertEvent(event)
@@ -231,15 +235,16 @@ class HomeFragment : Fragment() {
         //Сохраняем в БД
         val task = Task(
             stringToDate(binding.dateTaskInput.text.toString()),
-            binding.timeTaskInout.text.toString(),
+            stringToTime(binding.timeTaskInout.text.toString()),
             binding.nameTaskInput.text.toString(),
             points,
             checkBoxes
         )
-        tasks += task
 
-        if (chosenDate == task.data)
-            createNewTask(points, checkBoxes, tasks.size - 1)
+        if (chosenDate == task.data){
+            tasks += task
+            createAllEventsAndTasks()
+        }
 
         createError("Созданно на " + task.data)
         hideTaskPanel()
@@ -283,12 +288,12 @@ class HomeFragment : Fragment() {
 
         val textView: TextView
 
-        if (events[i].place != "") {
+        if (events[i].place.isNotEmpty() && events[i].time.length < 7) {
             textView = createText(
                 "Время: " + events[i].time + System.lineSeparator() +
                         "Место: " + events[i].place + System.lineSeparator() +
                         events[i].event,false, true)
-        } else if (events[i].time != "") {
+        } else if (events[i].time.length<7) {
             textView = createText(
                 "Время: " + events[i].time + System.lineSeparator() +
                         events[i].event,false, true)
@@ -689,6 +694,16 @@ class HomeFragment : Fragment() {
         return newString
     }
 
+    private fun stringToTime(string: String) : String{
+        var newString = ""
+        if (string.isEmpty())
+            newString = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
+        else
+            newString = string
+
+        return newString
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     private fun setupLongClickListeners(view: View,id: Int){
         view.setOnLongClickListener{
@@ -697,12 +712,12 @@ class HomeFragment : Fragment() {
                 RelativeLayout.LayoutParams.WRAP_CONTENT
             )
             params.setMargins(5, 5, 5, 5)
-            if ((binding.layout.indexOfChild(view) != binding.layout.childCount - 1
-                        || binding.layout.childCount == 2)
-            ) {
+
+            if (binding.layout.indexOfChild(view) == 0){
                 params.addRule(RelativeLayout.BELOW,view.id)
                 params.addRule(RelativeLayout.ALIGN_LEFT, view.id)
-            }else{
+            }else if(binding.layout.indexOfChild(view) == binding.layout.childCount -1
+                ||(binding.layout.indexOfChild(view) == binding.layout.childCount - 2 && binding.layout.getChildAt(binding.layout.childCount- 1) == deleteButton)){
                 params.addRule(RelativeLayout.ABOVE,view.id)
                 params.addRule(RelativeLayout.ALIGN_LEFT, view.id)
             }
@@ -744,16 +759,13 @@ class HomeFragment : Fragment() {
 
     private fun createAllEventsAndTasks() {
         createButton()
-        var i = 0
-        while (i < tasks.size) {
-            createNewTask(tasks[i].points, tasks[i].checkBoxes, i)
-            i += 1
-        }
 
-        i = 0
-        while (i < events.size) {
-            createNewEvent(i)
-            i += 1
+        val newList = (events + tasks).sortedBy { it.time }
+        for (item in newList) {
+            when (item) {
+                is Event -> createNewEvent(events.indexOf(item))
+                is Task -> createNewTask(item.points,item.checkBoxes,tasks.indexOf(item))
+            }
         }
         binding.layout.addView(deleteButton)
         checkToNothingToDo()
@@ -769,8 +781,8 @@ class HomeFragment : Fragment() {
     }
 
     private fun changeScrollView() {
-        events = dbHelper.getEventsByDate(chosenDate)
-        tasks = dbHelper.getTasksByDate(chosenDate)
+        events = dbHelper.getEventsByDate(chosenDate).sortedBy { it.time }
+        tasks = dbHelper.getTasksByDate(chosenDate).sortedBy { it.time }
         binding.layout.removeAllViews()
         createAllEventsAndTasks()
     }
