@@ -503,7 +503,6 @@ class HomeFragment : Fragment() {
         binding.addNewPoint.setLayoutParams(btn2Params)
 
         btn3Params.addRule(RelativeLayout.BELOW, editText.id)
-        btn3Params.rightMargin = 10
         btn3Params.addRule(RelativeLayout.LEFT_OF, binding.addNewPoint.id)
         binding.deletePoint.setLayoutParams(btn3Params)
     }
@@ -689,7 +688,7 @@ class HomeFragment : Fragment() {
         if (string.length == 8)
             newString = string.replace(Regex("(\\d{2})$"), "20$1")
         else if (string.isEmpty())
-            newString = LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+            newString = chosenDate
 
         return newString
     }
@@ -716,8 +715,7 @@ class HomeFragment : Fragment() {
             if (binding.layout.indexOfChild(view) == 0){
                 params.addRule(RelativeLayout.BELOW,view.id)
                 params.addRule(RelativeLayout.ALIGN_LEFT, view.id)
-            }else if(binding.layout.indexOfChild(view) == binding.layout.childCount -1
-                ||(binding.layout.indexOfChild(view) == binding.layout.childCount - 2 && binding.layout.getChildAt(binding.layout.childCount- 1) == deleteButton)){
+            }else {
                 params.addRule(RelativeLayout.ABOVE,view.id)
                 params.addRule(RelativeLayout.ALIGN_LEFT, view.id)
             }
@@ -758,6 +756,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun createAllEventsAndTasks() {
+        binding.layout.removeAllViews()
         createButton()
 
         val newList = (events + tasks).sortedBy { it.time }
@@ -783,7 +782,6 @@ class HomeFragment : Fragment() {
     private fun changeScrollView() {
         events = dbHelper.getEventsByDate(chosenDate).sortedBy { it.time }
         tasks = dbHelper.getTasksByDate(chosenDate).sortedBy { it.time }
-        binding.layout.removeAllViews()
         createAllEventsAndTasks()
     }
 

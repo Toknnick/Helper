@@ -2,15 +2,15 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="green">#51C857</color>
-    <color name="not_completed_task">#EFFF04</color>
+    <color name="green">#33691E</color>
+    <color name="not_completed_task">#FFDE04</color>
     <color name="completed_task">#909A03</color>
-    <color name="edit_text">#3858FF</color>
 
-    <color name="main_background">#D23F5CF1</color>
-    <color name="panel_background">#D7192981</color>
-    <color name="bottom_nav_bg">#D20526C8</color>
-    <color name="bottom_nav_item">#8800FF</color>
-    <color name="nav_selected_item">#430025</color>
-    <color name="text_color_button">#8700FE</color>
+    <color name="edit_text">#206F7C</color>
+    <color name="main_background">#77341D</color>
+    <color name="panel_background">#B17365</color>
+    <color name="bottom_nav_bg">#211B1A</color>
+    <color name="bottom_nav_item">#206F7C</color>
+    <color name="nav_selected_item">#77341D</color>
+    <color name="text_color_button">#3D79A7</color>
 </resources>
