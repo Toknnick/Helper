@@ -97,6 +97,8 @@
             android:layout_margin="10dp"
             android:layout_toRightOf="@id/backTaskButton"
             android:background="@color/edit_text"
+            android:editable="false"
+            android:focusable="false"
             android:hint="Дата"
             android:inputType="date"
             android:padding="10dp"
@@ -109,6 +111,8 @@
             android:layout_below="@+id/dateTaskInput"
             android:layout_margin="10dp"
             android:background="@color/edit_text"
+            android:editable="false"
+            android:focusable="false"
             android:hint="Время"
             android:inputType="time"
             android:padding="10dp"
@@ -221,10 +225,12 @@
             android:layout_margin="10dp"
             android:layout_toRightOf="@id/backEventButton"
             android:background="@color/edit_text"
+            android:editable="false"
+            android:focusable="false"
             android:hint="Дата"
             android:inputType="date"
             android:padding="10dp"
-            android:textColor="@color/text_color_button"/>
+            android:textColor="@color/text_color_button" />
 
         <EditText
             android:id="@+id/timeInput"
@@ -233,10 +239,12 @@
             android:layout_below="@id/dateInput"
             android:layout_margin="10dp"
             android:background="@color/edit_text"
+            android:editable="false"
+            android:focusable="false"
             android:hint="Время"
             android:inputType="time"
             android:padding="10dp"
-            android:textColor="@color/text_color_button"/>
+            android:textColor="@color/text_color_button" />
 
         <EditText
             android:id="@+id/placeInput"
@@ -247,7 +255,7 @@
             android:background="@color/edit_text"
             android:hint="Место"
             android:padding="10dp"
-            android:textColor="@color/text_color_button"/>
+            android:textColor="@color/text_color_button" />
 
         <EditText
             android:id="@+id/eventInput"
@@ -260,7 +268,7 @@
             android:hint="Описание"
             android:lines="8"
             android:padding="10dp"
-            android:textColor="@color/text_color_button"/>
+            android:textColor="@color/text_color_button" />
 
         <Button
             android:id="@+id/saveButton"

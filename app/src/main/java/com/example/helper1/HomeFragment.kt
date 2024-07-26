@@ -4,8 +4,10 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.DatePickerDialog.OnDateSetListener
+import android.app.TimePickerDialog
 import android.content.res.Resources
 import android.graphics.Color
+import android.graphics.Paint
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -21,6 +23,7 @@ import android.widget.EditText
 import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.helper1.databinding.FragmentHomeBinding
 import java.time.LocalDate
@@ -38,7 +41,7 @@ data class Event(
     override var time: String,
     var place: String,
     var event: String
-): Timable
+) : Timable
 
 data class Task(
     var data: String,
@@ -46,17 +49,20 @@ data class Task(
     var name: String,
     var points: List<String>,
     var checkBoxes: List<Boolean>
-): Timable
+) : Timable
 
 class HomeFragment : Fragment() {
     private lateinit var binding: FragmentHomeBinding
     private lateinit var mainActivity: MainActivity
     private lateinit var datePickerDialog: DatePickerDialog
-    private lateinit var deleteButton : Button
+    private lateinit var datePickerDialogForObject: DatePickerDialog
+    private lateinit var timePickerDialog: TimePickerDialog
+    private lateinit var deleteButton: Button
     private var chosenDate: String = ""
     private var events: List<Event> = ArrayList()
     private var tasks: List<Task> = ArrayList()
     private var countOfPoint = 1
+    private var textSize = 21F
 
     private val ENENT_ID = 10000
     private val TASK_ID = 232320
@@ -68,6 +74,7 @@ class HomeFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         dbHelper = DBHelper(requireContext())
+        val t = dbHelper.getChosenDate()
         dbHelper.updateChosenDate(LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
         //requireContext().deleteDatabase(dbHelper.databaseName)
     }
@@ -85,6 +92,7 @@ class HomeFragment : Fragment() {
         mainActivity = (activity as MainActivity)
         addParamsToButtons(binding.point0)
         initDatePicker()
+        initTimePicker()
 
         binding.addButton.setOnClickListener {
             showDialog()
@@ -110,11 +118,18 @@ class HomeFragment : Fragment() {
         binding.backEventButton.setOnClickListener {
             hideEventPanel()
         }
-
-        changeDataEditText(binding.dateInput)
-        changeDataEditText(binding.dateTaskInput)
-        changeTimeEditText(binding.timeInput)
-        changeTimeEditText(binding.timeTaskInout)
+        binding.dateInput.setOnClickListener {
+            datePickerDialogForObject.show()
+        }
+        binding.dateTaskInput.setOnClickListener {
+            datePickerDialogForObject.show()
+        }
+        binding.timeInput.setOnClickListener {
+            timePickerDialog.show()
+        }
+        binding.timeTaskInout.setOnClickListener {
+            timePickerDialog.show()
+        }
     }
 
     override fun onResume() {
@@ -145,24 +160,11 @@ class HomeFragment : Fragment() {
     }
 
     private fun addNewEventIntoScrollView() {
-        if (!isHasDate(binding.dateInput.text.toString())) {
-            createError("Ошибка! Некорректная дата!")
-            return
-        }
-
-        if (!isHasTime(binding.timeInput.text.toString())) {
-            createError("Ошибка! Некорректное время!")
-            return
-        }
-
         if (binding.eventInput.text.toString().trim().isEmpty()) {
             createError("Ошибка! Нет описания!")
             return
         }
 
-        var i = 0
-        if (events.isNotEmpty())
-            i = events.size
         //Сохраняем в БД
         val event = Event(
             stringToDate(binding.dateInput.text.toString()),
@@ -183,16 +185,6 @@ class HomeFragment : Fragment() {
     }
 
     private fun addNewTaskIntoScrollView() {
-        if (!isHasDate(binding.dateTaskInput.text.toString())) {
-            createError("Ошибка! Некорректная дата!")
-            return
-        }
-
-        if (!isHasTime(binding.timeTaskInout.text.toString())) {
-            createError("Ошибка! Некорректное время!")
-            return
-        }
-
         var i = 1
         if (binding.point0.text.toString().trim().isEmpty()) {
             createError("Ошибка! У вас есть пустой пункт!")
@@ -241,7 +233,7 @@ class HomeFragment : Fragment() {
             checkBoxes
         )
 
-        if (chosenDate == task.data){
+        if (chosenDate == task.data) {
             tasks += task
             createAllEventsAndTasks()
         }
@@ -266,7 +258,7 @@ class HomeFragment : Fragment() {
             nameTextView = createText(tasks[i].name, true)
         layout.addView(nameTextView)
         nameTextView.id = 666
-        nameTextView.textSize = 23F
+        nameTextView.textSize = textSize + 1
         nameTextView.gravity = Gravity.CENTER
 
         var j = 0
@@ -278,7 +270,7 @@ class HomeFragment : Fragment() {
 
         layout.setBackgroundResource(R.drawable.border_task)
         binding.layout.addView(layout)
-        setupLongClickListeners(layout,i)
+        setupLongClickListeners(layout, i)
     }
 
     private fun createNewEvent(i: Int) {
@@ -292,19 +284,21 @@ class HomeFragment : Fragment() {
             textView = createText(
                 "Время: " + events[i].time + System.lineSeparator() +
                         "Место: " + events[i].place + System.lineSeparator() +
-                        events[i].event,false, true)
-        } else if (events[i].time.length<7) {
+                        events[i].event, false, true
+            )
+        } else if (events[i].time.length < 7) {
             textView = createText(
                 "Время: " + events[i].time + System.lineSeparator() +
-                        events[i].event,false, true)
+                        events[i].event, false, true
+            )
         } else {
-            textView = createText(events[i].event,false,true)
+            textView = createText(events[i].event, false, true)
         }
 
         textView.setBackgroundResource(R.drawable.border_event)
         textView.id = i + ENENT_ID
         binding.layout.addView(textView)
-        setupLongClickListeners(textView,i)
+        setupLongClickListeners(textView, i)
     }
 
     private fun addNewPoint() {
@@ -318,7 +312,11 @@ class HomeFragment : Fragment() {
 
     //TODO: добавить возможность менять цветa в настройках
     @SuppressLint("ResourceAsColor")
-    private fun createText(text: String, isNameText: Boolean = false, isNeedBelow:Boolean = false): TextView {
+    private fun createText(
+        text: String,
+        isNameText: Boolean = false,
+        isNeedBelow: Boolean = false
+    ): TextView {
         val textView = TextView(context)
         val params = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.MATCH_PARENT,
@@ -331,7 +329,7 @@ class HomeFragment : Fragment() {
             params.setMargins(1, 1, 1, 1)
         }
 
-        if(isNeedBelow) {
+        if (isNeedBelow) {
             textView.id = 1488632223 + events.size
             if (binding.layout.childCount == 0 || (binding.layout.childCount == 1 && binding.layout.getChildAt(
                     0
@@ -353,12 +351,12 @@ class HomeFragment : Fragment() {
         textView.setTextColor(R.color.text_color_button)
         textView.setLayoutParams(params)
         textView.text = text
-        textView.textSize = 22F
+        textView.textSize = textSize
         return textView
     }
 
     @SuppressLint("ResourceAsColor")
-    private fun createButton(){
+    private fun createButton() {
         deleteButton = Button(requireContext())
         val params = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.WRAP_CONTENT,
@@ -369,7 +367,7 @@ class HomeFragment : Fragment() {
         deleteButton.setBackgroundResource(R.color.bottom_nav_bg)
         deleteButton.setTextColor(R.color.text_color_button)
         deleteButton.text = "Удалить"
-        deleteButton.textSize = 22F
+        deleteButton.textSize = textSize
         deleteButton.visibility = View.GONE
     }
 
@@ -383,14 +381,21 @@ class HomeFragment : Fragment() {
         params.setMargins(5, 5, 5, 5)
 
 
-        if(binding.layout.childCount == 0 || (binding.layout.childCount == 1 && binding.layout.getChildAt(0) == deleteButton)){
+        if (binding.layout.childCount == 0 || (binding.layout.childCount == 1 && binding.layout.getChildAt(
+                0
+            ) == deleteButton)
+        ) {
             params.addRule(RelativeLayout.ALIGN_PARENT_START)
-        }else if(binding.layout.getChildAt(binding.layout.childCount - 1) != deleteButton){
-            params.addRule(RelativeLayout.BELOW,
-                           binding.layout.getChildAt(binding.layout.childCount - 1).id)
-        }else{
-            params.addRule(RelativeLayout.BELOW,
-                binding.layout.getChildAt(binding.layout.childCount - 2).id)
+        } else if (binding.layout.getChildAt(binding.layout.childCount - 1) != deleteButton) {
+            params.addRule(
+                RelativeLayout.BELOW,
+                binding.layout.getChildAt(binding.layout.childCount - 1).id
+            )
+        } else {
+            params.addRule(
+                RelativeLayout.BELOW,
+                binding.layout.getChildAt(binding.layout.childCount - 2).id
+            )
         }
 
         layout.setLayoutParams(params)
@@ -412,7 +417,7 @@ class HomeFragment : Fragment() {
         editText.id = countOfPoint + TASK_ID
         editText.setPadding(10, 10, 10, 40)
         binding.pointsPlace.addView(editText)
-        editText.setTextColor(R.color.text_color_button)
+        editText.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_color_button))
 
         //Подвинуть новый пункт
         if (countOfPoint == 1) {
@@ -443,41 +448,44 @@ class HomeFragment : Fragment() {
             RelativeLayout.LayoutParams.WRAP_CONTENT
         )
 
-        relLayout.addView(textView)
         if (j == 0) {
-            params.addRule(RelativeLayout.BELOW, relLayout.findViewById<TextView>(666).id)
             checkBoxParams.addRule(RelativeLayout.BELOW, relLayout.findViewById<TextView>(666).id)
         } else {
-            params.addRule(
-                RelativeLayout.BELOW,
-                relLayout.findViewById<TextView>(j + 121210 - 1).id
-            )
             checkBoxParams.addRule(
                 RelativeLayout.BELOW,
-                relLayout.findViewById<TextView>(j + 121210 - 1).id
+                relLayout.findViewById<TextView>(j + 1321210 - 1).id
             )
         }
 
-        params.setMargins(10, 10, 0, 10)
-        textView.setLayoutParams(params)
+        params.setMargins(0, 0, 0, 0)
         textView.maxWidth = (Resources.getSystem().displayMetrics.widthPixels * 0.9f).toInt()
 
-
         checkBox.isChecked = isChecked
-        if (!isChecked)
-            textView.setBackgroundResource(R.drawable.border_not_completed_task)
-        else
-            textView.setBackgroundResource(R.drawable.border_completed_task)
 
-        textView.id = j + 121210
-        checkBoxParams.addRule(RelativeLayout.RIGHT_OF, textView.id)
+        if (checkBox.isChecked)
+            textView.apply {
+                paintFlags = paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+                text = textView.text
+            }
+        else
+            textView.apply {
+                paintFlags = paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+                text = textView.text
+            }
+
+        checkBox.id = j + 121210
+        textView.id = j + 1321210
+        params.addRule(RelativeLayout.ALIGN_TOP, checkBox.id)
+        params.addRule(RelativeLayout.RIGHT_OF, checkBox.id)
         checkBox.setLayoutParams(checkBoxParams)
+        textView.setLayoutParams(params)
 
         checkBox.setOnClickListener {
-            changeBackgroundOfPoint(textView, checkBox, relLayout.id - REL_LAYOUT_ID , j)
+            changeBackgroundOfPoint(textView, checkBox, relLayout.id - REL_LAYOUT_ID, j)
         }
 
         relLayout.addView(checkBox)
+        relLayout.addView(textView)
     }
 
     private fun addParamsToButtons(editText: EditText) {
@@ -507,14 +515,21 @@ class HomeFragment : Fragment() {
         binding.deletePoint.setLayoutParams(btn3Params)
     }
 
+    @SuppressLint("SetTextI18n")
     private fun changeBackgroundOfPoint(textView: TextView, checkBox: CheckBox, i: Int, j: Int) {
         val newCheckBoxes = tasks[i].checkBoxes.toMutableList()
 
         if (checkBox.isChecked) {
-            textView.setBackgroundResource(R.drawable.border_completed_task)
+            textView.apply {
+                paintFlags = paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+                text = textView.text
+            }
             newCheckBoxes[j] = true
         } else {
-            textView.setBackgroundResource(R.drawable.border_not_completed_task)
+            textView.apply {
+                paintFlags = paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+                text = textView.text
+            }
             newCheckBoxes[j] = false
         }
 
@@ -565,111 +580,8 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun changeTimeEditText(editText: EditText) {
-        editText.addTextChangedListener(object : TextWatcher {
-            private var wasDeleted = false
-
-            override fun afterTextChanged(s: Editable?) {}
-
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-                wasDeleted = count > after
-            }
-
-            @SuppressLint("SetTextI18n")
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                val text = s.toString()
-                if (text.length == 2 && !text.contains(":") && !wasDeleted) {
-                    editText.setText("$text:")
-                    editText.setSelection(editText.text.length)
-                }
-                if (text.length > 5) {
-                    editText.setText(text.substring(0, 5))
-                    editText.setSelection(editText.text.length)
-                }
-                if (text.length > 3) {
-                    val hours = text.substring(0, 2).toIntOrNull()
-                    if (hours != null && hours > 23) {
-                        editText.setText("23:")
-                        editText.setSelection(editText.text.length)
-                    }
-                }
-                if (text.length == 5) {
-                    val minutes = text.substring(3, 5).toIntOrNull()
-                    if (minutes != null && minutes > 59) {
-                        editText.setText(text.substring(0, 3) + "59")
-                        editText.setSelection(editText.text.length)
-                    }
-                }
-                wasDeleted = false
-            }
-        })
-    }
-
-    private fun changeDataEditText(editText: EditText) {
-        editText.addTextChangedListener(object : TextWatcher {
-            private var wasDeleted = false
-
-            override fun afterTextChanged(s: Editable?) {}
-
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-                wasDeleted = count > after
-            }
-
-            @SuppressLint("SetTextI18n")
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                val text = s.toString()
-                if ((text.length == 2 || text.length == 5) && !wasDeleted) {
-                    editText.setText("$text.")
-                    editText.setSelection(editText.text.length)
-                }
-                if (text.length > 10) {
-                    editText.setText(text.substring(0, 10))
-                    editText.setSelection(editText.text.length)
-                }
-                if (text.length == 4) {
-                    val day = text.substring(0, 2).toIntOrNull()
-                    if (day != null && day > 31) {
-                        editText.setText("31.")
-                        editText.setSelection(editText.text.length)
-                    }
-                }
-                if (text.length == 8) {
-                    val month = text.substring(3, 5).toIntOrNull()
-                    if (month != null && month > 12) {
-                        editText.setText(text.substring(0, 3) + "12.")
-                        editText.setSelection(editText.text.length)
-                    }
-                }
-                if (text.length == 10) {
-                    val year = text.substring(6, 10).toIntOrNull()
-                    if (year != null && year < 1900) {
-                        editText.setText(text.substring(0, 6) + "1900")
-                        editText.setSelection(editText.text.length)
-                    }
-                }
-                wasDeleted = false
-            }
-        })
-    }
-
     private fun createError(text: String) {
         Toast.makeText(requireContext(), text, Toast.LENGTH_SHORT).show()
-    }
-
-    private fun isHasDate(date: String): Boolean {
-        var boolean = false
-        if (date.length == 8 || date.length == 10 || date.isEmpty())
-            boolean = true
-
-        return boolean
-    }
-
-    private fun isHasTime(time: String): Boolean {
-        var boolean = false
-        if (time.length == 5 || time.isEmpty())
-            boolean = true
-
-        return boolean
     }
 
     private fun hideTaskPanel() {
@@ -689,11 +601,13 @@ class HomeFragment : Fragment() {
             newString = string.replace(Regex("(\\d{2})$"), "20$1")
         else if (string.isEmpty())
             newString = chosenDate
+        else
+            newString = string
 
         return newString
     }
 
-    private fun stringToTime(string: String) : String{
+    private fun stringToTime(string: String): String {
         var newString = ""
         if (string.isEmpty())
             newString = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
@@ -704,43 +618,44 @@ class HomeFragment : Fragment() {
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun setupLongClickListeners(view: View,id: Int){
-        view.setOnLongClickListener{
+    private fun setupLongClickListeners(view: View, id: Int) {
+        view.setOnLongClickListener {
             val params = RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT,
                 RelativeLayout.LayoutParams.WRAP_CONTENT
             )
             params.setMargins(5, 5, 5, 5)
 
-            if (binding.layout.indexOfChild(view) == 0){
-                params.addRule(RelativeLayout.BELOW,view.id)
+            if (binding.layout.indexOfChild(view) == 0) {
+                params.addRule(RelativeLayout.BELOW, view.id)
                 params.addRule(RelativeLayout.ALIGN_LEFT, view.id)
-            }else {
-                params.addRule(RelativeLayout.ABOVE,view.id)
+            } else {
+                params.addRule(RelativeLayout.ABOVE, view.id)
                 params.addRule(RelativeLayout.ALIGN_LEFT, view.id)
             }
             deleteButton.setLayoutParams(params)
             deleteButton.visibility = View.VISIBLE
 
-        deleteButton.setOnClickListener {
-            when(view){
-                is TextView -> {
-                    dbHelper.deleteEvent(events[id])
-                }
-                is RelativeLayout ->{
-                    dbHelper.deleteTask(tasks[id])
-                }
-            }
+            deleteButton.setOnClickListener {
+                when (view) {
+                    is TextView -> {
+                        dbHelper.deleteEvent(events[id])
+                    }
 
-            binding.layout.removeView(view)
-            checkToNothingToDo()
-            changeScrollView()
-            deleteButton.visibility = View.GONE
-        }
+                    is RelativeLayout -> {
+                        dbHelper.deleteTask(tasks[id])
+                    }
+                }
+
+                binding.layout.removeView(view)
+                checkToNothingToDo()
+                changeScrollView()
+                deleteButton.visibility = View.GONE
+            }
             true
         }
 
-        setTouchListener(view,deleteButton)
+        setTouchListener(view, deleteButton)
         setTouchListener(binding.layout, deleteButton)
         setTouchListener(binding.conLayout, deleteButton)
     }
@@ -763,7 +678,7 @@ class HomeFragment : Fragment() {
         for (item in newList) {
             when (item) {
                 is Event -> createNewEvent(events.indexOf(item))
-                is Task -> createNewTask(item.points,item.checkBoxes,tasks.indexOf(item))
+                is Task -> createNewTask(item.points, item.checkBoxes, tasks.indexOf(item))
             }
         }
         binding.layout.addView(deleteButton)
@@ -786,25 +701,11 @@ class HomeFragment : Fragment() {
     }
 
     @SuppressLint("SetTextI18n")
-    @Suppress("DEPRECATION", "NAME_SHADOWING")
+    @Suppress("DEPRECATION")
     private fun initDatePicker() {
-        val dateSetListener =
-            OnDateSetListener { _, year, month, day ->
-                var month = month
-                month += 1
-                val date: String
 
-                if (month > 9)
-                    date = "$day.$month.$year"
-                else
-                    date = "$day.0$month.$year"
-
-                binding.dataPickerButton.text = date
-                chosenDate = date
-                dbHelper.updateChosenDate(chosenDate)
-                changeScrollView()
-            }
-
+        val dateSetListener = dateListener(true)
+        val dateSetListenerForObject = dateListener(false)
         val cal: Calendar = Calendar.getInstance()
         val year: Int = cal.get(Calendar.YEAR)
         val month: Int = cal.get(Calendar.MONTH)
@@ -814,42 +715,80 @@ class HomeFragment : Fragment() {
 
         datePickerDialog =
             DatePickerDialog(requireContext(), style, dateSetListener, year, month, day)
+        datePickerDialogForObject =
+            DatePickerDialog(requireContext(), style, dateSetListenerForObject, year, month, day)
+
+    }
+
+    private fun dateListener(isMainDatePicker: Boolean = false): OnDateSetListener {
+        val dateSetListener = OnDateSetListener { _, year, month, day ->
+            val date: String
+            var month = month
+            month += 1
+
+            if (month > 9)
+                date = "$day.$month.$year"
+            else
+                date = "$day.0$month.$year"
+
+            if (isMainDatePicker) {
+                binding.dataPickerButton.text = date
+                chosenDate = date
+                dbHelper.updateChosenDate(chosenDate)
+                changeScrollView()
+            } else {
+                binding.dateInput.setText(date)
+                binding.dateTaskInput.setText(date)
+            }
+        }
+        return dateSetListener
+    }
+
+    private fun initTimePicker() {
+        val timeSetListener = TimePickerDialog.OnTimeSetListener { _, hour, minute ->
+            val time: String
+            if (hour > 9 && minute > 9)
+                time = "$hour:$minute"
+            else if (hour > 9)
+                time = "$hour:0$minute"
+            else if (minute > 9)
+                time = "0$hour:$minute"
+            else
+                time = "0$hour:0$minute"
+
+            binding.timeInput.setText(time)
+            binding.timeTaskInout.setText(time)
+        }
+
+        val cal: Calendar = Calendar.getInstance()
+        val hour: Int = cal.get(Calendar.HOUR_OF_DAY)
+        val minute: Int = cal.get(Calendar.MINUTE)
+
+        val style: Int = AlertDialog.THEME_HOLO_LIGHT
+
+        timePickerDialog =
+            TimePickerDialog(requireContext(), style, timeSetListener, hour, minute, true)
     }
 
     private fun showDialog() {
         val langArray: Array<String> = arrayOf("Задача", "Событие")
-        val selectedEvent = BooleanArray(langArray.size)
-        val langList: ArrayList<Int> = ArrayList()
+        var selectedEvent = -1
         val builder: androidx.appcompat.app.AlertDialog.Builder =
             androidx.appcompat.app.AlertDialog.Builder(requireContext())
-        builder.setTitle("Выбрерите тип")
+        builder.setTitle("Выберите тип")
         builder.setCancelable(false)
 
-        builder.setMultiChoiceItems(
-            langArray, selectedEvent
-        ) { _, i, b ->
-            if (b) {
-                langList.add(i)
-                langList.sort()
-            } else {
-                langList.remove(i)
-            }
+        builder.setSingleChoiceItems(
+            langArray, -1
+        ) { _, i ->
+            selectedEvent = i
         }
 
         builder.setPositiveButton(
             "OK"
-        ) { _, _ -> // Initialize string builder
-            if (langList.size != 1) {
-                val stringBuilder = StringBuilder()
-                for (j in langList.indices) {
-                    stringBuilder.append(langArray[langList[j]])
-                    if (j != langList.size - 1) {
-                        stringBuilder.append(", ")
-                    }
-                }
-                createError("Ошибка! Необходимо выбрать что-то одно")
-            } else {
-                createNewText(langList[0])
+        ) { _, _ ->
+            if (selectedEvent != -1) {
+                createNewText(selectedEvent)
             }
         }
 

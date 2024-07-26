@@ -120,13 +120,14 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null,
     }
 
     fun getChosenDate(): String {
-        val db = readableDatabase
+        var db = readableDatabase
         val cursor = db.query("settings", null, null, null, null, null, null)
         var chosenDate = ""
 
         if (cursor.moveToFirst()) {
             chosenDate = cursor.getString(1)
         } else {
+            db = writableDatabase
             val contentValues = ContentValues()
             contentValues.put("chosen_date", LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
             db.insert("settings", null, contentValues)
