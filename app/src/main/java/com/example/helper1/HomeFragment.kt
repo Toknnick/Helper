@@ -244,33 +244,50 @@ class HomeFragment : Fragment() {
     }
 
     @SuppressLint("ResourceType")
-    private fun createNewTask(points: List<String>, checkBoxes: List<Boolean>, i: Int) {
+    private fun createNewTask(task : Task) {
         if (binding.layout.findViewById<TextView>(TEXT_VIEW_NOTHING_TO_DO_ID) != null) {
             binding.layout.removeView(binding.layout.findViewById(TEXT_VIEW_NOTHING_TO_DO_ID))
         }
 
-        val layout = createRelativeLayout(i)
+        val layout = createRelativeLayout(tasks.indexOf(task))
         val nameTextView: TextView
 
-        if (tasks[i].name.isEmpty())
+        if (task.name.isEmpty())
             nameTextView = createText("Нет названия")
         else
-            nameTextView = createText(tasks[i].name, true)
+            nameTextView = createText(task.name, true)
         layout.addView(nameTextView)
         nameTextView.id = 666
         nameTextView.textSize = textSize + 1
         nameTextView.gravity = Gravity.CENTER
 
+        if(task.points.size > task.checkBoxes.size){
+            repairTask(task)
+        }
+
         var j = 0
-        while (points.size > j) {
-            val textView = createText(points[j])
-            addParamsToNewPoint(textView, layout, j, checkBoxes[j])
+        while (task.points.size > j) {
+            val textView = createText(task.points[j])
+            addParamsToNewPoint(textView, layout, j, task.checkBoxes[j])
             j += 1
         }
 
         layout.setBackgroundResource(R.drawable.border_task)
         binding.layout.addView(layout)
-        setupLongClickListeners(layout, i)
+        setupLongClickListeners(layout, tasks.indexOf(task))
+    }
+
+    private fun repairTask(task: Task){
+        var newPoints : List<String> =  ArrayList()
+        var i = 0
+        while(i < task.points.size - 2){
+            newPoints += task.points[i]
+            i+=1
+        }
+        newPoints +=(task.points[task.points.size-2] + task.points[task.points.size-1])
+        dbHelper.deleteTask(task)
+        task.points = newPoints
+        dbHelper.insertTask(task)
     }
 
     private fun createNewEvent(i: Int) {
@@ -678,7 +695,7 @@ class HomeFragment : Fragment() {
         for (item in newList) {
             when (item) {
                 is Event -> createNewEvent(events.indexOf(item))
-                is Task -> createNewTask(item.points, item.checkBoxes, tasks.indexOf(item))
+                is Task -> createNewTask(item)
             }
         }
         binding.layout.addView(deleteButton)
