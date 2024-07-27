@@ -162,7 +162,7 @@
                     android:padding="10dp"
                     android:text="Добавить пункт"
                     android:textColor="@color/text_color_button"
-                    android:textSize="15sp" />
+                    android:textSize="14sp"/>
 
                 <Button
                     android:id="@+id/deletePoint"
@@ -175,7 +175,7 @@
                     android:padding="10dp"
                     android:text="Удалить пункт"
                     android:textColor="@color/text_color_button"
-                    android:textSize="15sp" />
+                    android:textSize="14sp" />
 
                 <Button
                     android:id="@+id/saveTask"
@@ -188,7 +188,7 @@
                     android:padding="10dp"
                     android:text="Сохранить"
                     android:textColor="@color/text_color_button"
-                    android:textSize="15sp" />
+                    android:textSize="14sp" />
             </RelativeLayout>
         </ScrollView>
     </RelativeLayout>

@@ -188,33 +188,20 @@ class HomeFragment : Fragment() {
     }
 
     private fun addNewTaskIntoScrollView() {
-        var i = 1
-        if (binding.point0.text.toString().trim().isEmpty()) {
-            createError("Ошибка! У вас есть пустой пункт!")
-            return
-        }
-        while (countOfPoint > i) {
-            if (countOfPoint > 1 && binding.pointsPlace.findViewById<EditText>(i + TASK_ID).text.toString()
-                    .trim().isEmpty()
-            ) {
-                createError("Ошибка! У вас есть пустой пункт!")
-                return
-            }
-            i += 1
-        }
-
         //Добавляем пункты
         var points: List<String> = ArrayList()
         var checkBoxes: List<Boolean> = ArrayList()
-        clearEditText(binding.point0)
-        points += binding.point0.text.toString()
-        checkBoxes += false
+        if(binding.point0.text.trim().toString().isNotEmpty()){
+            points += binding.point0.text.toString()
+            checkBoxes += false
+        }
 
-        var j = 0
+        var j = 1
         while (countOfPoint > j) {
-            if (points.size != countOfPoint) {
-                clearEditText(binding.pointsPlace.findViewById(j + TASK_ID + 1))
-                points += binding.pointsPlace.findViewById<EditText>(j + TASK_ID + 1).text.toString()
+            if (binding.pointsPlace.findViewById<EditText>(j + TASK_ID).text.trim().toString()
+                    .isNotEmpty()
+            ) {
+                points += binding.pointsPlace.findViewById<EditText>(j + TASK_ID).text.toString()
                     .trim()
                 checkBoxes += false
             }
@@ -227,23 +214,29 @@ class HomeFragment : Fragment() {
             )
         }
 
-        //Сохраняем в БД
-        val task = Task(
-            stringToDate(binding.dateTaskInput.text.toString()),
-            stringToTime(binding.timeTaskInout.text.toString()),
-            binding.nameTaskInput.text.toString(),
-            points,
-            checkBoxes
-        )
+        if(points.size != 0) {
+            //Сохраняем в БД
+            val task = Task(
+                stringToDate(binding.dateTaskInput.text.toString()),
+                stringToTime(binding.timeTaskInout.text.toString()),
+                binding.nameTaskInput.text.toString(),
+                points,
+                checkBoxes
+            )
 
-        if (chosenDate == task.data) {
-            tasks += task
-            createAllEventsAndTasks()
+            if (chosenDate == task.data) {
+                tasks += task
+                createAllEventsAndTasks()
+            }
+
+            createError("Созданно на " + task.data)
+            dbHelper.insertTask(task)
+        }
+        else{
+            createError("Задача не создана. Она была пуста")
         }
 
-        createError("Созданно на " + task.data)
         hideTaskPanel()
-        dbHelper.insertTask(task)
         clearTaskPanel()
     }
 
@@ -327,10 +320,10 @@ class HomeFragment : Fragment() {
         setupLongClickListeners(textView, i)
     }
 
-    private fun addNewPoint() {
+    private fun addNewPoint(text: String = "") {
         val editText = EditText(context)
         //Подвинуть пункт
-        addParamsToEditText(editText)
+        addParamsToEditText(editText,text)
         //Подвинуть кнопки
         addParamsToButtons(editText)
         countOfPoint += 1
@@ -432,7 +425,7 @@ class HomeFragment : Fragment() {
     }
 
     @SuppressLint("ResourceAsColor")
-    private fun addParamsToEditText(editText: EditText) {
+    private fun addParamsToEditText(editText: EditText,text: String = "") {
         val params = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.MATCH_PARENT,
             RelativeLayout.LayoutParams.WRAP_CONTENT
@@ -442,6 +435,7 @@ class HomeFragment : Fragment() {
         editText.setLayoutParams(params)
         editText.setBackgroundResource(R.color.edit_text)
         editText.hint = "Пункт"
+        editText.setText(text)
         editText.id = countOfPoint + TASK_ID
         editText.setPadding(10, 10, 10, 40)
         binding.pointsPlace.addView(editText)
@@ -589,11 +583,6 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun clearEditText(editText: EditText): EditText {
-        editText.text.toString().trim()
-        return editText
-    }
-
     private fun deletePoint() {
         if (countOfPoint > 2) {
             binding.pointsPlace.removeView(binding.pointsPlace.findViewById<EditText>(countOfPoint + TASK_ID - 1))
@@ -730,6 +719,9 @@ class HomeFragment : Fragment() {
                 createError("Ошибка! Нет описания!")
             } else {
                 dbHelper.deleteEvent(event)
+
+                if(binding.timeInput.text.toString().isEmpty()){
+                    binding.timeInput.setText(event.time)}
                 val newEvent = Event(
                     stringToDate(binding.dateInput.text.toString()),
                     stringToTime(binding.timeInput.text.toString()),
@@ -737,7 +729,6 @@ class HomeFragment : Fragment() {
                     binding.eventInput.text.toString()
                 )
                 dbHelper.insertEvent(newEvent)
-                createError("Созданно на " + event.data)
                 events = dbHelper.getEventsByDate(chosenDate)
                 createAllEventsAndTasks()
                 clearEventPanel()
@@ -747,11 +738,62 @@ class HomeFragment : Fragment() {
     }
 
     private fun editTask(task: Task) {
-        binding.saveTask.setOnClickListener {
-            addNewTaskIntoScrollView()
+        binding.createTaskPanel.visibility = View.VISIBLE
+        binding.dateTaskInput.setText(task.data)
+        if(task.time.length < 7){
+        binding.timeTaskInout.setText(task.time)}
+        binding.nameTaskInput.setText(task.name)
+        binding.point0.setText(task.points[0])
+        addParamsToButtons(binding.point0)
+
+        var i = 1
+        while (task.points.size > i) {
+            addNewPoint(task.points[i])
+            i+=1
         }
-        clearTaskPanel()
-        hideTaskPanel()
+
+        binding.saveTask.setOnClickListener {
+            if(task.points.size != 0) {
+                var points: List<String> = ArrayList()
+                var checkBoxes: List<Boolean> = ArrayList()
+                if(binding.point0.text.trim().toString().isNotEmpty()){
+                    points += binding.point0.text.toString()
+                    checkBoxes += false
+                }
+
+                var j = 1
+                while (countOfPoint > j) {
+                    if (binding.pointsPlace.findViewById<EditText>(j + TASK_ID).text.trim().toString()
+                            .isNotEmpty()
+                    ) {
+                        points += binding.pointsPlace.findViewById<EditText>(j + TASK_ID).text.toString()
+                            .trim()
+                        checkBoxes += false
+                    }
+                    j += 1
+                }
+
+                if(binding.timeTaskInout.text.toString().isEmpty()){
+                    binding.timeTaskInout.setText(task.time)}
+
+                val newTask = Task(
+                    stringToDate(binding.dateTaskInput.text.toString()),
+                    stringToTime(binding.timeTaskInout.text.toString()),
+                    binding.nameTaskInput.text.toString(),
+                    points,
+                    checkBoxes
+                )
+
+                dbHelper.deleteTask(task)
+                dbHelper.insertTask(newTask)
+                tasks = dbHelper.getTasksByDate(chosenDate)
+                createAllEventsAndTasks()
+            }else{
+                createError("Ошибка! Задача была пуста")
+            }
+            clearTaskPanel()
+            hideTaskPanel()
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
