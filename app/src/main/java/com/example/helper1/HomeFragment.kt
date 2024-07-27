@@ -51,6 +51,7 @@ data class Task(
     var checkBoxes: List<Boolean>
 ) : Timable
 
+@Suppress("DEPRECATION")
 class HomeFragment : Fragment() {
     private lateinit var binding: FragmentHomeBinding
     private lateinit var mainActivity: MainActivity
@@ -58,6 +59,7 @@ class HomeFragment : Fragment() {
     private lateinit var datePickerDialogForObject: DatePickerDialog
     private lateinit var timePickerDialog: TimePickerDialog
     private lateinit var deleteButton: Button
+    private lateinit var editButton: Button
     private var chosenDate: String = ""
     private var events: List<Event> = ArrayList()
     private var tasks: List<Task> = ArrayList()
@@ -96,12 +98,6 @@ class HomeFragment : Fragment() {
 
         binding.addButton.setOnClickListener {
             showDialog()
-        }
-        binding.saveButton.setOnClickListener {
-            addNewEventIntoScrollView()
-        }
-        binding.saveTask.setOnClickListener {
-            addNewTaskIntoScrollView()
         }
         binding.addNewPoint.setOnClickListener {
             addNewPoint()
@@ -145,15 +141,21 @@ class HomeFragment : Fragment() {
     }
 
     private fun createNewText(item: Int) {
+        binding.saveButton.setOnClickListener {
+            addNewEventIntoScrollView()
+        }
+        binding.saveTask.setOnClickListener {
+            addNewTaskIntoScrollView()
+        }
         if (item == 0) {
             //Делаем задачу
-            clearTaskPanel()
+            clearEventPanel()
             countOfPoint = 1
             binding.createTaskPanel.visibility = View.VISIBLE
             binding.addButton.isEnabled = false
         } else {
             //Делаем событие
-            clearEventPanel()
+            clearTaskPanel()
             binding.createEventPanel.visibility = View.VISIBLE
             binding.addButton.isEnabled = false
         }
@@ -181,6 +183,7 @@ class HomeFragment : Fragment() {
         }
 
         hideEventPanel()
+        clearEventPanel()
         dbHelper.insertEvent(event)
     }
 
@@ -241,10 +244,11 @@ class HomeFragment : Fragment() {
         createError("Созданно на " + task.data)
         hideTaskPanel()
         dbHelper.insertTask(task)
+        clearTaskPanel()
     }
 
     @SuppressLint("ResourceType")
-    private fun createNewTask(task : Task) {
+    private fun createNewTask(task: Task) {
         if (binding.layout.findViewById<TextView>(TEXT_VIEW_NOTHING_TO_DO_ID) != null) {
             binding.layout.removeView(binding.layout.findViewById(TEXT_VIEW_NOTHING_TO_DO_ID))
         }
@@ -253,7 +257,7 @@ class HomeFragment : Fragment() {
         val nameTextView: TextView
 
         if (task.name.isEmpty())
-            nameTextView = createText("Нет названия")
+            nameTextView = createText("Нет названия", true)
         else
             nameTextView = createText(task.name, true)
         layout.addView(nameTextView)
@@ -261,7 +265,7 @@ class HomeFragment : Fragment() {
         nameTextView.textSize = textSize + 1
         nameTextView.gravity = Gravity.CENTER
 
-        if(task.points.size > task.checkBoxes.size){
+        if (task.points.size > task.checkBoxes.size) {
             repairTask(task)
         }
 
@@ -277,14 +281,14 @@ class HomeFragment : Fragment() {
         setupLongClickListeners(layout, tasks.indexOf(task))
     }
 
-    private fun repairTask(task: Task){
-        var newPoints : List<String> =  ArrayList()
+    private fun repairTask(task: Task) {
+        var newPoints: List<String> = ArrayList()
         var i = 0
-        while(i < task.points.size - 2){
+        while (i < task.points.size - 2) {
             newPoints += task.points[i]
-            i+=1
+            i += 1
         }
-        newPoints +=(task.points[task.points.size-2] + task.points[task.points.size-1])
+        newPoints += (task.points[task.points.size - 2] + task.points[task.points.size - 1])
         dbHelper.deleteTask(task)
         task.points = newPoints
         dbHelper.insertTask(task)
@@ -306,6 +310,11 @@ class HomeFragment : Fragment() {
         } else if (events[i].time.length < 7) {
             textView = createText(
                 "Время: " + events[i].time + System.lineSeparator() +
+                        events[i].event, false, true
+            )
+        } else if (events[i].place.isNotEmpty() && events[i].event.isNotEmpty()) {
+            textView = createText(
+                "Место: " + events[i].place + System.lineSeparator() +
                         events[i].event, false, true
             )
         } else {
@@ -373,19 +382,21 @@ class HomeFragment : Fragment() {
     }
 
     @SuppressLint("ResourceAsColor")
-    private fun createButton() {
-        deleteButton = Button(requireContext())
+    private fun createButton(text: String): Button {
+        val button = Button(requireContext())
         val params = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.WRAP_CONTENT,
             RelativeLayout.LayoutParams.WRAP_CONTENT
         )
         params.setMargins(5, 5, 5, 5)
-        deleteButton.setLayoutParams(params)
-        deleteButton.setBackgroundResource(R.color.bottom_nav_bg)
-        deleteButton.setTextColor(R.color.text_color_button)
-        deleteButton.text = "Удалить"
-        deleteButton.textSize = textSize
-        deleteButton.visibility = View.GONE
+        button.setLayoutParams(params)
+
+        button.setBackgroundColor(resources.getColor(R.color.bottom_nav_bg))
+        button.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_color_button))
+        button.text = text
+        button.textSize = textSize
+        button.visibility = View.GONE
+        return button
     }
 
     private fun createRelativeLayout(id: Int): RelativeLayout {
@@ -641,7 +652,12 @@ class HomeFragment : Fragment() {
                 RelativeLayout.LayoutParams.WRAP_CONTENT,
                 RelativeLayout.LayoutParams.WRAP_CONTENT
             )
+            val paramsToEdit = RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT
+            )
             params.setMargins(5, 5, 5, 5)
+            paramsToEdit.setMargins(5, 5, 5, 5)
 
             if (binding.layout.indexOfChild(view) == 0) {
                 params.addRule(RelativeLayout.BELOW, view.id)
@@ -664,24 +680,86 @@ class HomeFragment : Fragment() {
                     }
                 }
 
-                binding.layout.removeView(view)
                 checkToNothingToDo()
                 changeScrollView()
                 deleteButton.visibility = View.GONE
             }
+
+            if (binding.layout.indexOfChild(view) == 0) {
+                paramsToEdit.addRule(RelativeLayout.BELOW, view.id)
+                paramsToEdit.addRule(RelativeLayout.ALIGN_RIGHT, view.id)
+            } else {
+                paramsToEdit.addRule(RelativeLayout.ABOVE, view.id)
+                paramsToEdit.addRule(RelativeLayout.ALIGN_RIGHT, view.id)
+            }
+            editButton.setLayoutParams(paramsToEdit)
+            editButton.visibility = View.VISIBLE
+
+            editButton.setOnClickListener {
+                when (view) {
+                    is TextView -> {
+                        editEvent(events[id])
+                    }
+
+                    is RelativeLayout -> {
+                        editTask(tasks[id])
+                    }
+                }
+                checkToNothingToDo()
+                changeScrollView()
+                editButton.visibility = View.GONE
+            }
             true
         }
 
-        setTouchListener(view, deleteButton)
-        setTouchListener(binding.layout, deleteButton)
-        setTouchListener(binding.conLayout, deleteButton)
+        setTouchListener(view)
+        setTouchListener(binding.layout)
+        setTouchListener(binding.conLayout)
+    }
+
+    private fun editEvent(event: Event) {
+        binding.createEventPanel.visibility = View.VISIBLE
+        binding.dateInput.setText(event.data)
+        if(event.time.length < 7){
+        binding.timeInput.setText(event.time)}
+        binding.placeInput.setText(event.place)
+        binding.eventInput.setText(event.event)
+        binding.addButton.isEnabled = false
+        binding.saveButton.setOnClickListener {
+            if (binding.eventInput.text.toString().trim().isEmpty()) {
+                createError("Ошибка! Нет описания!")
+            } else {
+                dbHelper.deleteEvent(event)
+                val newEvent = Event(
+                    stringToDate(binding.dateInput.text.toString()),
+                    stringToTime(binding.timeInput.text.toString()),
+                    binding.placeInput.text.toString(),
+                    binding.eventInput.text.toString()
+                )
+                dbHelper.insertEvent(newEvent)
+                createError("Созданно на " + event.data)
+                events = dbHelper.getEventsByDate(chosenDate)
+                createAllEventsAndTasks()
+                clearEventPanel()
+                hideEventPanel()
+            }
+        }
+    }
+
+    private fun editTask(task: Task) {
+        binding.saveTask.setOnClickListener {
+            addNewTaskIntoScrollView()
+        }
+        clearTaskPanel()
+        hideTaskPanel()
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun setTouchListener(view: View, deleteButton: Button) {
+    private fun setTouchListener(view: View) {
         view.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_DOWN) {
                 deleteButton.visibility = View.GONE
+                editButton.visibility = View.GONE
             }
             false
         }
@@ -689,7 +767,8 @@ class HomeFragment : Fragment() {
 
     private fun createAllEventsAndTasks() {
         binding.layout.removeAllViews()
-        createButton()
+        deleteButton = createButton("Удалить")
+        editButton = createButton("Редактировать")
 
         val newList = (events + tasks).sortedBy { it.time }
         for (item in newList) {
@@ -699,6 +778,7 @@ class HomeFragment : Fragment() {
             }
         }
         binding.layout.addView(deleteButton)
+        binding.layout.addView(editButton)
         checkToNothingToDo()
     }
 
@@ -789,14 +869,15 @@ class HomeFragment : Fragment() {
 
     private fun showDialog() {
         val langArray: Array<String> = arrayOf("Задача", "Событие")
-        var selectedEvent = -1
+        var selectedEvent = 0 // Инициализируем в 0, который является первым элементом
         val builder: androidx.appcompat.app.AlertDialog.Builder =
             androidx.appcompat.app.AlertDialog.Builder(requireContext())
         builder.setTitle("Выберите тип")
         builder.setCancelable(false)
+        val temp = if (dbHelper.getEvents().size > dbHelper.getTasks().size) 1 else 0
 
         builder.setSingleChoiceItems(
-            langArray, -1
+            langArray, temp
         ) { _, i ->
             selectedEvent = i
         }
@@ -804,14 +885,12 @@ class HomeFragment : Fragment() {
         builder.setPositiveButton(
             "OK"
         ) { _, _ ->
-            if (selectedEvent != -1) {
-                createNewText(selectedEvent)
-            }
+            createNewText(selectedEvent)
         }
 
         builder.setNegativeButton(
-            "Cancel"
-        ) { dialogInterface, _ -> // dismiss dialog
+            "Отмена"
+        ) { dialogInterface, _ -> // закрыть диалог
             dialogInterface.dismiss()
         }
 

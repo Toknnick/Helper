@@ -9,7 +9,7 @@
     <item
         android:id="@+id/homeFragment"
         android:icon="@drawable/ic_home"
-        android:title="Домашняя" />
+        android:title="Дом" />
     <item
         android:id="@+id/settingsFragment"
         android:icon="@drawable/ic_settings"

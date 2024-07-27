@@ -45,7 +45,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null,
         db.close()
     }
 
-    /*fun getEvents(): List<Event> {
+    fun getEvents(): List<Event> {
         val db = readableDatabase
         val cursor = db.query("events", null, null, null, null, null, null)
         val events = ArrayList<Event>()
@@ -80,7 +80,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null,
         cursor.close()
         db.close()
         return tasks
-    }*/
+    }
 
     fun getEventsByDate(date: String): List<Event> {
         val db = readableDatabase
