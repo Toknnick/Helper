@@ -41,13 +41,13 @@ class RoomsFragment : Fragment() {
             createUserForAPI()
         }
         binding.updateUserButton.setOnClickListener {
-            updateUserForAPI()
+            updateUserPasswordForAPI()
         }
     }
 
     private fun createUserForAPI(){
-        val newUser = User(binding.loginUser.text.toString().trim(),binding.passwordUser.text.toString().trim(),"")
-        mysqlController.createUser(newUser, object : MySQLController.CreateUserCallback {
+        val newUser = User(binding.loginUser.text.toString().trim(),binding.passwordUser.text.toString().trim(),0,"")
+        mysqlController.createUser(newUser, object : MySQLController.CreateCallback {
             override fun onSuccess(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
             }
@@ -58,9 +58,9 @@ class RoomsFragment : Fragment() {
         })
     }
 
-    private fun updateUserForAPI(){
-        val newUser = User(binding.loginUser.text.toString().trim(),binding.passwordUser.text.toString().trim(),"")
-        mysqlController.updateUser(newUser, object : MySQLController.CreateUserCallback {
+    private fun updateUserPasswordForAPI(){
+        val newUser = User(binding.loginUser.text.toString().trim(),binding.passwordUser.text.toString().trim(),0,"")
+        mysqlController.updateUser(newUser, object : MySQLController.CreateCallback {
             override fun onSuccess(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
             }
@@ -68,7 +68,7 @@ class RoomsFragment : Fragment() {
             override fun onFailure(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
             }
-        })
+        }, false)
     }
 
 }

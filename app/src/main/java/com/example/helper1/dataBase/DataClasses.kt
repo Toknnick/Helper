@@ -28,6 +28,7 @@ data class Room(
 data class User(
     var login: String,
     var password: String,
+    var ownRoom: Long,
     var availableRooms: String
 )
 

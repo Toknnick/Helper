@@ -223,7 +223,19 @@
             android:layout_margin="10dp"
             android:backgroundTint="@color/bottom_nav_bg"
             android:padding="10dp"
-            android:text="Сохранить"
+            android:text="Готово"
+            android:textColor="@color/text_color_button"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/updateRoomButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/saveRoomButton"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/bottom_nav_bg"
+            android:padding="10dp"
+            android:text="Обновить"
             android:textColor="@color/text_color_button"
             android:textSize="15sp" />
     </RelativeLayout>

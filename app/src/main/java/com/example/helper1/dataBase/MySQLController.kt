@@ -5,12 +5,12 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class MySQLController(private val apiClient: ApiClient) {
-    interface CreateUserCallback {
+    interface CreateCallback {
         fun onSuccess(message: String)
         fun onFailure(message: String)
     }
 
-    fun createUser(user: User, callback: CreateUserCallback) {
+    fun createUser(user: User, callback: CreateCallback) {
         apiClient.getUserByLogin(user.login, object : Callback<User> {
             override fun onResponse(call: Call<User>, response: Response<User>) {
                 callback.onFailure("Ошибка! Такой логин уже существует!")
@@ -28,12 +28,17 @@ class MySQLController(private val apiClient: ApiClient) {
         })
     }
 
-    fun updateUser(newUser: User, callback: CreateUserCallback){
+    fun updateUser(newUser: User, callback: CreateCallback,isGetNewRoom: Boolean){
         apiClient.getUserByLogin(newUser.login, object : Callback<User> {
             override fun onResponse(call: Call<User>, response: Response<User>) {
                 val user = response.body()
-                newUser.availableRooms = user?.availableRooms.toString()
-                apiClient.deleteUser(newUser.login, object : Callback<Void> {
+                if (user != null) {
+                    newUser.ownRoom = user.ownRoom
+                    if(!isGetNewRoom) {
+                        newUser.availableRooms = user.availableRooms
+                    }
+                }
+                apiClient.updateUser(newUser, object : Callback<Void> {
                     override fun onResponse(call: Call<Void>, response: Response<Void>) {
                         apiClient.createUser(newUser, object : Callback<User> {
                             override fun onResponse(call: Call<User>, response: Response<User>) {}

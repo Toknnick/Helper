@@ -16,8 +16,24 @@ class ApiClient(private val retrofit: Retrofit) {
         call.enqueue(callback)
     }
 
-    fun deleteUser(login: String, callback: Callback<Void>) {
-        val call = apiInterface.deleteUser(login)
+    fun updateUser(user: User, callback: Callback<Void>) {
+        val call = apiInterface.updateUser(user)
+        call.enqueue(callback)
+    }
+
+
+    fun createRoom(room: Room, callback: Callback<Room>) {
+        val call = apiInterface.createRoom(room)
+        call.enqueue(callback)
+    }
+
+    fun getRoom(idRoom: Long, callback: Callback<Room>) {
+        val call = apiInterface.getRoom(idRoom)
+        call.enqueue(callback)
+    }
+
+    fun updateRoom(room: Room, callback: Callback<Room>) {
+        val call = apiInterface.updateRoom(room)
         call.enqueue(callback)
     }
 }
