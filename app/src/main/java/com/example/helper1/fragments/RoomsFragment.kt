@@ -22,11 +22,10 @@ class RoomsFragment : Fragment() {
         .build()
 
 
-
     private lateinit var binding: FragmentRoomsBinding
-    private lateinit var mysqlController : MySQLController
+    private lateinit var mysqlController: MySQLController
 
-    private var idRoomDef :Long  = 1
+    private var idRoomDef: Long = 1
 
     //TODO: менять у нынешнего пользователя availableRooms после подключения к комнате
     //TODO: перенести методы с добавлением пользователя в homeFragment
@@ -54,56 +53,102 @@ class RoomsFragment : Fragment() {
             updateUserPasswordForAPI()
         }
         binding.saveRoomButton.setOnClickListener {
-            createRoomForAPI()
+            val newRoom = Room(
+                0,
+                binding.nameRoom.text.toString().trim(),
+                binding.passwordRoom.text.toString().trim()
+            )
+            createRoomForAPI(newRoom,false)
         }
         binding.updateRoomButton.setOnClickListener {
             updateRoomPasswordForAPI()
         }
     }
 
-    private fun createUserForAPI(){
-        val newUser = User(binding.loginUser.text.toString().trim(),binding.passwordUser.text.toString().trim(),0,"")
-        mysqlController.createUser(newUser, object : MySQLController.CreateMessageCallback {
-            override fun onSuccess(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+    private fun createUserForAPI() {
+        val newRoom = Room(
+            0,
+            binding.loginUser.text.toString().trim(),
+            binding.passwordUser.text.toString().trim()
+        )
+        mysqlController.getUser(binding.loginUser.text.toString().trim(), object : MySQLController.CreateIsExistUserCallback {
+            override fun onSuccess(isExist: Boolean) {
+                //Проверка на уникальность логина
+                Toast.makeText(requireContext(), "Ошибка! Такой логин уже существует!", Toast.LENGTH_SHORT).show()
             }
 
-            override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+            override fun onFailure(isExist: Boolean) {
+                //Создаем личную комнату под юзера
+                createRoomForAPI(newRoom,true)
             }
         })
     }
 
-    private fun updateUserPasswordForAPI(){
-        val newUser = User(binding.loginUser.text.toString().trim(),binding.passwordUser.text.toString().trim(),0,"")
+
+    private fun createUser(idRoom: Long) {
+        val newUser = User(
+            binding.loginUser.text.toString().trim(),
+            binding.passwordUser.text.toString().trim(),
+            idRoom,
+            ""
+        )
+        mysqlController.createUser(newUser, object : MySQLController.CreateUserCallback {
+            override fun onSuccess(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onUserCreated(user: User) {
+                //TODO: передается куда-то пользователь
+                val user = user
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+
+    private fun updateUserPasswordForAPI() {
+        val newUser = User(
+            binding.loginUser.text.toString().trim(),
+            binding.passwordUser.text.toString().trim(),
+            0,
+            ""
+        )
         mysqlController.updateUser(newUser, object : MySQLController.CreateMessageCallback {
             override fun onSuccess(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
             }
         }, false)
     }
 
-    private fun createRoomForAPI(){
+    private fun createRoomForAPI(newRoom: Room, isNewUser: Boolean) {
         mysqlController.getAllRooms(object : MySQLController.GetAllRoomsCallback {
             override fun onSuccess(rooms: List<Room>) {
-                val idRoom = (rooms.count() +1).toLong()
-                val newRoom = Room(idRoom, binding.nameRoom.text.toString().trim(),binding.passwordRoom.text.toString().trim())
+                val idRoom = (rooms.count() + 1).toLong()
+                newRoom.idRoom = idRoom
                 mysqlController.createRoom(newRoom, object : MySQLController.CreateRoomCallback {
                     override fun onSuccess(message: String) {
+                        if(!isNewUser)
                         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
                     }
 
                     override fun onFailure(message: String) {
-                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                        if(!isNewUser)
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
                     }
 
                     override fun onRoomCreated(idRoom: Long) {
-                        val idRoom = idRoom
-                        Log.d("MyTag","Room created with id $idRoom")
+                        idRoomDef = idRoom
+                        Log.d("MyTag", "Комната создана с id $idRoom")
+                        if (isNewUser) {
+                            createUser(idRoomDef)
+                        }
                     }
                 })
             }
@@ -114,16 +159,21 @@ class RoomsFragment : Fragment() {
         })
     }
 
-    private fun updateRoomPasswordForAPI(){
+
+    private fun updateRoomPasswordForAPI() {
         //TODO:поменять binding
-        val newRoom = Room(binding.nameRoom.text.toString().toLong(),"",binding.passwordRoom.text.toString().trim())
+        val newRoom = Room(
+            binding.nameRoom.text.toString().toLong(),
+            "",
+            binding.passwordRoom.text.toString().trim()
+        )
         mysqlController.updateRoom(newRoom, object : MySQLController.CreateMessageCallback {
             override fun onSuccess(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
             }
         })
     }

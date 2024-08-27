@@ -10,32 +10,44 @@ class MySQLController(private val apiClient: ApiClient) {
         fun onFailure(message: String)
     }
 
+    interface CreateIsExistUserCallback {
+        fun onSuccess(isExist: Boolean)
+        fun onFailure(isExist: Boolean)
+    }
+
     interface CreateRoomCallback {
         fun onSuccess(message: String)
         fun onFailure(message: String)
         fun onRoomCreated(idRoom: Long)
     }
 
+    interface CreateUserCallback {
+        fun onSuccess(message: String)
+        fun onFailure(message: String)
+        fun onUserCreated(user: User)
+    }
+
+
+
+
     interface GetAllRoomsCallback {
         fun onSuccess(rooms: List<Room>)
         fun onFailure(message: String)
     }
 
-    fun createUser(user: User, callback: CreateMessageCallback) {
-        apiClient.getUserByLogin(user.login, object : Callback<User> {
+    fun createUser(user: User, callback: CreateUserCallback) {
+        apiClient.createUser(user, object : Callback<User> {
             override fun onResponse(call: Call<User>, response: Response<User>) {
-                callback.onFailure("Ошибка! Такой логин уже существует!")
+                val createdUser = response.body()
+                if (createdUser != null) {
+                    callback.onSuccess("Пользователь создан успешно")
+                    callback.onUserCreated(createdUser)
+                } else {
+                    callback.onFailure("Ошибка создания пользователя")
+                }
             }
 
-            override fun onFailure(call: Call<User>, t: Throwable) {
-                apiClient.createUser(user, object : Callback<User> {
-                    override fun onResponse(call: Call<User>, response: Response<User>) {}
-
-                    override fun onFailure(call: Call<User>, t: Throwable) {
-                        callback.onSuccess("Пользователь создан успешно")
-                    }
-                })
-            }
+            override fun onFailure(call: Call<User>, t: Throwable) {}
         })
     }
 
@@ -51,20 +63,36 @@ class MySQLController(private val apiClient: ApiClient) {
                 }
                 apiClient.updateUser(newUser, object : Callback<Void> {
                     override fun onResponse(call: Call<Void>, response: Response<Void>) {
-                        apiClient.createUser(newUser, object : Callback<User> {
-                            override fun onResponse(call: Call<User>, response: Response<User>) {}
-
-                            override fun onFailure(call: Call<User>, t: Throwable) {
+                        apiClient.updateUser(newUser, object : Callback<Void> {
+                            override fun onResponse(call: Call<Void>, response: Response<Void>) {
                                 callback.onSuccess("Пользователь обновлен успешно")
+                            }
+
+                            override fun onFailure(call: Call<Void>, t: Throwable) {
+                                callback.onFailure("Ошибка обновления пользователя")
                             }
                         })
                     }
 
-                    override fun onFailure(call: Call<Void>, t: Throwable) {}
+                    override fun onFailure(call: Call<Void>, t: Throwable) {
+                        callback.onFailure("Ошибка обновления пользователя")
+                    }
                 })
             }
 
             override fun onFailure(call: Call<User>, t: Throwable) {}
+        })
+    }
+
+    fun getUser(login:String, callback: CreateIsExistUserCallback){
+        apiClient.getUserByLogin(login, object : Callback<User> {
+            override fun onResponse(call: Call<User>, response: Response<User>) {
+                callback.onSuccess(true)
+            }
+
+            override fun onFailure(call: Call<User>, t: Throwable) {
+                callback.onFailure(false)
+            }
         })
     }
 
