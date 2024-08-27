@@ -69,6 +69,7 @@
         android:textColor="@color/text_color_button"
         android:textSize="20sp"
         android:tooltipText="text"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.94"
@@ -90,6 +91,80 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/addButton"
         app:layout_constraintVertical_bias="0.0"/>
+
+    <RelativeLayout
+        android:id="@+id/createUserPanel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@color/panel_background"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <Button
+            android:id="@+id/backUserButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/bottom_nav_bg"
+            android:padding="10dp"
+            android:text="Назад"
+            android:textColor="@color/text_color_button"
+            android:textSize="15sp" />
+
+        <EditText
+            android:id="@+id/loginUser"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_toRightOf="@id/backUserButton"
+            android:background="@color/edit_text"
+            android:ems="10"
+            android:hint="Логин"
+            android:inputType="text"
+            android:padding="10dp"
+            android:textColor="@color/text_color_button" />
+
+        <EditText
+            android:id="@+id/passwordUser"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/loginUser"
+            android:layout_margin="10dp"
+            android:background="@color/edit_text"
+            android:ems="10"
+            android:hint="Пароль"
+            android:inputType="textPassword"
+            android:padding="10dp"
+            android:textColor="@color/text_color_button" />
+
+        <Button
+            android:id="@+id/saveUserButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/passwordUser"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/bottom_nav_bg"
+            android:padding="10dp"
+            android:text="Готово"
+            android:textColor="@color/text_color_button"
+            android:textSize="15sp" />
+        <Button
+            android:id="@+id/updateUserButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/saveUserButton"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/bottom_nav_bg"
+            android:padding="10dp"
+            android:text="Обновить"
+            android:textColor="@color/text_color_button"
+            android:textSize="15sp" />
+    </RelativeLayout>
+
 
     <RelativeLayout
         android:id="@+id/createRoomPanel"
@@ -118,27 +193,27 @@
             android:id="@+id/nameRoom"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_toRightOf="@id/backRoomButton"
-            android:ems="10"
             android:layout_margin="10dp"
+            android:layout_toRightOf="@id/backRoomButton"
             android:background="@color/edit_text"
-            android:padding="10dp"
+            android:ems="10"
+            android:hint="Название комнаты"
             android:inputType="text"
-            android:textColor="@color/text_color_button"
-            android:hint="Название комнаты"/>
+            android:padding="10dp"
+            android:textColor="@color/text_color_button" />
 
         <EditText
             android:id="@+id/passwordRoom"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
+            android:layout_below="@id/nameRoom"
             android:layout_margin="10dp"
             android:background="@color/edit_text"
-            android:padding="10dp"
+            android:ems="10"
+            android:hint="Пароль"
             android:inputType="textPassword"
-            android:layout_below="@id/nameRoom"
-            android:textColor="@color/text_color_button"
-            android:hint="Пароль"/>
+            android:padding="10dp"
+            android:textColor="@color/text_color_button" />
 
         <Button
             android:id="@+id/saveRoomButton"
