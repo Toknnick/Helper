@@ -1,4 +1,4 @@
-package com.example.helper1
+package com.example.helper1.fragments
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
@@ -9,9 +9,6 @@ import android.content.res.Resources
 import android.graphics.Color
 import android.graphics.Paint
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
-import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -25,6 +22,11 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import com.example.helper1.MainActivity
+import com.example.helper1.R
+import com.example.helper1.dataBase.DBHelper
+import com.example.helper1.dataBase.Event
+import com.example.helper1.dataBase.Task
 import com.example.helper1.databinding.FragmentHomeBinding
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -32,27 +34,9 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
-interface Timable {
-    var time: String
-}
-
-data class Event(
-    var data: String,
-    override var time: String,
-    var place: String,
-    var event: String
-) : Timable
-
-data class Task(
-    var data: String,
-    override var time: String,
-    var name: String,
-    var points: List<String>,
-    var checkBoxes: List<Boolean>
-) : Timable
-
-@Suppress("DEPRECATION")
-class HomeFragment : Fragment() {
+@SuppressLint("SetTextI18n","ClickableViewAccessibility")
+@Suppress("DEPRECATION", "NAME_SHADOWING")
+class HomeFragment : Fragment(){
     private lateinit var binding: FragmentHomeBinding
     private lateinit var mainActivity: MainActivity
     private lateinit var datePickerDialog: DatePickerDialog
@@ -76,9 +60,9 @@ class HomeFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         dbHelper = DBHelper(requireContext())
+        requireContext().deleteDatabase(dbHelper.databaseName)
         val t = dbHelper.getChosenDate()
         dbHelper.updateChosenDate(LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
-        //requireContext().deleteDatabase(dbHelper.databaseName)
     }
 
     override fun onCreateView(
@@ -133,11 +117,6 @@ class HomeFragment : Fragment() {
         chosenDate = dbHelper.getChosenDate()
         binding.dataPickerButton.text = chosenDate
         changeScrollView()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        dbHelper.close()
     }
 
     private fun createNewText(item: Int) {
@@ -214,7 +193,7 @@ class HomeFragment : Fragment() {
             )
         }
 
-        if(points.size != 0) {
+        if(points.isNotEmpty()) {
             //Сохраняем в БД
             val task = Task(
                 stringToDate(binding.dateTaskInput.text.toString()),
@@ -612,7 +591,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun stringToDate(string: String): String {
-        var newString = ""
+        val newString: String
 
         if (string.length == 8)
             newString = string.replace(Regex("(\\d{2})$"), "20$1")
@@ -625,7 +604,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun stringToTime(string: String): String {
-        var newString = ""
+        val newString: String
         if (string.isEmpty())
             newString = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
         else
@@ -634,7 +613,6 @@ class HomeFragment : Fragment() {
         return newString
     }
 
-    @SuppressLint("ClickableViewAccessibility")
     private fun setupLongClickListeners(view: View, id: Int) {
         view.setOnLongClickListener {
             val params = RelativeLayout.LayoutParams(
@@ -839,8 +817,6 @@ class HomeFragment : Fragment() {
         createAllEventsAndTasks()
     }
 
-    @SuppressLint("SetTextI18n")
-    @Suppress("DEPRECATION")
     private fun initDatePicker() {
 
         val dateSetListener = dateListener(true)
