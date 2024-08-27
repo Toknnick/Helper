@@ -22,6 +22,7 @@ class RoomsFragment : Fragment() {
 
 
     private lateinit var binding: FragmentRoomsBinding
+    private lateinit var mysqlController : MySQLController
     //TODO: менять у нынешнего пользователя availableRooms после подключения к комнате
 
     override fun onCreateView(
@@ -34,19 +35,32 @@ class RoomsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val apiClient = ApiClient(retrofit)
+        mysqlController = MySQLController(apiClient)
         binding.saveUserButton.setOnClickListener {
-            createUser()
+            createUserForAPI()
         }
         binding.updateUserButton.setOnClickListener {
-            //updateUser()
+            updateUserForAPI()
         }
     }
 
-    private fun createUser(){
-        val apiClient = ApiClient(retrofit)
-        val mysqlController = MySQLController(apiClient)
+    private fun createUserForAPI(){
         val newUser = User(binding.loginUser.text.toString().trim(),binding.passwordUser.text.toString().trim(),"")
         mysqlController.createUser(newUser, object : MySQLController.CreateUserCallback {
+            override fun onSuccess(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    private fun updateUserForAPI(){
+        val newUser = User(binding.loginUser.text.toString().trim(),binding.passwordUser.text.toString().trim(),"")
+        mysqlController.updateUser(newUser, object : MySQLController.CreateUserCallback {
             override fun onSuccess(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
             }

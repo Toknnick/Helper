@@ -27,4 +27,28 @@ class MySQLController(private val apiClient: ApiClient) {
             }
         })
     }
+
+    fun updateUser(newUser: User, callback: CreateUserCallback){
+        apiClient.getUserByLogin(newUser.login, object : Callback<User> {
+            override fun onResponse(call: Call<User>, response: Response<User>) {
+                val user = response.body()
+                newUser.availableRooms = user?.availableRooms.toString()
+                apiClient.deleteUser(newUser.login, object : Callback<Void> {
+                    override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                        apiClient.createUser(newUser, object : Callback<User> {
+                            override fun onResponse(call: Call<User>, response: Response<User>) {}
+
+                            override fun onFailure(call: Call<User>, t: Throwable) {
+                                callback.onSuccess("Пользователь обновлен успешно")
+                            }
+                        })
+                    }
+
+                    override fun onFailure(call: Call<Void>, t: Throwable) {}
+                })
+            }
+
+            override fun onFailure(call: Call<User>, t: Throwable) {}
+        })
+    }
 }
