@@ -52,6 +52,7 @@ class RoomsFragment : Fragment() {
         binding.updateUserButton.setOnClickListener {
             updateUserPasswordForAPI()
         }
+
         binding.saveRoomButton.setOnClickListener {
             val newRoom = Room(
                 0,
@@ -71,10 +72,10 @@ class RoomsFragment : Fragment() {
             binding.loginUser.text.toString().trim(),
             binding.passwordUser.text.toString().trim()
         )
-        mysqlController.getUser(binding.loginUser.text.toString().trim(), object : MySQLController.CreateIsExistUserCallback {
+        mysqlController.getUser(binding.loginUser.text.toString().trim(), object : MySQLController.IsExistUserCallback {
             override fun onSuccess(isExist: Boolean) {
                 //Проверка на уникальность логина
-                Toast.makeText(requireContext(), "Ошибка! Такой логин уже существует!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Ошибка! Такой логин уже существует!", Toast.LENGTH_LONG).show()
             }
 
             override fun onFailure(isExist: Boolean) {
@@ -83,8 +84,6 @@ class RoomsFragment : Fragment() {
             }
         })
     }
-
-
     private fun createUser(idRoom: Long) {
         val newUser = User(
             binding.loginUser.text.toString().trim(),
@@ -108,8 +107,8 @@ class RoomsFragment : Fragment() {
         })
     }
 
-
     private fun updateUserPasswordForAPI() {
+        //TODO:поменять editTexts на строках ниже
         val newUser = User(
             binding.loginUser.text.toString().trim(),
             binding.passwordUser.text.toString().trim(),
@@ -126,6 +125,7 @@ class RoomsFragment : Fragment() {
             }
         }, false)
     }
+
 
     private fun createRoomForAPI(newRoom: Room, isNewUser: Boolean) {
         mysqlController.getAllRooms(object : MySQLController.GetAllRoomsCallback {
@@ -159,7 +159,6 @@ class RoomsFragment : Fragment() {
         })
     }
 
-
     private fun updateRoomPasswordForAPI() {
         //TODO:поменять binding
         val newRoom = Room(
@@ -170,6 +169,30 @@ class RoomsFragment : Fragment() {
         mysqlController.updateRoom(newRoom, object : MySQLController.CreateMessageCallback {
             override fun onSuccess(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    private fun getRoomFromAPI(){
+        //TODO:поменять editTexts на строках ниже
+        val gettingRoom = Room(
+            binding.nameRoom.text.toString().toLong(),
+            "",
+            binding.passwordRoom.text.toString().trim()
+        )
+
+        mysqlController.getRoom(gettingRoom.idRoom, object : MySQLController.GetRoomCallback {
+            override fun onSuccess(gotRoom: Room) {
+                if(gettingRoom.password == gotRoom.password){
+                    //TODO: тут все норм, добавить на панель
+                    Toast.makeText(requireContext(), "Комнату нашел!", Toast.LENGTH_LONG).show()
+                }else{
+                    Toast.makeText(requireContext(), "Ошибка! Данные не верны!", Toast.LENGTH_LONG).show()
+                }
             }
 
             override fun onFailure(message: String) {

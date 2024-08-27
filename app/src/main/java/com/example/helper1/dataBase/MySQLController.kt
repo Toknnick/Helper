@@ -10,7 +10,7 @@ class MySQLController(private val apiClient: ApiClient) {
         fun onFailure(message: String)
     }
 
-    interface CreateIsExistUserCallback {
+    interface IsExistUserCallback {
         fun onSuccess(isExist: Boolean)
         fun onFailure(isExist: Boolean)
     }
@@ -27,11 +27,13 @@ class MySQLController(private val apiClient: ApiClient) {
         fun onUserCreated(user: User)
     }
 
-
-
-
     interface GetAllRoomsCallback {
         fun onSuccess(rooms: List<Room>)
+        fun onFailure(message: String)
+    }
+
+    interface GetRoomCallback {
+        fun onSuccess(gotRoom: Room)
         fun onFailure(message: String)
     }
 
@@ -84,7 +86,7 @@ class MySQLController(private val apiClient: ApiClient) {
         })
     }
 
-    fun getUser(login:String, callback: CreateIsExistUserCallback){
+    fun getUser(login:String, callback: IsExistUserCallback){
         apiClient.getUserByLogin(login, object : Callback<User> {
             override fun onResponse(call: Call<User>, response: Response<User>) {
                 callback.onSuccess(true)
@@ -95,6 +97,7 @@ class MySQLController(private val apiClient: ApiClient) {
             }
         })
     }
+
 
     fun getAllRooms(callback: GetAllRoomsCallback) {
         apiClient.getAllRooms(object : Callback<List<Room>> {
@@ -117,7 +120,6 @@ class MySQLController(private val apiClient: ApiClient) {
         })
     }
 
-    //TODO: передалать методы, связанные с юзером
     fun createRoom(room: Room, callback: CreateRoomCallback) {
         apiClient.createRoom(room, object : Callback<Room> {
             override fun onResponse(call: Call<Room>, response: Response<Room>) {
@@ -151,6 +153,21 @@ class MySQLController(private val apiClient: ApiClient) {
             }
 
             override fun onFailure(call: Call<Room>, t: Throwable) {}
+        })
+    }
+
+    fun getRoom(idRoom: Long, callback: GetRoomCallback){
+        apiClient.getRoom(idRoom, object : Callback<Room> {
+            override fun onResponse(call: Call<Room>, response: Response<Room>) {
+                val gotRoom = response.body()
+                if(gotRoom != null) {
+                    callback.onSuccess(gotRoom)
+                }
+            }
+
+            override fun onFailure(call: Call<Room>, t: Throwable) {
+                callback.onFailure("Неверный номер комнаты")
+            }
         })
     }
 }
