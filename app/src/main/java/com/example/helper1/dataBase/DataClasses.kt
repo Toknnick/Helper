@@ -20,7 +20,6 @@ data class Task(
 ) : Timable
 
 data class Room(
-    var idRoom: Int,
     var name: String,
     var password: String
 )

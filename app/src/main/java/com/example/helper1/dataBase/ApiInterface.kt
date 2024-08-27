@@ -25,6 +25,6 @@ interface ApiInterface {
     fun getRoom(@Path("idRoom") idRoom: Long): Call<Room>
 
     @PUT("rooms/update")
-    fun updateRoom(@Body room: Room): Call<Room>
+    fun updateRoom(@Body room: Room): Call<Void>
 
 }

@@ -5,12 +5,18 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class MySQLController(private val apiClient: ApiClient) {
-    interface CreateCallback {
+    interface CreateMessageCallback {
         fun onSuccess(message: String)
         fun onFailure(message: String)
     }
 
-    fun createUser(user: User, callback: CreateCallback) {
+    interface CreateRoomCallback {
+        fun onSuccess(message: String)
+        fun onFailure(message: String)
+        fun onRoomCreated(idRoom: Long)
+    }
+
+    fun createUser(user: User, callback: CreateMessageCallback) {
         apiClient.getUserByLogin(user.login, object : Callback<User> {
             override fun onResponse(call: Call<User>, response: Response<User>) {
                 callback.onFailure("Ошибка! Такой логин уже существует!")
@@ -28,7 +34,7 @@ class MySQLController(private val apiClient: ApiClient) {
         })
     }
 
-    fun updateUser(newUser: User, callback: CreateCallback,isGetNewRoom: Boolean){
+    fun updateUser(newUser: User, callback: CreateMessageCallback, isGetNewRoom: Boolean){
         apiClient.getUserByLogin(newUser.login, object : Callback<User> {
             override fun onResponse(call: Call<User>, response: Response<User>) {
                 val user = response.body()
@@ -54,6 +60,26 @@ class MySQLController(private val apiClient: ApiClient) {
             }
 
             override fun onFailure(call: Call<User>, t: Throwable) {}
+        })
+    }
+
+
+    //TODO: передалать методы, связанные с юзером
+    fun createRoom(room: Room, callback: CreateRoomCallback) {
+        apiClient.createRoom(room, object : Callback<Room> {
+            override fun onResponse(call: Call<Room>, response: Response<Room>) {
+                val createdRoom = response.body()
+                if (createdRoom != null) {
+                    callback.onSuccess("Комната создана успешно")
+                    callback.onRoomCreated(createdRoom.)
+                } else {
+                    callback.onFailure("Ошибка создания комнаты")
+                }
+            }
+
+            override fun onFailure(call: Call<Room>, t: Throwable) {
+                callback.onFailure("Ошибка создания комнаты")
+            }
         })
     }
 }

@@ -32,7 +32,7 @@ class ApiClient(private val retrofit: Retrofit) {
         call.enqueue(callback)
     }
 
-    fun updateRoom(room: Room, callback: Callback<Room>) {
+    fun updateRoom(room: Room, callback: Callback<Void>) {
         val call = apiInterface.updateRoom(room)
         call.enqueue(callback)
     }
