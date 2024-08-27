@@ -5,6 +5,7 @@ interface Timable {
 }
 
 data class Event(
+    //var idEvent: Int,
     var data: String,
     override var time: String,
     var place: String,
@@ -12,6 +13,7 @@ data class Event(
 ) : Timable
 
 data class Task(
+    //var idTask: Int,
     var data: String,
     override var time: String,
     var name: String,
@@ -20,6 +22,7 @@ data class Task(
 ) : Timable
 
 data class Room(
+    var idRoom: Long,
     var name: String,
     var password: String
 )

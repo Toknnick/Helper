@@ -16,6 +16,11 @@ class MySQLController(private val apiClient: ApiClient) {
         fun onRoomCreated(idRoom: Long)
     }
 
+    interface GetAllRoomsCallback {
+        fun onSuccess(rooms: List<Room>)
+        fun onFailure(message: String)
+    }
+
     fun createUser(user: User, callback: CreateMessageCallback) {
         apiClient.getUserByLogin(user.login, object : Callback<User> {
             override fun onResponse(call: Call<User>, response: Response<User>) {
@@ -63,6 +68,26 @@ class MySQLController(private val apiClient: ApiClient) {
         })
     }
 
+    fun getAllRooms(callback: GetAllRoomsCallback) {
+        apiClient.getAllRooms(object : Callback<List<Room>> {
+            override fun onResponse(call: Call<List<Room>>, response: Response<List<Room>>) {
+                if (response.isSuccessful) {
+                    val rooms = response.body()
+                    if (rooms != null) {
+                        callback.onSuccess(rooms)
+                    } else {
+                        callback.onFailure("Ошибка получения комнат")
+                    }
+                } else {
+                    callback.onFailure("Ошибка получения комнат")
+                }
+            }
+
+            override fun onFailure(call: Call<List<Room>>, t: Throwable) {
+                callback.onFailure("Ошибка получения комнат")
+            }
+        })
+    }
 
     //TODO: передалать методы, связанные с юзером
     fun createRoom(room: Room, callback: CreateRoomCallback) {
@@ -71,7 +96,7 @@ class MySQLController(private val apiClient: ApiClient) {
                 val createdRoom = response.body()
                 if (createdRoom != null) {
                     callback.onSuccess("Комната создана успешно")
-                    callback.onRoomCreated(createdRoom.)
+                    callback.onRoomCreated(createdRoom.idRoom)
                 } else {
                     callback.onFailure("Ошибка создания комнаты")
                 }
@@ -80,6 +105,24 @@ class MySQLController(private val apiClient: ApiClient) {
             override fun onFailure(call: Call<Room>, t: Throwable) {
                 callback.onFailure("Ошибка создания комнаты")
             }
+        })
+    }
+
+    fun updateRoom(newRoom: Room, callback: CreateMessageCallback){
+        apiClient.getRoom(newRoom.idRoom, object : Callback<Room> {
+            override fun onResponse(call: Call<Room>, response: Response<Room>) {
+                val foundedRoom = response.body()
+                newRoom.name = foundedRoom?.name.toString()
+                apiClient.updateRoom(newRoom, object : Callback<Void> {
+                    override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                        callback.onSuccess("Комната обновлена успешно")
+                    }
+
+                    override fun onFailure(call: Call<Void>, t: Throwable) {}
+                })
+            }
+
+            override fun onFailure(call: Call<Room>, t: Throwable) {}
         })
     }
 }

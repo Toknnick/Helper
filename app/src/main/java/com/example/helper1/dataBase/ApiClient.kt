@@ -27,6 +27,11 @@ class ApiClient(private val retrofit: Retrofit) {
         call.enqueue(callback)
     }
 
+    fun getAllRooms(callback: Callback<List<Room>>)  {
+        val call = apiInterface.getAllRooms()
+        call.enqueue(callback)
+    }
+
     fun getRoom(idRoom: Long, callback: Callback<Room>) {
         val call = apiInterface.getRoom(idRoom)
         call.enqueue(callback)

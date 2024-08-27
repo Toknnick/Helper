@@ -24,6 +24,9 @@ interface ApiInterface {
     @GET("rooms/get/{idRoom}")
     fun getRoom(@Path("idRoom") idRoom: Long): Call<Room>
 
+    @GET("rooms/get/all")
+    fun getAllRooms(): Call<List<Room>>
+
     @PUT("rooms/update")
     fun updateRoom(@Body room: Room): Call<Void>
 

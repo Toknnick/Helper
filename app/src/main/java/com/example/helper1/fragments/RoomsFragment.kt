@@ -1,6 +1,7 @@
 package com.example.helper1.fragments
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,6 +25,8 @@ class RoomsFragment : Fragment() {
 
     private lateinit var binding: FragmentRoomsBinding
     private lateinit var mysqlController : MySQLController
+
+    private var idRoomDef :Long  = 1
 
     //TODO: менять у нынешнего пользователя availableRooms после подключения к комнате
     //TODO: перенести методы с добавлением пользователя в homeFragment
@@ -54,7 +57,7 @@ class RoomsFragment : Fragment() {
             createRoomForAPI()
         }
         binding.updateRoomButton.setOnClickListener {
-            //updateRoomPasswordForAPI()
+            updateRoomPasswordForAPI()
         }
     }
 
@@ -85,8 +88,36 @@ class RoomsFragment : Fragment() {
     }
 
     private fun createRoomForAPI(){
-        val newRoom = Room(binding.nameRoom.text.toString().trim(),binding.passwordRoom.text.toString().trim())
-        mysqlController.createRoom(newRoom, object : MySQLController.CreateRoomCallback {
+        mysqlController.getAllRooms(object : MySQLController.GetAllRoomsCallback {
+            override fun onSuccess(rooms: List<Room>) {
+                val idRoom = (rooms.count() +1).toLong()
+                val newRoom = Room(idRoom, binding.nameRoom.text.toString().trim(),binding.passwordRoom.text.toString().trim())
+                mysqlController.createRoom(newRoom, object : MySQLController.CreateRoomCallback {
+                    override fun onSuccess(message: String) {
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                    }
+
+                    override fun onFailure(message: String) {
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                    }
+
+                    override fun onRoomCreated(idRoom: Long) {
+                        val idRoom = idRoom
+                        Log.d("MyTag","Room created with id $idRoom")
+                    }
+                })
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    private fun updateRoomPasswordForAPI(){
+        //TODO:поменять binding
+        val newRoom = Room(binding.nameRoom.text.toString().toLong(),"",binding.passwordRoom.text.toString().trim())
+        mysqlController.updateRoom(newRoom, object : MySQLController.CreateMessageCallback {
             override fun onSuccess(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
             }
@@ -94,11 +125,7 @@ class RoomsFragment : Fragment() {
             override fun onFailure(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
             }
-
-            override fun onRoomCreated(idRoom: Long) {
-                val idRoom = idRoom
-                Toast.makeText(requireContext(), "Room created with id $idRoom", Toast.LENGTH_SHORT).show()
-            }
         })
     }
+
 }
