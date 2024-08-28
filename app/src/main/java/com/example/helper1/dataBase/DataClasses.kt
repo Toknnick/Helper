@@ -15,7 +15,7 @@ data class Event(
 
 /*data class Task(
     //var idTask: Int,
-    var data: String,
+    var date: String,
     override var time: String,
     var name: String,
     var points: List<String>,

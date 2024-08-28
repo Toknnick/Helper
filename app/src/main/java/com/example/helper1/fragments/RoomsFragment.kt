@@ -70,7 +70,15 @@ class RoomsFragment : Fragment() {
             createEventForAPI()
         }
         binding.updateEventButton.setOnClickListener {
-            getEventsByDate()
+            val previousEvent = Event(
+                0,
+                1,
+                "28.08.2024",
+                "16:18",
+                "дом",
+                "дом"
+            )
+            updateEventForAPI(previousEvent)
         }
     }
 
@@ -113,7 +121,7 @@ class RoomsFragment : Fragment() {
 
             override fun onUserCreated(user: User) {
                 //TODO: передается куда-то пользователь
-                val user = user
+                //val user = user
             }
 
             override fun onFailure(message: String) {
@@ -218,7 +226,6 @@ class RoomsFragment : Fragment() {
     }
 
 
-    //TODO: пофиксить метод создания события
     private fun createEventForAPI() {
         mysqlController.getAllEvents(idRoomDef, object : MySQLController.GetAllEventsCallback {
             override fun onSuccess(events: List<Event>) {
@@ -247,7 +254,7 @@ class RoomsFragment : Fragment() {
         })
     }
 
-    private fun getEventsByDate():List<Event>{
+    private fun getEventsByDateForAPI():List<Event>{
         var events: List<Event> = ArrayList()
         mysqlController.getAllEvents(idRoomDef, object : MySQLController.GetAllEventsCallback {
             override fun onSuccess(tempEvents: List<Event>) {
@@ -257,7 +264,6 @@ class RoomsFragment : Fragment() {
                     }
                 }
 
-                Log.d("MyTag",events.count().toString())
             }
 
             override fun onFailure(message: String) {
@@ -267,4 +273,29 @@ class RoomsFragment : Fragment() {
 
         return events
     }
+
+    private fun updateEventForAPI(previousEvent: Event){
+        val updatingEvent = Event(
+            0,
+            idRoomDef,
+            binding.dateEvent.text.toString().trim(),
+            binding.timeEvent.text.toString().trim(),
+            binding.placeEvent.text.toString().trim(),
+            binding.eventEvent.text.toString().trim()
+        )
+
+        mysqlController.updateEvent(previousEvent, updatingEvent, object : MySQLController.CreateMessageCallback {
+            override fun onSuccess(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                //TODO: пересобрать
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+
+    }
+
+    //TODO: в mySQLHelper исправить метод updateUser
 }

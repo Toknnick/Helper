@@ -42,6 +42,7 @@ class ApiClient(private val retrofit: Retrofit) {
         call.enqueue(callback)
     }
 
+
     fun createEvent(event: Event, callback: Callback<Event>) {
         val call = apiInterface.createEvent(event)
         call.enqueue(callback)
@@ -53,7 +54,7 @@ class ApiClient(private val retrofit: Retrofit) {
     }
 
     fun getEvent(event: Event, callback: Callback<Event>) {
-        val call = apiInterface.getEvent(event)
+        val call = apiInterface.getEvent(event.idRoom,event.date,event.time,event.place,event.event)
         call.enqueue(callback)
     }
 

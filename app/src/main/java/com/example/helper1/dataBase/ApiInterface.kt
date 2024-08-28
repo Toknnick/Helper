@@ -35,8 +35,9 @@ interface ApiInterface {
     @POST("events/create")
     fun createEvent(@Body event: Event): Call<Event>
 
-    @GET("events/get/one")
-    fun getEvent(@Body event: Event): Call<Event>
+    @GET("events/get/one/{idRoom}/{date}/{time}/{place}/{event}")
+    fun getEvent(@Path("idRoom") idRoom:Long, @Path("date") date:String, @Path("time") time:String,
+                 @Path("place") place:String, @Path("event") event:String): Call<Event>
 
     @GET("events/get/all/{idRoom}")
     fun getAllEvent(@Path("idRoom") idRoom:Long): Call<List<Event>>

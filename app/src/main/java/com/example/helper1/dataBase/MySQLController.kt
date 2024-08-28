@@ -1,5 +1,6 @@
 package com.example.helper1.dataBase
 
+import android.util.Log
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -182,7 +183,7 @@ class MySQLController(private val apiClient: ApiClient) {
     fun createEvent(event: Event, callback: CreateMessageCallback) {
         apiClient.createEvent(event, object : Callback<Event> {
             override fun onResponse(call: Call<Event>, response: Response<Event>) {
-                val createdEvent = response.body()s
+                val createdEvent = response.body()
                 if (createdEvent != null) {
                     callback.onSuccess("Успешно")
                 } else {
@@ -213,6 +214,33 @@ class MySQLController(private val apiClient: ApiClient) {
 
             override fun onFailure(call: Call<List<Event>>, t: Throwable) {
                 callback.onFailure("Ошибка получения событий")
+            }
+        })
+    }
+
+    fun updateEvent(previousEvent: Event, updatingEvent: Event, callback: CreateMessageCallback){
+        apiClient.getEvent(previousEvent,object : Callback<Event>{
+            override fun onResponse(call: Call<Event>, response: Response<Event>) {
+                val foundedEvent = response.body()
+                if(foundedEvent!=null) {
+                    updatingEvent.idEvent = foundedEvent.idEvent
+                }
+                Log.d("MyTag",updatingEvent.idEvent.toString())
+                Log.d("MyTag",foundedEvent?.event.toString())
+
+                apiClient.updateEvent(updatingEvent,object : Callback<Void>{
+                    override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                        callback.onSuccess("Успех!")
+                    }
+
+                    override fun onFailure(call: Call<Void>, t: Throwable) {
+                        callback.onFailure("Ошибка! Не удалось обновить!")
+                    }
+                })
+            }
+
+            override fun onFailure(call: Call<Event>, t: Throwable) {
+                callback.onFailure("Ошибка! Не найдено событие")
             }
         })
     }
