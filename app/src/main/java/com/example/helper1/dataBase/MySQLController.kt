@@ -10,21 +10,23 @@ class MySQLController(private val apiClient: ApiClient) {
         fun onFailure(message: String)
     }
 
+
     interface IsExistUserCallback {
         fun onSuccess(isExist: Boolean)
         fun onFailure(isExist: Boolean)
-    }
-
-    interface CreateRoomCallback {
-        fun onSuccess(message: String)
-        fun onFailure(message: String)
-        fun onRoomCreated(idRoom: Long)
     }
 
     interface CreateUserCallback {
         fun onSuccess(message: String)
         fun onFailure(message: String)
         fun onUserCreated(user: User)
+    }
+
+
+    interface CreateRoomCallback {
+        fun onSuccess(message: String)
+        fun onFailure(message: String)
+        fun onRoomCreated(idRoom: Long)
     }
 
     interface GetAllRoomsCallback {
@@ -34,6 +36,11 @@ class MySQLController(private val apiClient: ApiClient) {
 
     interface GetRoomCallback {
         fun onSuccess(gotRoom: Room)
+        fun onFailure(message: String)
+    }
+
+    interface GetAllEventsCallback {
+        fun onSuccess(events: List<Event>)
         fun onFailure(message: String)
     }
 
@@ -167,6 +174,45 @@ class MySQLController(private val apiClient: ApiClient) {
 
             override fun onFailure(call: Call<Room>, t: Throwable) {
                 callback.onFailure("Неверный номер комнаты")
+            }
+        })
+    }
+
+
+    fun createEvent(event: Event, callback: CreateMessageCallback) {
+        apiClient.createEvent(event, object : Callback<Event> {
+            override fun onResponse(call: Call<Event>, response: Response<Event>) {
+                val createdEvent = response.body()s
+                if (createdEvent != null) {
+                    callback.onSuccess("Успешно")
+                } else {
+                    callback.onFailure("Ошибка1 создания события")
+                }
+            }
+
+            override fun onFailure(call: Call<Event>, t: Throwable) {
+                callback.onFailure("Ошибка2 создания события")
+            }
+        })
+    }
+
+    fun getAllEvents(idRoom: Long, callback: GetAllEventsCallback) {
+        apiClient.getAllEvents(idRoom, object : Callback<List<Event>> {
+            override fun onResponse(call: Call<List<Event>>, response: Response<List<Event>>) {
+                if (response.isSuccessful) {
+                    val events = response.body()
+                    if (events != null) {
+                        callback.onSuccess(events)
+                    } else {
+                        callback.onFailure("Ошибка получения событий")
+                    }
+                } else {
+                    callback.onFailure("Ошибка получения событий")
+                }
+            }
+
+            override fun onFailure(call: Call<List<Event>>, t: Throwable) {
+                callback.onFailure("Ошибка получения событий")
             }
         })
     }

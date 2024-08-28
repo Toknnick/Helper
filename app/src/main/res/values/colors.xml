@@ -12,5 +12,5 @@
     <color name="bottom_nav_bg">#4971CD</color>
     <color name="bottom_nav_item">#ff9a8d</color>
     <color name="nav_selected_item">#aed6dc</color>
-    <color name="text_color_button">#ff9a8d</color>
+    <color name="text_color_button">#000000</color>
 </resources>

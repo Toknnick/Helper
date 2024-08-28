@@ -41,4 +41,29 @@ class ApiClient(private val retrofit: Retrofit) {
         val call = apiInterface.updateRoom(room)
         call.enqueue(callback)
     }
+
+    fun createEvent(event: Event, callback: Callback<Event>) {
+        val call = apiInterface.createEvent(event)
+        call.enqueue(callback)
+    }
+
+    fun getAllEvents(idRoom:Long,callback: Callback<List<Event>>)  {
+        val call = apiInterface.getAllEvent(idRoom)
+        call.enqueue(callback)
+    }
+
+    fun getEvent(event: Event, callback: Callback<Event>) {
+        val call = apiInterface.getEvent(event)
+        call.enqueue(callback)
+    }
+
+    fun updateEvent(event: Event, callback: Callback<Void>) {
+        val call = apiInterface.updateEvent(event)
+        call.enqueue(callback)
+    }
+
+    fun deleteEvent(event: Event, callback: Callback<Void>) {
+        val call = apiInterface.deleteEvent(event)
+        call.enqueue(callback)
+    }
 }

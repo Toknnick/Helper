@@ -1,43 +1,12 @@
 package com.example.helper1.fragments
 
 import android.annotation.SuppressLint
-import android.app.AlertDialog
-import android.app.DatePickerDialog
-import android.app.DatePickerDialog.OnDateSetListener
-import android.app.TimePickerDialog
-import android.content.res.Resources
-import android.graphics.Color
-import android.graphics.Paint
-import android.os.Bundle
-import android.view.Gravity
-import android.view.LayoutInflater
-import android.view.MotionEvent
-import android.view.View
-import android.view.ViewGroup
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.EditText
-import android.widget.RelativeLayout
-import android.widget.TextView
-import android.widget.Toast
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.example.helper1.MainActivity
-import com.example.helper1.R
-import com.example.helper1.dataBase.DBHelper
-import com.example.helper1.dataBase.Event
-import com.example.helper1.dataBase.Task
-import com.example.helper1.databinding.FragmentHomeBinding
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.util.Calendar
 
 @SuppressLint("SetTextI18n","ClickableViewAccessibility")
 @Suppress("DEPRECATION", "NAME_SHADOWING")
 class HomeFragment : Fragment(){
-    private lateinit var binding: FragmentHomeBinding
+    /*private lateinit var binding: FragmentHomeBinding
     private lateinit var mainActivity: MainActivity
     private lateinit var datePickerDialog: DatePickerDialog
     private lateinit var datePickerDialogForObject: DatePickerDialog
@@ -913,5 +882,5 @@ class HomeFragment : Fragment(){
         }
 
         builder.show()
-    }
+    }*/
 }

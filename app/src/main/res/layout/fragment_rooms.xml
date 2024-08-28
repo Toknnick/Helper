@@ -171,7 +171,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@color/panel_background"
-        android:visibility="visible"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -373,7 +373,7 @@
         android:layout_height="wrap_content"
         android:background="@color/panel_background"
         android:orientation="vertical"
-        android:visibility="gone"
+        android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -392,39 +392,33 @@
             android:textSize="15sp" />
 
         <EditText
-            android:id="@+id/dateInput"
+            android:id="@+id/dateEvent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:layout_margin="10dp"
-            android:layout_toRightOf="@id/backEventButton"
+            android:layout_toEndOf="@id/backEventButton"
             android:background="@color/edit_text"
-            android:editable="false"
-            android:focusable="false"
             android:hint="Дата"
-            android:inputType="date"
             android:padding="10dp"
             android:textColor="@color/text_color_button" />
 
         <EditText
-            android:id="@+id/timeInput"
+            android:id="@+id/timeEvent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/dateInput"
+            android:layout_below="@id/dateEvent"
             android:layout_margin="10dp"
             android:background="@color/edit_text"
-            android:editable="false"
-            android:focusable="false"
             android:hint="Время"
-            android:inputType="time"
             android:padding="10dp"
             android:textColor="@color/text_color_button" />
 
         <EditText
-            android:id="@+id/placeInput"
+            android:id="@+id/placeEvent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/timeInput"
+            android:layout_below="@id/timeEvent"
             android:layout_margin="10dp"
             android:background="@color/edit_text"
             android:hint="Место"
@@ -432,10 +426,10 @@
             android:textColor="@color/text_color_button" />
 
         <EditText
-            android:id="@+id/eventInput"
+            android:id="@+id/eventEvent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/placeInput"
+            android:layout_below="@id/placeEvent"
             android:layout_margin="10dp"
             android:background="@color/edit_text"
             android:gravity="top"
@@ -445,15 +439,28 @@
             android:textColor="@color/text_color_button" />
 
         <Button
-            android:id="@+id/saveButton"
+            android:id="@+id/saveEventButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/eventInput"
+            android:layout_below="@id/eventEvent"
             android:layout_gravity="left"
             android:layout_margin="10dp"
             android:backgroundTint="@color/bottom_nav_bg"
             android:padding="10dp"
-            android:text="Сохранить"
+            android:text="Готово"
+            android:textColor="@color/text_color_button"
+            android:textSize="20sp" />
+
+        <Button
+            android:id="@+id/updateEventButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/saveEventButton"
+            android:layout_gravity="left"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/bottom_nav_bg"
+            android:padding="10dp"
+            android:text="Обновить"
             android:textColor="@color/text_color_button"
             android:textSize="20sp" />
 

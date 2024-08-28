@@ -1,13 +1,6 @@
 package com.example.helper1.dataBase
 
-import android.content.ContentValues
-import android.content.Context
-import android.database.sqlite.SQLiteDatabase
-import android.database.sqlite.SQLiteOpenHelper
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-
-class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null, 1) {
+/*class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null, 1) {
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("CREATE TABLE events (_id INTEGER PRIMARY KEY, data TEXT, time TEXT, place TEXT, event TEXT)")
@@ -200,4 +193,4 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null,
             arrayOf(task.data, task.time, task.name, task.points.joinToString(",")))
         db.close()
     }
-}
+}*/

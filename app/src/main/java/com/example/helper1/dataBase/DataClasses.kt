@@ -5,21 +5,22 @@ interface Timable {
 }
 
 data class Event(
-    //var idEvent: Int,
-    var data: String,
+    var idEvent: Long,
+    var idRoom: Long,
+    var date: String,
     override var time: String,
     var place: String,
     var event: String
 ) : Timable
 
-data class Task(
+/*data class Task(
     //var idTask: Int,
     var data: String,
     override var time: String,
     var name: String,
     var points: List<String>,
     var checkBoxes: List<Boolean>
-) : Timable
+) : Timable*/
 
 data class Room(
     var idRoom: Long,

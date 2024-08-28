@@ -2,6 +2,7 @@ package com.example.helper1.dataBase
 
 import retrofit2.Call
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -29,5 +30,21 @@ interface ApiInterface {
 
     @PUT("rooms/update")
     fun updateRoom(@Body room: Room): Call<Void>
+
+
+    @POST("events/create")
+    fun createEvent(@Body event: Event): Call<Event>
+
+    @GET("events/get/one")
+    fun getEvent(@Body event: Event): Call<Event>
+
+    @GET("events/get/all/{idRoom}")
+    fun getAllEvent(@Path("idRoom") idRoom:Long): Call<List<Event>>
+
+    @PUT("events/update")
+    fun updateEvent(@Body event: Event): Call<Void>
+
+    @DELETE("events/delete")
+    fun deleteEvent(@Body event: Event): Call<Void>
 
 }
