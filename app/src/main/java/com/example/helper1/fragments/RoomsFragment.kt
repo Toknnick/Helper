@@ -70,15 +70,7 @@ class RoomsFragment : Fragment() {
             createEventForAPI()
         }
         binding.updateEventButton.setOnClickListener {
-            val previousEvent = Event(
-                0,
-                1,
-                "28.08.2024",
-                "16:18",
-                "дом",
-                "дом"
-            )
-            updateEventForAPI(previousEvent)
+            deleteEventForAPI()
         }
     }
 
@@ -240,6 +232,7 @@ class RoomsFragment : Fragment() {
                 mysqlController.createEvent(newEvent, object : MySQLController.CreateMessageCallback {
                     override fun onSuccess(message: String) {
                         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                        //TODO: пересобрать
                     }
 
                     override fun onFailure(message: String) {
@@ -297,5 +290,28 @@ class RoomsFragment : Fragment() {
 
     }
 
+    private fun deleteEventForAPI(){
+        val deletingEvent = Event(
+            0,
+            idRoomDef,
+            binding.dateEvent.text.toString().trim(),
+            binding.timeEvent.text.toString().trim(),
+            binding.placeEvent.text.toString().trim(),
+            binding.eventEvent.text.toString().trim()
+        )
+
+        mysqlController.deleteEvent(deletingEvent,object : MySQLController.CreateMessageCallback {
+            override fun onSuccess(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                //TODO: пересобрать
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    //TODO: убрать потом сообщения об успехе
     //TODO: в mySQLHelper исправить метод updateUser
 }

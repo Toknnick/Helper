@@ -225,12 +225,37 @@ class MySQLController(private val apiClient: ApiClient) {
                 if(foundedEvent!=null) {
                     updatingEvent.idEvent = foundedEvent.idEvent
                 }
-                Log.d("MyTag",updatingEvent.idEvent.toString())
-                Log.d("MyTag",foundedEvent?.event.toString())
 
                 apiClient.updateEvent(updatingEvent,object : Callback<Void>{
                     override fun onResponse(call: Call<Void>, response: Response<Void>) {
                         callback.onSuccess("Успех!")
+                    }
+
+                    override fun onFailure(call: Call<Void>, t: Throwable) {
+                        callback.onFailure("Ошибка! Не удалось обновить!")
+                    }
+                })
+            }
+
+            override fun onFailure(call: Call<Event>, t: Throwable) {
+                callback.onFailure("Ошибка! Не найдено событие")
+            }
+        })
+    }
+
+    fun deleteEvent(deletingEvent: Event, callback: CreateMessageCallback){
+        apiClient.getEvent(deletingEvent,object : Callback<Event>{
+            override fun onResponse(call: Call<Event>, response: Response<Event>) {
+                val foundedEvent = response.body()
+                if(foundedEvent!=null) {
+                    deletingEvent.idEvent = foundedEvent.idEvent
+                }
+                Log.d("MyTag",deletingEvent.toString())
+                Log.d("MyTag",foundedEvent.toString())
+
+                apiClient.deleteEvent(deletingEvent, object : Callback<Void>{
+                    override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                        callback.onSuccess("Удалил!")
                     }
 
                     override fun onFailure(call: Call<Void>, t: Throwable) {

@@ -64,7 +64,7 @@ class ApiClient(private val retrofit: Retrofit) {
     }
 
     fun deleteEvent(event: Event, callback: Callback<Void>) {
-        val call = apiInterface.deleteEvent(event)
+        val call = apiInterface.deleteEvent(event.idEvent)
         call.enqueue(callback)
     }
 }

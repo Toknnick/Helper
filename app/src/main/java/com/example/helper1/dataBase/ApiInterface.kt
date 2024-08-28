@@ -45,7 +45,7 @@ interface ApiInterface {
     @PUT("events/update")
     fun updateEvent(@Body event: Event): Call<Void>
 
-    @DELETE("events/delete")
-    fun deleteEvent(@Body event: Event): Call<Void>
+    @DELETE("events/delete/{idEvent}")
+    fun deleteEvent(@Path("idEvent") idEvent:Long): Call<Void>
 
 }
