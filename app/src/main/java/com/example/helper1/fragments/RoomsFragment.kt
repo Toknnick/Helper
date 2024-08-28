@@ -11,6 +11,7 @@ import com.example.helper1.dataBase.ApiClient
 import com.example.helper1.dataBase.Event
 import com.example.helper1.dataBase.MySQLController
 import com.example.helper1.dataBase.Room
+import com.example.helper1.dataBase.Task
 import com.example.helper1.dataBase.User
 import com.example.helper1.databinding.FragmentRoomsBinding
 import retrofit2.Retrofit
@@ -71,6 +72,10 @@ class RoomsFragment : Fragment() {
         }
         binding.updateEventButton.setOnClickListener {
             deleteEventForAPI()
+        }
+
+        binding.saveTaskButton.setOnClickListener {
+            getTaskByDateForAPI()
         }
     }
 
@@ -312,6 +317,118 @@ class RoomsFragment : Fragment() {
         })
     }
 
+
+    private fun createTaskForAPI() {
+        mysqlController.getAllTasks(idRoomDef, object : MySQLController.GetAllTaskCallback {
+            override fun onSuccess(tasks: List<Task>) {
+                //TODO: сделать получение из всех поинтов
+                //TODO: добавлять запятые!!!!
+                var points: String =""
+                points += binding.point0.text.toString()
+                var checkBoxes: String =""
+                checkBoxes += "false"
+                val newTask = Task(
+                    (tasks.count()+1).toLong(),
+                    idRoomDef,
+                    binding.dateTask.text.toString().trim(),
+                    binding.timeTask.text.toString().trim(),
+                    binding.nameTask.text.toString().trim(),
+                    points,
+                    checkBoxes
+                )
+                mysqlController.createTask(newTask, object : MySQLController.CreateMessageCallback {
+                    override fun onSuccess(message: String) {
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                        //TODO: пересобрать
+                    }
+
+                    override fun onFailure(message: String) {
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                    }
+                })
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    private fun getTaskByDateForAPI():List<Task>{
+        var tasks: List<Task> = ArrayList()
+        mysqlController.getAllTasks(idRoomDef, object : MySQLController.GetAllTaskCallback {
+            override fun onSuccess(tempTasks: List<Task>) {
+                for (task in tempTasks) {
+                    if(task.date == chosenDate){
+                        tasks += task
+                    }
+                }
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+
+        return tasks
+    }
+
+    private fun updateTaskForAPI(previousTask: Task){
+        //TODO: почини points и checkboxes
+        val updatingTask = Task(
+            0,
+            idRoomDef,
+            binding.dateTask.text.toString().trim(),
+            binding.timeTask.text.toString().trim(),
+            binding.nameTask.text.toString().trim(),
+            binding.point0.text.toString().trim(),
+            "false"
+        )
+
+        mysqlController.updateTask(previousTask, updatingTask, object : MySQLController.CreateMessageCallback {
+            override fun onSuccess(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                //TODO: пересобрать
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    private fun deleteTaskForAPI(){
+        //TODO: почини points и checkboxes
+
+        val deletingTask = Task(
+            0,
+            idRoomDef,
+            binding.dateTask.text.toString().trim(),
+            binding.timeTask.text.toString().trim(),
+            binding.nameTask.text.toString().trim(),
+            binding.point0.text.toString().trim(),
+            "false"
+        )
+
+        mysqlController.deleteTask(deletingTask,object : MySQLController.CreateMessageCallback {
+            override fun onSuccess(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                //TODO: пересобрать
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+
+
     //TODO: убрать потом сообщения об успехе
     //TODO: в mySQLHelper исправить метод updateUser
+
+    //TODO: добавить строки ниже потом для даты и времени для ивента и таск
+    //android:editable="false"
+    //android:focusable="false"
+    //android:inputType="date"
 }

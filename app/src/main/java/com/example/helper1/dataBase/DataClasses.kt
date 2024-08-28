@@ -13,14 +13,15 @@ data class Event(
     var event: String
 ) : Timable
 
-/*data class Task(
-    //var idTask: Int,
+data class Task(
+    var idTask: Long,
+    var idRoom: Long,
     var date: String,
     override var time: String,
     var name: String,
-    var points: List<String>,
-    var checkBoxes: List<Boolean>
-) : Timable*/
+    var points: String,
+    var checkBoxes: String
+) : Timable
 
 data class Room(
     var idRoom: Long,

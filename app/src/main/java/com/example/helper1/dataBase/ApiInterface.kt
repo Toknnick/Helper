@@ -48,4 +48,21 @@ interface ApiInterface {
     @DELETE("events/delete/{idEvent}")
     fun deleteEvent(@Path("idEvent") idEvent:Long): Call<Void>
 
+
+    @POST("tasks/create")
+    fun createTask(@Body task: Task): Call<Task>
+
+    @GET("tasks/get/one/{idRoom}/{date}/{time}/{name}/{points}/{checkBoxes}")
+    fun getTask(@Path("idRoom") idRoom:Long, @Path("date") date:String, @Path("time") time:String,
+                 @Path("name") name:String, @Path("points") points:String, @Path("checkBoxes") checkBoxes:String): Call<Task>
+
+    @GET("tasks/get/all/{idRoom}")
+    fun getAllTasks(@Path("idRoom") idRoom:Long): Call<List<Task>>
+
+    @PUT("tasks/update")
+    fun updateTask(@Body task: Task): Call<Void>
+
+    @DELETE("tasks/delete/{idTask}")
+    fun deleteTask(@Path("idTask") idTask:Long): Call<Void>
+
 }

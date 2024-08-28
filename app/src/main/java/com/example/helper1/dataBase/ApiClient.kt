@@ -67,4 +67,30 @@ class ApiClient(private val retrofit: Retrofit) {
         val call = apiInterface.deleteEvent(event.idEvent)
         call.enqueue(callback)
     }
+
+
+    fun createTask(task: Task, callback: Callback<Task>) {
+        val call = apiInterface.createTask(task)
+        call.enqueue(callback)
+    }
+
+    fun getAllTasks(idRoom:Long,callback: Callback<List<Task>>)  {
+        val call = apiInterface.getAllTasks(idRoom)
+        call.enqueue(callback)
+    }
+
+    fun getTask(task: Task, callback: Callback<Task>) {
+        val call = apiInterface.getTask(task.idRoom,task.date,task.time,task.name,task.points,task.checkBoxes)
+        call.enqueue(callback)
+    }
+
+    fun updateTask(task: Task, callback: Callback<Void>) {
+        val call = apiInterface.updateTask(task)
+        call.enqueue(callback)
+    }
+
+    fun deleteTask(task: Task, callback: Callback<Void>) {
+        val call = apiInterface.deleteTask(task.idTask)
+        call.enqueue(callback)
+    }
 }
