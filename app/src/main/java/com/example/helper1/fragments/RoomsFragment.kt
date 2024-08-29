@@ -8,11 +8,22 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.helper1.dataBase.ApiClient
+import com.example.helper1.dataBase.CreateMessageCallback
+import com.example.helper1.dataBase.CreateRoomCallback
+import com.example.helper1.dataBase.CreateUserCallback
 import com.example.helper1.dataBase.Event
-import com.example.helper1.dataBase.MySQLController
+import com.example.helper1.dataBase.GetAllEventsCallback
+import com.example.helper1.dataBase.GetAllRoomsCallback
+import com.example.helper1.dataBase.GetAllTaskCallback
+import com.example.helper1.dataBase.GetRoomCallback
+import com.example.helper1.dataBase.IsExistUserCallback
 import com.example.helper1.dataBase.Room
 import com.example.helper1.dataBase.Task
 import com.example.helper1.dataBase.User
+import com.example.helper1.dataBase.managers.EventManager
+import com.example.helper1.dataBase.managers.RoomManager
+import com.example.helper1.dataBase.managers.TaskManager
+import com.example.helper1.dataBase.managers.UserManager
 import com.example.helper1.databinding.FragmentRoomsBinding
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -25,7 +36,11 @@ class RoomsFragment : Fragment() {
 
 
     private lateinit var binding: FragmentRoomsBinding
-    private lateinit var mysqlController: MySQLController
+    private lateinit var userManager: UserManager
+    private lateinit var roomManger: RoomManager
+    private lateinit var eventManager: EventManager
+    private lateinit var taskManager: TaskManager
+
 
     private var chosenDate: String = "28.08.2024"
 
@@ -47,7 +62,10 @@ class RoomsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val apiClient = ApiClient(retrofit)
-        mysqlController = MySQLController(apiClient)
+        userManager = UserManager(apiClient)
+        roomManger = RoomManager(apiClient)
+        eventManager = EventManager(apiClient)
+        taskManager = TaskManager(apiClient)
         binding.saveUserButton.setOnClickListener {
             createUserForAPI()
         }
@@ -85,9 +103,9 @@ class RoomsFragment : Fragment() {
             binding.loginUser.text.toString().trim(),
             binding.passwordUser.text.toString().trim()
         )
-        mysqlController.getUser(
+        userManager.getUser(
             binding.loginUser.text.toString().trim(),
-            object : MySQLController.IsExistUserCallback {
+            object : IsExistUserCallback {
                 override fun onSuccess(isExist: Boolean) {
                     //Проверка на уникальность логина
                     Toast.makeText(
@@ -111,7 +129,7 @@ class RoomsFragment : Fragment() {
             idRoom,
             ""
         )
-        mysqlController.createUser(newUser, object : MySQLController.CreateUserCallback {
+        userManager.createUser(newUser, object : CreateUserCallback {
             override fun onSuccess(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
             }
@@ -135,7 +153,7 @@ class RoomsFragment : Fragment() {
             0,
             ""
         )
-        mysqlController.updateUser(newUser, object : MySQLController.CreateMessageCallback {
+        userManager.updateUser(newUser, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
             }
@@ -148,11 +166,11 @@ class RoomsFragment : Fragment() {
 
 
     private fun createRoomForAPI(newRoom: Room, isNewUser: Boolean) {
-        mysqlController.getAllRooms(object : MySQLController.GetAllRoomsCallback {
+        roomManger.getAllRooms(object : GetAllRoomsCallback {
             override fun onSuccess(rooms: List<Room>) {
                 val idRoom = (rooms.count() + 1).toLong()
                 newRoom.idRoom = idRoom
-                mysqlController.createRoom(newRoom, object : MySQLController.CreateRoomCallback {
+                roomManger.createRoom(newRoom, object : CreateRoomCallback {
                     override fun onSuccess(message: String) {
                         if (!isNewUser)
                             Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
@@ -186,7 +204,7 @@ class RoomsFragment : Fragment() {
             "",
             binding.passwordRoom.text.toString().trim()
         )
-        mysqlController.updateRoom(newRoom, object : MySQLController.CreateMessageCallback {
+        roomManger.updateRoom(newRoom, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
             }
@@ -205,7 +223,7 @@ class RoomsFragment : Fragment() {
             binding.passwordRoom.text.toString().trim()
         )
 
-        mysqlController.getRoom(gettingRoom.idRoom, object : MySQLController.GetRoomCallback {
+        roomManger.getRoom(gettingRoom.idRoom, object : GetRoomCallback {
             override fun onSuccess(gotRoom: Room) {
                 if (gettingRoom.password == gotRoom.password) {
                     //TODO: тут все норм, добавить на панель
@@ -224,7 +242,7 @@ class RoomsFragment : Fragment() {
 
 
     private fun createEventForAPI() {
-        mysqlController.getAllEvents(idRoomDef, object : MySQLController.GetAllEventsCallback {
+        eventManager.getAllEvents(idRoomDef, object : GetAllEventsCallback {
             override fun onSuccess(events: List<Event>) {
                 val newEvent = Event(
                     (events.count()+1).toLong(),
@@ -234,7 +252,7 @@ class RoomsFragment : Fragment() {
                     binding.placeEvent.text.toString().trim(),
                     binding.eventEvent.text.toString().trim()
                 )
-                mysqlController.createEvent(newEvent, object : MySQLController.CreateMessageCallback {
+                eventManager.createEvent(newEvent, object : CreateMessageCallback {
                     override fun onSuccess(message: String) {
                         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
                         //TODO: пересобрать
@@ -252,9 +270,10 @@ class RoomsFragment : Fragment() {
         })
     }
 
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     private fun getEventsByDateForAPI():List<Event>{
         var events: List<Event> = ArrayList()
-        mysqlController.getAllEvents(idRoomDef, object : MySQLController.GetAllEventsCallback {
+        eventManager.getAllEvents(idRoomDef, object : GetAllEventsCallback {
             override fun onSuccess(tempEvents: List<Event>) {
                 for (event in tempEvents) {
                     if(event.date == chosenDate){
@@ -282,7 +301,7 @@ class RoomsFragment : Fragment() {
             binding.eventEvent.text.toString().trim()
         )
 
-        mysqlController.updateEvent(previousEvent, updatingEvent, object : MySQLController.CreateMessageCallback {
+        eventManager.updateEvent(previousEvent, updatingEvent, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
                 //TODO: пересобрать
@@ -305,7 +324,7 @@ class RoomsFragment : Fragment() {
             binding.eventEvent.text.toString().trim()
         )
 
-        mysqlController.deleteEvent(deletingEvent,object : MySQLController.CreateMessageCallback {
+        eventManager.deleteEvent(deletingEvent,object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
                 //TODO: пересобрать
@@ -319,13 +338,13 @@ class RoomsFragment : Fragment() {
 
 
     private fun createTaskForAPI() {
-        mysqlController.getAllTasks(idRoomDef, object : MySQLController.GetAllTaskCallback {
+        taskManager.getAllTasks(idRoomDef, object : GetAllTaskCallback {
             override fun onSuccess(tasks: List<Task>) {
                 //TODO: сделать получение из всех поинтов
                 //TODO: добавлять запятые!!!!
-                var points: String =""
+                var points = ""
                 points += binding.point0.text.toString()
-                var checkBoxes: String =""
+                var checkBoxes = ""
                 checkBoxes += "false"
                 val newTask = Task(
                     (tasks.count()+1).toLong(),
@@ -336,7 +355,7 @@ class RoomsFragment : Fragment() {
                     points,
                     checkBoxes
                 )
-                mysqlController.createTask(newTask, object : MySQLController.CreateMessageCallback {
+                taskManager.createTask(newTask, object : CreateMessageCallback {
                     override fun onSuccess(message: String) {
                         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
                         //TODO: пересобрать
@@ -354,9 +373,10 @@ class RoomsFragment : Fragment() {
         })
     }
 
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     private fun getTaskByDateForAPI():List<Task>{
         var tasks: List<Task> = ArrayList()
-        mysqlController.getAllTasks(idRoomDef, object : MySQLController.GetAllTaskCallback {
+        taskManager.getAllTasks(idRoomDef, object : GetAllTaskCallback {
             override fun onSuccess(tempTasks: List<Task>) {
                 for (task in tempTasks) {
                     if(task.date == chosenDate){
@@ -385,7 +405,7 @@ class RoomsFragment : Fragment() {
             "false"
         )
 
-        mysqlController.updateTask(previousTask, updatingTask, object : MySQLController.CreateMessageCallback {
+        taskManager.updateTask(previousTask, updatingTask, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
                 //TODO: пересобрать
@@ -410,7 +430,7 @@ class RoomsFragment : Fragment() {
             "false"
         )
 
-        mysqlController.deleteTask(deletingTask,object : MySQLController.CreateMessageCallback {
+        taskManager.deleteTask(deletingTask,object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
                 //TODO: пересобрать
@@ -425,7 +445,6 @@ class RoomsFragment : Fragment() {
 
 
     //TODO: убрать потом сообщения об успехе
-    //TODO: в mySQLHelper исправить метод updateUser
 
     //TODO: добавить строки ниже потом для даты и времени для ивента и таск
     //android:editable="false"
