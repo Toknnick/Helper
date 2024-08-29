@@ -67,7 +67,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null,
         db.close()
     }
 
-    fun getRoomId():Int{
+    fun getRoomId():Long{
         val db = readableDatabase
         val cursor = db.query("roomId", null, null, null, null, null, null)
         var roomId = -1
@@ -76,7 +76,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null,
         }
         cursor.close()
         db.close()
-        return roomId
+        return roomId.toLong()
     }
 
     fun getChosenDate(): String {

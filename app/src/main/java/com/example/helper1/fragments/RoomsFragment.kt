@@ -42,12 +42,12 @@ import com.example.helper1.dataBase.managers.UserManager
 import com.example.helper1.databinding.FragmentRoomsBinding
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
+@Suppress("NAME_SHADOWING", "DEPRECATION")
 class RoomsFragment : Fragment() {
     private val retrofit = Retrofit.Builder()
         .baseUrl("https://api-helper-toknnick.amvera.io/")
@@ -81,7 +81,7 @@ class RoomsFragment : Fragment() {
     private lateinit var dbHelper: DBHelper
 
 
-    private var idRoomDef: Long = 1
+    private var idRoomDef: Long = -1
 
     //TODO: менять у нынешнего пользователя availableRooms после подключения к комнате
     //TODO: перенести метод с обновлением пароля пользователя в settingsFragment
@@ -149,8 +149,10 @@ class RoomsFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         chosenDate = dbHelper.getChosenDate()
+        idRoomDef = dbHelper.getRoomId()
         binding.dataPickerButton.text = chosenDate
         changeScrollView()
+        getRoomFromAPI(Room(idRoomDef,"",""),true)
     }
 
     private fun createRoomForAPI(newRoom: Room) {
@@ -192,20 +194,38 @@ class RoomsFragment : Fragment() {
         })
     }
 
-    private fun getRoomFromAPI(gettingRoom: Room) {
+    private fun getRoomFromAPI(gettingRoom: Room, isForText: Boolean) {
         roomManger.getRoom(gettingRoom.idRoom, object : GetRoomCallback {
+            @SuppressLint("SetTextI18n")
             override fun onSuccess(gotRoom: Room) {
-                if (gettingRoom.password == gotRoom.password) {
-                    //TODO: тут все норм, добавить на панель
-                    Toast.makeText(requireContext(), "Комнату нашел!", Toast.LENGTH_LONG).show()
+                if (isForText) {
+                    binding.roomNameTextView.text = gotRoom.name
+                    binding.addButton.visibility = View.VISIBLE
+                    binding.dataPickerButton.visibility = View.VISIBLE
                 } else {
-                    Toast.makeText(requireContext(), "Ошибка! Данные не верны!", Toast.LENGTH_LONG)
-                        .show()
+                    if (gettingRoom.password == gotRoom.password) {
+                        //TODO: тут все норм, добавить на панель
+                        Toast.makeText(requireContext(), "Комнату нашел!", Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(
+                            requireContext(),
+                            "Ошибка! Данные не верны!",
+                            Toast.LENGTH_LONG
+                        )
+                            .show()
+                    }
                 }
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                if (!isForText) {
+                    Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                }else{
+                    binding.addButton.visibility = View.INVISIBLE
+                    binding.dataPickerButton.visibility = View.INVISIBLE
+                    binding.roomNameTextView.text = "У вас еще нет ни одной комнаты. Попробуйте ее создать или найти"
+
+                }
             }
         })
     }
@@ -351,10 +371,6 @@ class RoomsFragment : Fragment() {
 
 
 
-
-
-
-
     private fun createNewText(item: Int) {
         binding.saveEventButton.setOnClickListener {
             addNewEventIntoScrollView()
@@ -362,17 +378,20 @@ class RoomsFragment : Fragment() {
         binding.saveTaskButton.setOnClickListener {
             addNewTaskIntoScrollView()
         }
-        if (item == 0) {
-            //Делаем задачу
-            clearEventPanel()
-            countOfPoint = 1
-            binding.createTaskPanel.visibility = View.VISIBLE
-            binding.addButton.isEnabled = false
-        } else {
-            //Делаем событие
-            clearTaskPanel()
-            binding.createEventPanel.visibility = View.VISIBLE
-            binding.addButton.isEnabled = false
+        when (item) {
+            0 -> {
+                //Делаем задачу
+                clearEventPanel()
+                countOfPoint = 1
+                binding.createTaskPanel.visibility = View.VISIBLE
+                binding.addButton.isEnabled = false
+            }
+            1 -> {
+                //Делаем событие
+                clearTaskPanel()
+                binding.createEventPanel.visibility = View.VISIBLE
+                binding.addButton.isEnabled = false
+            }
         }
     }
 
@@ -498,7 +517,7 @@ class RoomsFragment : Fragment() {
     }
 
     private fun repairTask(task: Task,points:List<String>, checkBoxes : List<Boolean>) {
-        var tempPoints: List<String> = ArrayList()
+        val tempPoints: MutableList<String> = ArrayList<String>().toMutableList()
         var i = 0
         while (i < points.count() - 2) {
             tempPoints += points[i]
@@ -1123,7 +1142,7 @@ class RoomsFragment : Fragment() {
     }
 
     private fun showDialog() {
-        val langArray: Array<String> = arrayOf("Задача", "Событие")
+        val langArray: Array<String> = arrayOf("Задача", "Событие", "Комната")
         var selectedEvent = 0 // Инициализируем в 0, который является первым элементом
         val builder: androidx.appcompat.app.AlertDialog.Builder =
             androidx.appcompat.app.AlertDialog.Builder(requireContext())
