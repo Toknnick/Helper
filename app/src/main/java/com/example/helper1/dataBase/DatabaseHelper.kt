@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.util.Log
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -81,7 +82,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null,
     fun getChosenDate(): String {
         var db = readableDatabase
         val cursor = db.query("chosenDate", null, null, null, null, null, null)
-        var chosenDate = ""
+        val chosenDate: String
 
         if (cursor.moveToFirst()) {
             chosenDate = cursor.getString(1)
@@ -95,6 +96,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null,
 
         cursor.close()
         db.close()
+        Log.d("MyTag",chosenDate)
         return chosenDate
     }
 

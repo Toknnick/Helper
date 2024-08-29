@@ -81,7 +81,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
-            android:layout_toRightOf="@id/backUserButton"
             android:background="@color/edit_text"
             android:ems="10"
             android:hint="Логин"
@@ -98,7 +97,6 @@
             android:background="@color/edit_text"
             android:ems="10"
             android:hint="Пароль"
-            android:inputType="textPassword"
             android:padding="10dp"
             android:textColor="@color/text_color_button" />
 
@@ -110,7 +108,19 @@
             android:layout_margin="10dp"
             android:backgroundTint="@color/bottom_nav_bg"
             android:padding="10dp"
-            android:text="Готово"
+            android:text="Зарегистрироваться"
+            android:textColor="@color/text_color_button"
+            android:textSize="15sp" />
+        <Button
+            android:id="@+id/loginUserButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/saveUserButton"
+            android:layout_below="@id/passwordUser"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/bottom_nav_bg"
+            android:padding="10dp"
+            android:text="Авторизоваться"
             android:textColor="@color/text_color_button"
             android:textSize="15sp" />
     </RelativeLayout>

@@ -3,7 +3,7 @@ package com.example.helper1.dataBase.managers
 import com.example.helper1.dataBase.ApiClient
 import com.example.helper1.dataBase.CreateMessageCallback
 import com.example.helper1.dataBase.CreateUserCallback
-import com.example.helper1.dataBase.IsExistUserCallback
+import com.example.helper1.dataBase.GetUserCallback
 import com.example.helper1.dataBase.User
 import retrofit2.Call
 import retrofit2.Callback
@@ -51,10 +51,12 @@ class UserManager(private val apiClient: ApiClient) {
         })
     }
 
-    fun getUser(login:String, callback: IsExistUserCallback){
+    fun getUser(login:String, callback: GetUserCallback){
         apiClient.getUserByLogin(login, object : Callback<User> {
             override fun onResponse(call: Call<User>, response: Response<User>) {
-                callback.onSuccess(true)
+                val user = response.body()
+                if(user != null)
+                    callback.onSuccess(user)
             }
 
             override fun onFailure(call: Call<User>, t: Throwable) {

@@ -84,7 +84,6 @@ class RoomsFragment : Fragment() {
     private var idRoomDef: Long = 1
 
     //TODO: менять у нынешнего пользователя availableRooms после подключения к комнате
-    //TODO: перенести метод с добавлением пользователя в homeFragment
     //TODO: перенести метод с обновлением пароля пользователя в settingsFragment
 
 
@@ -92,8 +91,6 @@ class RoomsFragment : Fragment() {
         super.onCreate(savedInstanceState)
         dbHelper = DBHelper(requireContext())
         //requireContext().deleteDatabase(dbHelper.databaseName)
-        val t = dbHelper.getChosenDate()
-        dbHelper.updateChosenDate(LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
     }
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -155,6 +152,7 @@ class RoomsFragment : Fragment() {
         binding.dataPickerButton.text = chosenDate
         changeScrollView()
     }
+
     private fun createRoomForAPI(newRoom: Room) {
         roomManger.getAllRooms(object : GetAllRoomsCallback {
             override fun onSuccess(rooms: List<Room>) {

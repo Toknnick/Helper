@@ -47,6 +47,11 @@ interface IsExistUserCallback {
     fun onFailure(isExist: Boolean)
 }
 
+interface GetUserCallback {
+    fun onSuccess(user: User)
+    fun onFailure(isExist: Boolean)
+}
+
 interface CreateUserCallback {
     fun onSuccess(message: String)
     fun onFailure(message: String)

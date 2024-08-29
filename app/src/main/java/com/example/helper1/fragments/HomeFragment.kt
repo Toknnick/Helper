@@ -34,7 +34,7 @@ import com.example.helper1.dataBase.GetAllEventsCallback
 import com.example.helper1.dataBase.GetAllRoomsCallback
 import com.example.helper1.dataBase.GetAllTaskCallback
 import com.example.helper1.dataBase.GetRoomCallback
-import com.example.helper1.dataBase.IsExistUserCallback
+import com.example.helper1.dataBase.GetUserCallback
 import com.example.helper1.dataBase.Room
 import com.example.helper1.dataBase.Task
 import com.example.helper1.dataBase.User
@@ -45,7 +45,6 @@ import com.example.helper1.dataBase.managers.UserManager
 import com.example.helper1.databinding.FragmentHomeBinding
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -101,7 +100,6 @@ class HomeFragment : Fragment(){
 
         dbHelper = DBHelper(requireContext())
         //requireContext().deleteDatabase(dbHelper.databaseName)
-        val t = dbHelper.getChosenDate()
         val user = dbHelper.getUser()
         if(user == null){
             binding.createUserPanel.visibility = View.VISIBLE
@@ -111,7 +109,6 @@ class HomeFragment : Fragment(){
         }else{
             idRoomDef = user.ownRoom
         }
-        dbHelper.updateChosenDate(LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
 
         mainActivity = (activity as MainActivity)
         addParamsToButtons(binding.point0)
@@ -155,6 +152,10 @@ class HomeFragment : Fragment(){
         binding.timeTask.setOnClickListener {
             timePickerDialog.show()
         }
+
+        binding.loginUserButton.setOnClickListener{
+            loginUserForAPI()
+        }
     }
 
     override fun onResume() {
@@ -164,6 +165,31 @@ class HomeFragment : Fragment(){
         changeScrollView()
     }
 
+    private fun loginUserForAPI(){
+        val loggingUser = User(
+            binding.loginUser.text.toString().trim(),
+            binding.passwordUser.text.toString().trim(),
+            0,
+            ""
+        )
+        userManager.getUser(binding.loginUser.text.toString().trim(),object : GetUserCallback {
+            override fun onSuccess(gotUser: User) {
+                if(loggingUser.password == gotUser.password){
+                    dbHelper.createUser(loggingUser)
+                    binding.createUserPanel.visibility = View.GONE
+                    Toast.makeText(requireContext(),"Успешно!", Toast.LENGTH_LONG).show()
+                }
+                else{
+                    Toast.makeText(requireContext(),"Неверный пароль!", Toast.LENGTH_LONG).show()
+
+                }
+            }
+
+            override fun onFailure(isExist: Boolean) {
+                Toast.makeText(requireContext(),"Ошибка! Пользователь не найден", Toast.LENGTH_LONG).show()
+            }
+        })
+    }
 
     private fun createUserForAPI() {
         val newRoom = Room(
@@ -171,8 +197,8 @@ class HomeFragment : Fragment(){
             binding.loginUser.text.toString().trim(),
             binding.passwordUser.text.toString().trim()
         )
-        userManager.getUser(binding.loginUser.text.toString().trim(),object : IsExistUserCallback {
-            override fun onSuccess(isExist: Boolean) {
+        userManager.getUser(binding.loginUser.text.toString().trim(), object : GetUserCallback {
+            override fun onSuccess(user: User) {
                 //Проверка на уникальность логина
                 Toast.makeText(requireContext(),"Ошибка! Такой логин уже существует!", Toast.LENGTH_LONG).show()
             }

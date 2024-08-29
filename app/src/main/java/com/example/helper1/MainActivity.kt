@@ -6,7 +6,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentManager
 import androidx.navigation.findNavController
 import androidx.navigation.ui.setupWithNavController
+import com.example.helper1.dataBase.DBHelper
 import com.example.helper1.databinding.ActivityMainBinding
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -22,13 +25,11 @@ class MainActivity : AppCompatActivity() {
         val bottomNavigationView = binding.bottomNavigationView
         bottomNavigationView.setupWithNavController(navController)
         fm = supportFragmentManager
+    }
 
-        /*navController.addOnDestinationChangedListener { controller, destination, bundle ->
-            when(destination.id) {
-                R.id.roomsFragment -> {}
-                R.id.homeFragment -> {}
-                R.id.settingsFragment -> {}
-            }
-        }*/
+    override fun onStop() {
+        super.onStop()
+        val dbHelper = DBHelper(applicationContext)
+        dbHelper.updateChosenDate(LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
     }
 }
