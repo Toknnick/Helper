@@ -1,18 +1,77 @@
 package com.example.helper1.fragments
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import android.content.res.Resources
+import android.graphics.Color
+import android.graphics.Paint
+import android.os.Bundle
+import android.util.Log
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.CheckBox
+import android.widget.EditText
+import android.widget.RelativeLayout
+import android.widget.TextView
+import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import com.example.helper1.MainActivity
+import com.example.helper1.R
+import com.example.helper1.dataBase.ApiClient
+import com.example.helper1.dataBase.CreateMessageCallback
+import com.example.helper1.dataBase.CreateRoomCallback
+import com.example.helper1.dataBase.CreateUserCallback
+import com.example.helper1.dataBase.DBHelper
+import com.example.helper1.dataBase.Event
+import com.example.helper1.dataBase.GetAllEventsCallback
+import com.example.helper1.dataBase.GetAllRoomsCallback
+import com.example.helper1.dataBase.GetAllTaskCallback
+import com.example.helper1.dataBase.GetRoomCallback
+import com.example.helper1.dataBase.IsExistUserCallback
+import com.example.helper1.dataBase.Room
+import com.example.helper1.dataBase.Task
+import com.example.helper1.dataBase.User
+import com.example.helper1.dataBase.managers.EventManager
+import com.example.helper1.dataBase.managers.RoomManager
+import com.example.helper1.dataBase.managers.TaskManager
+import com.example.helper1.dataBase.managers.UserManager
+import com.example.helper1.databinding.FragmentHomeBinding
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.Calendar
 
 @SuppressLint("SetTextI18n","ClickableViewAccessibility")
 @Suppress("DEPRECATION", "NAME_SHADOWING")
 class HomeFragment : Fragment(){
-    /*private lateinit var binding: FragmentHomeBinding
+    private val retrofit = Retrofit.Builder()
+        .baseUrl("https://api-helper-toknnick.amvera.io/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+
+    private lateinit var binding: FragmentHomeBinding
+    private lateinit var userManager: UserManager
+    private lateinit var roomManger: RoomManager
+    private lateinit var eventManager: EventManager
+    private lateinit var taskManager: TaskManager
     private lateinit var mainActivity: MainActivity
     private lateinit var datePickerDialog: DatePickerDialog
     private lateinit var datePickerDialogForObject: DatePickerDialog
     private lateinit var timePickerDialog: TimePickerDialog
     private lateinit var deleteButton: Button
     private lateinit var editButton: Button
+
     private var chosenDate: String = ""
     private var events: List<Event> = ArrayList()
     private var tasks: List<Task> = ArrayList()
@@ -25,14 +84,9 @@ class HomeFragment : Fragment(){
     private val TEXT_VIEW_NOTHING_TO_DO_ID = 11111111
 
     private lateinit var dbHelper: DBHelper
+    private var idRoomDef: Long = 1
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        dbHelper = DBHelper(requireContext())
-        requireContext().deleteDatabase(dbHelper.databaseName)
-        val t = dbHelper.getChosenDate()
-        dbHelper.updateChosenDate(LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
-    }
+    //TODO: перенести метод с обновлением пароля пользователя в settingsFragment
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -44,8 +98,28 @@ class HomeFragment : Fragment(){
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        dbHelper = DBHelper(requireContext())
+        //requireContext().deleteDatabase(dbHelper.databaseName)
+        val t = dbHelper.getChosenDate()
+        val user = dbHelper.getUser()
+        if(user == null){
+            binding.createUserPanel.visibility = View.VISIBLE
+            binding.saveUserButton.setOnClickListener{
+                createUserForAPI()
+            }
+        }else{
+            idRoomDef = user.ownRoom
+        }
+        dbHelper.updateChosenDate(LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
+
         mainActivity = (activity as MainActivity)
         addParamsToButtons(binding.point0)
+        val apiClient = ApiClient(retrofit)
+        userManager = UserManager(apiClient)
+        roomManger = RoomManager(apiClient)
+        eventManager = EventManager(apiClient)
+        taskManager = TaskManager(apiClient)
         initDatePicker()
         initTimePicker()
 
@@ -63,20 +137,22 @@ class HomeFragment : Fragment(){
         }
         binding.backTaskButton.setOnClickListener {
             hideTaskPanel()
+            clearTaskPanel()
         }
         binding.backEventButton.setOnClickListener {
             hideEventPanel()
+            clearEventPanel()
         }
-        binding.dateInput.setOnClickListener {
+        binding.dateEvent.setOnClickListener {
             datePickerDialogForObject.show()
         }
-        binding.dateTaskInput.setOnClickListener {
+        binding.dateTask.setOnClickListener {
             datePickerDialogForObject.show()
         }
-        binding.timeInput.setOnClickListener {
+        binding.timeEvent.setOnClickListener {
             timePickerDialog.show()
         }
-        binding.timeTaskInout.setOnClickListener {
+        binding.timeTask.setOnClickListener {
             timePickerDialog.show()
         }
     }
@@ -88,11 +164,275 @@ class HomeFragment : Fragment(){
         changeScrollView()
     }
 
+
+    private fun createUserForAPI() {
+        val newRoom = Room(
+            0,
+            binding.loginUser.text.toString().trim(),
+            binding.passwordUser.text.toString().trim()
+        )
+        userManager.getUser(binding.loginUser.text.toString().trim(),object : IsExistUserCallback {
+            override fun onSuccess(isExist: Boolean) {
+                //Проверка на уникальность логина
+                Toast.makeText(requireContext(),"Ошибка! Такой логин уже существует!", Toast.LENGTH_LONG).show()
+            }
+
+            override fun onFailure(isExist: Boolean) {
+                //Создаем личную комнату под юзера
+                createRoomForAPI(newRoom, true)
+            }
+        })
+    }
+
+    private fun createUser(idRoom: Long) {
+        val newUser = User(
+            binding.loginUser.text.toString().trim(),
+            binding.passwordUser.text.toString().trim(),
+            idRoom,
+            ""
+        )
+        userManager.createUser(newUser, object : CreateUserCallback {
+            override fun onSuccess(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onUserCreated(user: User) {
+                //TODO: передается куда-то пользователь
+                dbHelper.createUser(user)
+                binding.createUserPanel.visibility = View.GONE
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    private fun updateUserPasswordForAPI(newUser: User) {
+        userManager.updateUser(newUser, object : CreateMessageCallback {
+            override fun onSuccess(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        }, false)
+    }
+
+
+    private fun createRoomForAPI(newRoom: Room, isNewUser: Boolean) {
+        roomManger.getAllRooms(object : GetAllRoomsCallback {
+            override fun onSuccess(rooms: List<Room>) {
+                val idRoom = (rooms.count() + 1).toLong()
+                newRoom.idRoom = idRoom
+                roomManger.createRoom(newRoom, object : CreateRoomCallback {
+                    override fun onSuccess(message: String) {
+                        if (!isNewUser)
+                            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                    }
+
+                    override fun onFailure(message: String) {
+                        if (!isNewUser)
+                            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                    }
+
+                    override fun onRoomCreated(idRoom: Long) {
+                        idRoomDef = idRoom
+                        Log.d("MyTag", "Комната создана с id $idRoom")
+                        if (isNewUser) {
+                            createUser(idRoomDef)
+                        }
+                    }
+                })
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    private fun updateRoomPasswordForAPI(newRoom: Room) {
+        roomManger.updateRoom(newRoom, object : CreateMessageCallback {
+            override fun onSuccess(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    private fun getRoomFromAPI(gettingRoom: Room) {
+        roomManger.getRoom(gettingRoom.idRoom, object : GetRoomCallback {
+            override fun onSuccess(gotRoom: Room) {
+                if (gettingRoom.password == gotRoom.password) {
+                    //TODO: тут все норм, добавить на панель
+                    Toast.makeText(requireContext(), "Комнату нашел!", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(requireContext(), "Ошибка! Данные не верны!", Toast.LENGTH_LONG)
+                        .show()
+                }
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+
+    private fun createEventForAPI(newEvent: Event) {
+        eventManager.getAllEvents(idRoomDef, object : GetAllEventsCallback {
+            override fun onSuccess(events: List<Event>) {
+                newEvent.idEvent = (events.count()+1).toLong()
+                eventManager.createEvent(newEvent, object : CreateMessageCallback {
+                    override fun onSuccess(message: String) {
+                        createAllEventsAndTasks()
+                    }
+
+                    override fun onFailure(message: String) {
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                    }
+                })
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    private fun getEventsByDateForAPI(){
+        events = mutableListOf()
+        eventManager.getAllEvents(idRoomDef, object : GetAllEventsCallback {
+            override fun onSuccess(tempEvents: List<Event>) {
+                for (event in tempEvents) {
+                    if(event.date == chosenDate){
+                        events += event
+                    }
+                }
+                events.sortedBy { it.time }
+                createAllEventsAndTasks()
+
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    private fun updateEventForAPI(previousEvent: Event, updatingEvent: Event){
+        eventManager.updateEvent(previousEvent, updatingEvent, object : CreateMessageCallback {
+            override fun onSuccess(message: String) {
+                changeScrollView()
+                checkToNothingToDo()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+
+    }
+
+    private fun deleteEventForAPI(deletingEvent: Event){
+        eventManager.deleteEvent(deletingEvent,object : CreateMessageCallback {
+            override fun onSuccess(message: String) {
+                changeScrollView()
+                checkToNothingToDo()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+
+    private fun createTaskForAPI(newTask: Task) {
+        taskManager.getAllTasks(idRoomDef, object : GetAllTaskCallback {
+            override fun onSuccess(tasks: List<Task>) {
+                newTask.idTask = (tasks.count()+1).toLong()
+                taskManager.createTask(newTask, object : CreateMessageCallback {
+                    override fun onSuccess(message: String) {
+                        createAllEventsAndTasks()
+                    }
+
+                    override fun onFailure(message: String) {
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                    }
+                })
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    private fun getTasksByDateForAPI(){
+        tasks = mutableListOf()
+        taskManager.getAllTasks(idRoomDef, object : GetAllTaskCallback {
+            override fun onSuccess(tempTasks: List<Task>) {
+                for (task in tempTasks) {
+                    if(task.date == chosenDate){
+                        tasks += task
+                    }
+                }
+                tasks.sortedBy { it.time }
+
+                createAllEventsAndTasks()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    private fun updateTaskForAPI(previousTask: Task, updatingTask: Task){
+        taskManager.updateTask(previousTask, updatingTask, object : CreateMessageCallback {
+            override fun onSuccess(message: String) {
+                getTasksByDateForAPI()
+                checkToNothingToDo()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    private fun deleteTaskForAPI(deletingTask: Task){
+        taskManager.deleteTask(deletingTask,object : CreateMessageCallback {
+            override fun onSuccess(message: String) {
+                changeScrollView()
+                checkToNothingToDo()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+
+
+
+
+
+
     private fun createNewText(item: Int) {
-        binding.saveButton.setOnClickListener {
+        binding.saveEventButton.setOnClickListener {
             addNewEventIntoScrollView()
         }
-        binding.saveTask.setOnClickListener {
+        binding.saveTaskButton.setOnClickListener {
             addNewTaskIntoScrollView()
         }
         if (item == 0) {
@@ -110,36 +450,37 @@ class HomeFragment : Fragment(){
     }
 
     private fun addNewEventIntoScrollView() {
-        if (binding.eventInput.text.toString().trim().isEmpty()) {
+        if (binding.eventEvent.text.toString().trim().isEmpty()) {
             createError("Ошибка! Нет описания!")
             return
         }
 
         //Сохраняем в БД
         val event = Event(
-            stringToDate(binding.dateInput.text.toString()),
-            stringToTime(binding.timeInput.text.toString()),
-            binding.placeInput.text.toString(),
-            binding.eventInput.text.toString()
+            0,
+            idRoomDef,
+            stringToDate(binding.dateEvent.text.toString()),
+            stringToTime(binding.timeEvent.text.toString()),
+            binding.placeEvent.text.toString(),
+            binding.eventEvent.text.toString()
         )
 
-        createError("Созданно на " + event.data)
+        createError("Созданно на " + event.date)
 
-        if (chosenDate == event.data) {
+        if (chosenDate == event.date) {
             events += event
-            createAllEventsAndTasks()
         }
 
         hideEventPanel()
         clearEventPanel()
-        dbHelper.insertEvent(event)
+        createEventForAPI(event)
     }
 
     private fun addNewTaskIntoScrollView() {
         //Добавляем пункты
         var points: List<String> = ArrayList()
         var checkBoxes: List<Boolean> = ArrayList()
-        if(binding.point0.text.trim().toString().isNotEmpty()){
+        if(binding.point0.text.trim().toString().isNotEmpty() && binding.point0.text.trim().toString()!=""){
             points += binding.point0.text.toString()
             checkBoxes += false
         }
@@ -152,33 +493,37 @@ class HomeFragment : Fragment(){
                 points += binding.pointsPlace.findViewById<EditText>(j + TASK_ID).text.toString()
                     .trim()
                 checkBoxes += false
+                points += binding.pointsPlace.findViewById<EditText>(j + TASK_ID).text.toString()
+                    .trim()
+                checkBoxes += false
             }
             j += 1
         }
 
-        if (binding.timeInput.text.toString().trim().isEmpty()) {
-            binding.timeInput.setText(
+        if (binding.timeTask.text.toString().trim().isEmpty()) {
+            binding.timeTask.setText(
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
             )
         }
 
         if(points.isNotEmpty()) {
             //Сохраняем в БД
-            val task = Task(
-                stringToDate(binding.dateTaskInput.text.toString()),
-                stringToTime(binding.timeTaskInout.text.toString()),
-                binding.nameTaskInput.text.toString(),
-                points,
-                checkBoxes
+            val newTask = Task(
+                0,
+                idRoomDef,
+                stringToDate(binding.dateTask.text.toString().trim()),
+                binding.timeTask.text.toString().trim(),
+                binding.nameTask.text.toString().trim(),
+                points.joinToString("|"),
+                checkBoxes.map { it.toString() }.joinToString("|")
             )
 
-            if (chosenDate == task.data) {
-                tasks += task
-                createAllEventsAndTasks()
+            if (chosenDate == newTask.date) {
+                tasks += newTask
             }
 
-            createError("Созданно на " + task.data)
-            dbHelper.insertTask(task)
+            createError("Созданно на " + newTask.date)
+            createTaskForAPI(newTask)
         }
         else{
             createError("Задача не создана. Она была пуста")
@@ -198,7 +543,7 @@ class HomeFragment : Fragment(){
         val nameTextView: TextView
 
         if (task.name.isEmpty())
-            nameTextView = createText("Нет названия", true)
+            nameTextView = createText("Без названия", true)
         else
             nameTextView = createText(task.name, true)
         layout.addView(nameTextView)
@@ -206,14 +551,17 @@ class HomeFragment : Fragment(){
         nameTextView.textSize = textSize + 1
         nameTextView.gravity = Gravity.CENTER
 
-        if (task.points.size > task.checkBoxes.size) {
-            repairTask(task)
+        val points: List<String> = task.points.splitToSequence("|").toList()
+        val checkBoxes: List<Boolean> = task.checkBoxes.split("|").map { it.toBoolean() }
+
+        if (points.count() > points.count()) {
+            repairTask(task, points, checkBoxes)
         }
 
         var j = 0
-        while (task.points.size > j) {
-            val textView = createText(task.points[j])
-            addParamsToNewPoint(textView, layout, j, task.checkBoxes[j])
+        while (points.count() > j) {
+            val textView = createText(points[j])
+            addParamsToNewPoint(textView, layout, j, checkBoxes[j])
             j += 1
         }
 
@@ -222,17 +570,17 @@ class HomeFragment : Fragment(){
         setupLongClickListeners(layout, tasks.indexOf(task))
     }
 
-    private fun repairTask(task: Task) {
-        var newPoints: List<String> = ArrayList()
+    private fun repairTask(task: Task, points:List<String>, checkBoxes : List<Boolean>) {
+        var tempPoints: List<String> = ArrayList()
         var i = 0
-        while (i < task.points.size - 2) {
-            newPoints += task.points[i]
+        while (i < points.count() - 2) {
+            tempPoints += points[i]
             i += 1
         }
-        newPoints += (task.points[task.points.size - 2] + task.points[task.points.size - 1])
-        dbHelper.deleteTask(task)
-        task.points = newPoints
-        dbHelper.insertTask(task)
+        tempPoints += (points[points.count() - 2] + points[points.count() - 1])
+        deleteTaskForAPI(task)
+        task.points = tempPoints.joinToString("|")
+        createTaskForAPI(task)
     }
 
     private fun createNewEvent(i: Int) {
@@ -373,7 +721,7 @@ class HomeFragment : Fragment(){
     }
 
     @SuppressLint("ResourceAsColor")
-    private fun addParamsToEditText(editText: EditText,text: String = "") {
+    private fun addParamsToEditText(editText: EditText, text: String = "") {
         val params = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.MATCH_PARENT,
             RelativeLayout.LayoutParams.WRAP_CONTENT
@@ -474,7 +822,7 @@ class HomeFragment : Fragment(){
 
         btn1Params.addRule(RelativeLayout.ALIGN_START, editText.id)
         btn1Params.addRule(RelativeLayout.BELOW, editText.id)
-        binding.saveTask.setLayoutParams(btn1Params)
+        binding.saveTaskButton.setLayoutParams(btn1Params)
 
         btn2Params.addRule(RelativeLayout.ALIGN_END, editText.id)
         btn2Params.addRule(RelativeLayout.BELOW, editText.id)
@@ -487,7 +835,7 @@ class HomeFragment : Fragment(){
 
     @SuppressLint("SetTextI18n")
     private fun changeBackgroundOfPoint(textView: TextView, checkBox: CheckBox, i: Int, j: Int) {
-        val newCheckBoxes = tasks[i].checkBoxes.toMutableList()
+        val newCheckBoxes = tasks[i].checkBoxes.split("|").map { it.toBoolean() }.toMutableList()
 
         if (checkBox.isChecked) {
             textView.apply {
@@ -502,22 +850,23 @@ class HomeFragment : Fragment(){
             }
             newCheckBoxes[j] = false
         }
+        val newTask = tasks[i]
+        newTask.checkBoxes = newCheckBoxes.map { it.toString() }.joinToString("|")
 
-        tasks[i].checkBoxes = newCheckBoxes
-        dbHelper.updateTaskCheckBoxes(tasks[i], newCheckBoxes)
+        updateTaskForAPI(tasks[i],newTask)
     }
 
     private fun clearEventPanel() {
-        binding.dateInput.setText("")
-        binding.timeInput.setText("")
-        binding.placeInput.setText("")
-        binding.eventInput.setText("")
+        binding.dateEvent.setText("")
+        binding.timeEvent.setText("")
+        binding.placeEvent.setText("")
+        binding.eventEvent.setText("")
     }
 
     private fun clearTaskPanel() {
-        binding.dateTaskInput.setText("")
-        binding.timeTaskInout.setText("")
-        binding.nameTaskInput.setText("")
+        binding.dateTask.setText("")
+        binding.timeTask.setText("")
+        binding.nameTask.setText("")
         binding.point0.setText("")
         addParamsToButtons(binding.point0)
 
@@ -606,19 +955,17 @@ class HomeFragment : Fragment(){
             deleteButton.visibility = View.VISIBLE
 
             deleteButton.setOnClickListener {
+                editButton.visibility = View.GONE
+                deleteButton.visibility = View.GONE
                 when (view) {
                     is TextView -> {
-                        dbHelper.deleteEvent(events[id])
+                        deleteEventForAPI(events[id])
                     }
 
                     is RelativeLayout -> {
-                        dbHelper.deleteTask(tasks[id])
+                        deleteTaskForAPI(tasks[id])
                     }
                 }
-
-                checkToNothingToDo()
-                changeScrollView()
-                deleteButton.visibility = View.GONE
             }
 
             if (binding.layout.indexOfChild(view) == 0) {
@@ -632,6 +979,8 @@ class HomeFragment : Fragment(){
             editButton.visibility = View.VISIBLE
 
             editButton.setOnClickListener {
+                editButton.visibility = View.GONE
+                deleteButton.visibility = View.GONE
                 when (view) {
                     is TextView -> {
                         editEvent(events[id])
@@ -641,9 +990,6 @@ class HomeFragment : Fragment(){
                         editTask(tasks[id])
                     }
                 }
-                checkToNothingToDo()
-                changeScrollView()
-                editButton.visibility = View.GONE
             }
             true
         }
@@ -655,52 +1001,50 @@ class HomeFragment : Fragment(){
 
     private fun editEvent(event: Event) {
         binding.createEventPanel.visibility = View.VISIBLE
-        binding.dateInput.setText(event.data)
+        binding.dateEvent.setText(event.date)
         if(event.time.length < 7){
-        binding.timeInput.setText(event.time)}
-        binding.placeInput.setText(event.place)
-        binding.eventInput.setText(event.event)
+            binding.timeEvent.setText(event.time)}
+        binding.placeEvent.setText(event.place)
+        binding.eventEvent.setText(event.event)
         binding.addButton.isEnabled = false
-        binding.saveButton.setOnClickListener {
-            if (binding.eventInput.text.toString().trim().isEmpty()) {
-                createError("Ошибка! Нет описания!")
-            } else {
-                dbHelper.deleteEvent(event)
+        binding.saveEventButton.setOnClickListener {
 
-                if(binding.timeInput.text.toString().isEmpty()){
-                    binding.timeInput.setText(event.time)}
-                val newEvent = Event(
-                    stringToDate(binding.dateInput.text.toString()),
-                    stringToTime(binding.timeInput.text.toString()),
-                    binding.placeInput.text.toString(),
-                    binding.eventInput.text.toString()
-                )
-                dbHelper.insertEvent(newEvent)
-                events = dbHelper.getEventsByDate(chosenDate)
-                createAllEventsAndTasks()
-                clearEventPanel()
-                hideEventPanel()
+            if (binding.timeEvent.text.toString().isEmpty()) {
+                binding.timeEvent.setText(event.time)
             }
+            val newEvent = Event(
+                0,
+                idRoomDef,
+                stringToDate(binding.dateEvent.text.toString()),
+                stringToTime(binding.timeEvent.text.toString()),
+                binding.placeEvent.text.toString(),
+                binding.eventEvent.text.toString()
+            )
+            updateEventForAPI(event,newEvent)
+            getEventsByDateForAPI()
+            clearEventPanel()
+            hideEventPanel()
         }
     }
 
     private fun editTask(task: Task) {
         binding.createTaskPanel.visibility = View.VISIBLE
-        binding.dateTaskInput.setText(task.data)
+        binding.dateTask.setText(task.date)
         if(task.time.length < 7){
-        binding.timeTaskInout.setText(task.time)}
-        binding.nameTaskInput.setText(task.name)
-        binding.point0.setText(task.points[0])
+            binding.timeTask.setText(task.time)}
+        binding.nameTask.setText(task.name)
+        val previousPoints: List<String> = task.points.splitToSequence("|").toMutableList()
+        binding.point0.setText(previousPoints[0])
         addParamsToButtons(binding.point0)
 
         var i = 1
-        while (task.points.size > i) {
-            addNewPoint(task.points[i])
+        while (previousPoints.count() > i) {
+            addNewPoint(previousPoints[i])
             i+=1
         }
 
-        binding.saveTask.setOnClickListener {
-            if(task.points.size != 0) {
+        binding.saveTaskButton.setOnClickListener {
+            if(previousPoints.isNotEmpty()) {
                 var points: List<String> = ArrayList()
                 var checkBoxes: List<Boolean> = ArrayList()
                 if(binding.point0.text.trim().toString().isNotEmpty()){
@@ -720,21 +1064,20 @@ class HomeFragment : Fragment(){
                     j += 1
                 }
 
-                if(binding.timeTaskInout.text.toString().isEmpty()){
-                    binding.timeTaskInout.setText(task.time)}
+                if(binding.timeTask.text.toString().isEmpty()){
+                    binding.timeTask.setText(task.time)}
 
                 val newTask = Task(
-                    stringToDate(binding.dateTaskInput.text.toString()),
-                    stringToTime(binding.timeTaskInout.text.toString()),
-                    binding.nameTaskInput.text.toString(),
-                    points,
-                    checkBoxes
+                    0,
+                    idRoomDef,
+                    stringToDate(binding.dateTask.text.toString()),
+                    stringToTime(binding.timeTask.text.toString()),
+                    binding.nameTask.text.toString(),
+                    points.joinToString("|"),
+                    checkBoxes.map { it.toString() }.joinToString("|")
                 )
-
-                dbHelper.deleteTask(task)
-                dbHelper.insertTask(newTask)
-                tasks = dbHelper.getTasksByDate(chosenDate)
-                createAllEventsAndTasks()
+                updateTaskForAPI(task,newTask)
+                getTasksByDateForAPI()
             }else{
                 createError("Ошибка! Задача была пуста")
             }
@@ -781,13 +1124,11 @@ class HomeFragment : Fragment(){
     }
 
     private fun changeScrollView() {
-        events = dbHelper.getEventsByDate(chosenDate).sortedBy { it.time }
-        tasks = dbHelper.getTasksByDate(chosenDate).sortedBy { it.time }
-        createAllEventsAndTasks()
+        getEventsByDateForAPI()
+        getTasksByDateForAPI()
     }
 
     private fun initDatePicker() {
-
         val dateSetListener = dateListener(true)
         val dateSetListenerForObject = dateListener(false)
         val cal: Calendar = Calendar.getInstance()
@@ -804,8 +1145,8 @@ class HomeFragment : Fragment(){
 
     }
 
-    private fun dateListener(isMainDatePicker: Boolean = false): OnDateSetListener {
-        val dateSetListener = OnDateSetListener { _, year, month, day ->
+    private fun dateListener(isMainDatePicker: Boolean = false): DatePickerDialog.OnDateSetListener {
+        val dateSetListener = DatePickerDialog.OnDateSetListener { _, year, month, day ->
             val date: String
             var month = month
             month += 1
@@ -821,8 +1162,8 @@ class HomeFragment : Fragment(){
                 dbHelper.updateChosenDate(chosenDate)
                 changeScrollView()
             } else {
-                binding.dateInput.setText(date)
-                binding.dateTaskInput.setText(date)
+                binding.dateEvent.setText(date)
+                binding.dateTask.setText(date)
             }
         }
         return dateSetListener
@@ -840,8 +1181,8 @@ class HomeFragment : Fragment(){
             else
                 time = "0$hour:0$minute"
 
-            binding.timeInput.setText(time)
-            binding.timeTaskInout.setText(time)
+            binding.timeEvent.setText(time)
+            binding.timeTask.setText(time)
         }
 
         val cal: Calendar = Calendar.getInstance()
@@ -861,10 +1202,9 @@ class HomeFragment : Fragment(){
             androidx.appcompat.app.AlertDialog.Builder(requireContext())
         builder.setTitle("Выберите тип")
         builder.setCancelable(false)
-        val temp = if (dbHelper.getEvents().size > dbHelper.getTasks().size) 1 else 0
 
         builder.setSingleChoiceItems(
-            langArray, temp
+            langArray, 0
         ) { _, i ->
             selectedEvent = i
         }
@@ -882,5 +1222,5 @@ class HomeFragment : Fragment(){
         }
 
         builder.show()
-    }*/
+    }
 }

@@ -12,15 +12,43 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null,
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("CREATE TABLE chosenDate (_id INTEGER PRIMARY KEY, chosen_date TEXT DEFAULT '')")
         db.execSQL("CREATE TABLE roomId (_id INTEGER PRIMARY KEY, room_id TEXT DEFAULT '')")
+        db.execSQL("CREATE TABLE user (login TEXT DEFAULT '', password TEXT DEFAULT '', own_room INTEGER DEFAULT 0, available_rooms TEXT DEFAULT '')")
     }
 
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         db.execSQL("DROP TABLE IF EXISTS chosenDate")
         db.execSQL("DROP TABLE IF EXISTS roomId")
+        db.execSQL("DROP TABLE IF EXISTS user")
         onCreate(db)
     }
 
+    fun createUser(user: User) {
+        val db = writableDatabase
+        val query = "INSERT INTO user (login, password, own_room, available_rooms) VALUES (?, ?, ?, ?)"
+        db.execSQL(query, arrayOf(user.login, user.password, user.ownRoom, user.availableRooms))
+    }
+
+    fun getUser(): User? {
+        var db = readableDatabase
+        val query = "SELECT * FROM user"
+        val cursor = db.rawQuery(query, null)
+        if (cursor.moveToFirst()) {
+            val login = cursor.getString(0)
+            val password = cursor.getString(1)
+            val ownRoom = cursor.getLong(2)
+            val availableRooms = cursor.getString(3)
+            return User(login, password, ownRoom, availableRooms)
+        }
+        return null
+    }
+
+    fun updateUser(user: User) {
+        val db = writableDatabase
+        val query = "UPDATE user SET login = ?, password = ?, own_room = ?, available_rooms = ?"
+        db.execSQL(query, arrayOf(user.login, user.password, user.ownRoom, user.availableRooms))
+        db.close()
+    }
 
     fun addRoomId(roomId :Int){
         val db = writableDatabase

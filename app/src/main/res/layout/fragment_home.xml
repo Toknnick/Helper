@@ -65,6 +65,55 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/addButton"
         app:layout_constraintVertical_bias="0.0"/>
+    <RelativeLayout
+        android:id="@+id/createUserPanel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@color/panel_background"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <EditText
+            android:id="@+id/loginUser"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_toRightOf="@id/backUserButton"
+            android:background="@color/edit_text"
+            android:ems="10"
+            android:hint="Логин"
+            android:inputType="text"
+            android:padding="10dp"
+            android:textColor="@color/text_color_button" />
+
+        <EditText
+            android:id="@+id/passwordUser"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/loginUser"
+            android:layout_margin="10dp"
+            android:background="@color/edit_text"
+            android:ems="10"
+            android:hint="Пароль"
+            android:inputType="textPassword"
+            android:padding="10dp"
+            android:textColor="@color/text_color_button" />
+
+        <Button
+            android:id="@+id/saveUserButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/passwordUser"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/bottom_nav_bg"
+            android:padding="10dp"
+            android:text="Готово"
+            android:textColor="@color/text_color_button"
+            android:textSize="15sp" />
+    </RelativeLayout>
 
     <RelativeLayout
         android:id="@+id/createTaskPanel"
@@ -90,7 +139,7 @@
             android:textSize="15sp" />
 
         <EditText
-            android:id="@+id/dateTaskInput"
+            android:id="@+id/dateTask"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
@@ -105,10 +154,10 @@
             android:textColor="@color/text_color_button" />
 
         <EditText
-            android:id="@+id/timeTaskInout"
+            android:id="@+id/timeTask"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/dateTaskInput"
+            android:layout_below="@+id/dateTask"
             android:layout_margin="10dp"
             android:background="@color/edit_text"
             android:editable="false"
@@ -119,10 +168,10 @@
             android:textColor="@color/text_color_button" />
 
         <EditText
-            android:id="@+id/nameTaskInput"
+            android:id="@+id/nameTask"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/timeTaskInout"
+            android:layout_below="@+id/timeTask"
             android:layout_margin="10dp"
             android:background="@color/edit_text"
             android:hint="Название"
@@ -132,7 +181,7 @@
         <ScrollView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/nameTaskInput">
+            android:layout_below="@id/nameTask">
 
             <RelativeLayout
                 android:id="@+id/pointsPlace"
@@ -178,7 +227,7 @@
                     android:textSize="14sp" />
 
                 <Button
-                    android:id="@+id/saveTask"
+                    android:id="@+id/saveTaskButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_below="@id/point0"
@@ -218,7 +267,7 @@
             android:textSize="15sp" />
 
         <EditText
-            android:id="@+id/dateInput"
+            android:id="@+id/dateEvent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
@@ -233,10 +282,10 @@
             android:textColor="@color/text_color_button" />
 
         <EditText
-            android:id="@+id/timeInput"
+            android:id="@+id/timeEvent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/dateInput"
+            android:layout_below="@id/dateEvent"
             android:layout_margin="10dp"
             android:background="@color/edit_text"
             android:editable="false"
@@ -247,10 +296,10 @@
             android:textColor="@color/text_color_button" />
 
         <EditText
-            android:id="@+id/placeInput"
+            android:id="@+id/placeEvent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/timeInput"
+            android:layout_below="@id/timeEvent"
             android:layout_margin="10dp"
             android:background="@color/edit_text"
             android:hint="Место"
@@ -258,10 +307,10 @@
             android:textColor="@color/text_color_button" />
 
         <EditText
-            android:id="@+id/eventInput"
+            android:id="@+id/eventEvent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/placeInput"
+            android:layout_below="@id/placeEvent"
             android:layout_margin="10dp"
             android:background="@color/edit_text"
             android:gravity="top"
@@ -271,10 +320,10 @@
             android:textColor="@color/text_color_button" />
 
         <Button
-            android:id="@+id/saveButton"
+            android:id="@+id/saveEventButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/eventInput"
+            android:layout_below="@id/eventEvent"
             android:layout_gravity="left"
             android:layout_margin="10dp"
             android:backgroundTint="@color/bottom_nav_bg"

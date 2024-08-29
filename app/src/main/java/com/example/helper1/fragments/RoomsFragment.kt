@@ -27,17 +27,14 @@ import com.example.helper1.R
 import com.example.helper1.dataBase.ApiClient
 import com.example.helper1.dataBase.CreateMessageCallback
 import com.example.helper1.dataBase.CreateRoomCallback
-import com.example.helper1.dataBase.CreateUserCallback
 import com.example.helper1.dataBase.DBHelper
 import com.example.helper1.dataBase.Event
 import com.example.helper1.dataBase.GetAllEventsCallback
 import com.example.helper1.dataBase.GetAllRoomsCallback
 import com.example.helper1.dataBase.GetAllTaskCallback
 import com.example.helper1.dataBase.GetRoomCallback
-import com.example.helper1.dataBase.IsExistUserCallback
 import com.example.helper1.dataBase.Room
 import com.example.helper1.dataBase.Task
-import com.example.helper1.dataBase.User
 import com.example.helper1.dataBase.managers.EventManager
 import com.example.helper1.dataBase.managers.RoomManager
 import com.example.helper1.dataBase.managers.TaskManager
@@ -94,7 +91,7 @@ class RoomsFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         dbHelper = DBHelper(requireContext())
-        requireContext().deleteDatabase(dbHelper.databaseName)
+        //requireContext().deleteDatabase(dbHelper.databaseName)
         val t = dbHelper.getChosenDate()
         dbHelper.updateChosenDate(LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
     }
@@ -158,85 +155,23 @@ class RoomsFragment : Fragment() {
         binding.dataPickerButton.text = chosenDate
         changeScrollView()
     }
-
-
-    private fun createUserForAPI() {
-        val newRoom = Room(
-            0,
-            binding.loginUser.text.toString().trim(),
-            binding.passwordUser.text.toString().trim()
-        )
-        userManager.getUser(binding.loginUser.text.toString().trim(),object : IsExistUserCallback {
-                override fun onSuccess(isExist: Boolean) {
-                    //Проверка на уникальность логина
-                    Toast.makeText(requireContext(),"Ошибка! Такой логин уже существует!",Toast.LENGTH_LONG).show()
-                }
-
-                override fun onFailure(isExist: Boolean) {
-                    //Создаем личную комнату под юзера
-                    createRoomForAPI(newRoom, true)
-                }
-            })
-    }
-
-    private fun createUser(idRoom: Long) {
-        val newUser = User(
-            binding.loginUser.text.toString().trim(),
-            binding.passwordUser.text.toString().trim(),
-            idRoom,
-            ""
-        )
-        userManager.createUser(newUser, object : CreateUserCallback {
-            override fun onSuccess(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
-            }
-
-            override fun onUserCreated(user: User) {
-                //TODO: передается куда-то пользователь
-                //val user = user
-            }
-
-            override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
-            }
-        })
-    }
-
-    private fun updateUserPasswordForAPI(newUser: User) {
-        userManager.updateUser(newUser, object : CreateMessageCallback {
-            override fun onSuccess(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
-            }
-
-            override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
-            }
-        }, false)
-    }
-
-
-    private fun createRoomForAPI(newRoom: Room, isNewUser: Boolean) {
+    private fun createRoomForAPI(newRoom: Room) {
         roomManger.getAllRooms(object : GetAllRoomsCallback {
             override fun onSuccess(rooms: List<Room>) {
                 val idRoom = (rooms.count() + 1).toLong()
                 newRoom.idRoom = idRoom
                 roomManger.createRoom(newRoom, object : CreateRoomCallback {
                     override fun onSuccess(message: String) {
-                        if (!isNewUser)
-                            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
                     }
 
                     override fun onFailure(message: String) {
-                        if (!isNewUser)
-                            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
                     }
 
                     override fun onRoomCreated(idRoom: Long) {
                         idRoomDef = idRoom
                         Log.d("MyTag", "Комната создана с id $idRoom")
-                        if (isNewUser) {
-                            createUser(idRoomDef)
-                        }
                     }
                 })
             }
