@@ -1,6 +1,5 @@
 package com.example.helper1.dataBase.managers
 
-import android.util.Log
 import com.example.helper1.dataBase.ApiClient
 import com.example.helper1.dataBase.CreateMessageCallback
 import com.example.helper1.dataBase.GetAllTaskCallback
@@ -14,9 +13,6 @@ class TaskManager(private val apiClient: ApiClient) {
         apiClient.createTask(task, object : Callback<Task> {
             override fun onResponse(call: Call<Task>, response: Response<Task>) {
                 val createdTask = response.body()
-
-                Log.d("MyTag",task.toString())
-                Log.d("MyTag",createdTask.toString())
 
                 if (createdTask != null) {
                     callback.onSuccess("Успешно")
@@ -55,26 +51,14 @@ class TaskManager(private val apiClient: ApiClient) {
     }
 
     fun updateTask(previousTask: Task, updatingTask: Task, callback: CreateMessageCallback){
-        apiClient.getTask(previousTask,object : Callback<Task> {
-            override fun onResponse(call: Call<Task>, response: Response<Task>) {
-                val foundedTask = response.body()
-                if(foundedTask!=null) {
-                    updatingTask.idTask = foundedTask.idTask
-                }
-
-                apiClient.updateTask(updatingTask,object : Callback<Void> {
-                    override fun onResponse(call: Call<Void>, response: Response<Void>) {
-                        callback.onSuccess("Успех!")
-                    }
-
-                    override fun onFailure(call: Call<Void>, t: Throwable) {
-                        callback.onFailure("Ошибка! Не удалось обновить!")
-                    }
-                })
+        updatingTask.idTask = previousTask.idTask
+        apiClient.updateTask(updatingTask,object : Callback<Void> {
+            override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                callback.onSuccess("Успех!")
             }
 
-            override fun onFailure(call: Call<Task>, t: Throwable) {
-                callback.onFailure("Ошибка! Не найдено событие")
+            override fun onFailure(call: Call<Void>, t: Throwable) {
+                callback.onFailure("Ошибка! Не удалось обновить!")
             }
         })
     }

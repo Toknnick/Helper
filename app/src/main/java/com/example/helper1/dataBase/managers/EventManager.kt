@@ -48,26 +48,14 @@ class EventManager(private val apiClient: ApiClient) {
     }
 
     fun updateEvent(previousEvent: Event, updatingEvent: Event, callback: CreateMessageCallback){
-        apiClient.getEvent(previousEvent,object : Callback<Event> {
-            override fun onResponse(call: Call<Event>, response: Response<Event>) {
-                val foundedEvent = response.body()
-                if(foundedEvent!=null) {
-                    updatingEvent.idEvent = foundedEvent.idEvent
-                }
-
-                apiClient.updateEvent(updatingEvent,object : Callback<Void> {
-                    override fun onResponse(call: Call<Void>, response: Response<Void>) {
-                        callback.onSuccess("Успех!")
-                    }
-
-                    override fun onFailure(call: Call<Void>, t: Throwable) {
-                        callback.onFailure("Ошибка! Не удалось обновить!")
-                    }
-                })
+        updatingEvent.idEvent = previousEvent.idEvent
+        apiClient.updateEvent(updatingEvent,object : Callback<Void> {
+            override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                callback.onSuccess("Успех!")
             }
 
-            override fun onFailure(call: Call<Event>, t: Throwable) {
-                callback.onFailure("Ошибка! Не найдено событие")
+            override fun onFailure(call: Call<Void>, t: Throwable) {
+                callback.onFailure("Ошибка! Не удалось обновить!")
             }
         })
     }
