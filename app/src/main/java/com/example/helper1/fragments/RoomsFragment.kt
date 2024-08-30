@@ -8,7 +8,6 @@ import android.content.res.Resources
 import android.graphics.Color
 import android.graphics.Paint
 import android.os.Bundle
-import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -17,6 +16,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -35,6 +35,7 @@ import com.example.helper1.dataBase.GetAllTaskCallback
 import com.example.helper1.dataBase.GetRoomCallback
 import com.example.helper1.dataBase.Room
 import com.example.helper1.dataBase.Task
+import com.example.helper1.dataBase.User
 import com.example.helper1.dataBase.managers.EventManager
 import com.example.helper1.dataBase.managers.RoomManager
 import com.example.helper1.dataBase.managers.TaskManager
@@ -67,6 +68,8 @@ class RoomsFragment : Fragment() {
     private lateinit var deleteButton: Button
     private lateinit var editButton: Button
 
+    private var user: User? = null
+
     private var chosenDate: String = ""
     private var events: List<Event> = ArrayList()
     private var tasks: List<Task> = ArrayList()
@@ -90,7 +93,6 @@ class RoomsFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         dbHelper = DBHelper(requireContext())
-        //requireContext().deleteDatabase(dbHelper.databaseName)
     }
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -144,15 +146,43 @@ class RoomsFragment : Fragment() {
         binding.timeTask.setOnClickListener {
             timePickerDialog.show()
         }
+        binding.showRoomPanelButton.setOnClickListener {
+            showRoomPanel()
+        }
+        binding.createRoomButton.setOnClickListener{
+            binding.createRoomPanel.visibility = View.VISIBLE
+        }
+        binding.addRoomButton.setOnClickListener{
+            binding.addRoomPanel.visibility = View.VISIBLE
+        }
+        binding.saveRoomButton.setOnClickListener {
+            createRoom()
+        }
+        binding.backCreateRoomButton.setOnClickListener {
+            binding.createRoomPanel.visibility = View.GONE
+            binding.createNameRoom.setText("")
+            binding.createPasswordRoom.setText("")
+        }
+        binding.getRoomButton.setOnClickListener{
+            addRoom()
+        }
+        binding.backAddRoomButton.setOnClickListener{
+            binding.addRoomPanel.visibility = View.GONE
+            binding.addIdRoom.setText("")
+            binding.addPasswordRoom.setText("")
+        }
     }
 
     override fun onResume() {
         super.onResume()
         chosenDate = dbHelper.getChosenDate()
-        idRoomDef = dbHelper.getRoomId()
+        user = dbHelper.getUser()
         binding.dataPickerButton.text = chosenDate
-        changeScrollView()
-        getRoomFromAPI(Room(idRoomDef,"",""),true)
+        rebuildPage()
+        rebuildRoomPanel()
+        deleteButton = createButton("Удалить")
+        editButton = createButton("Редактировать")
+        setTouchListenerForButtons(binding.conLayout)
     }
 
     private fun createRoomForAPI(newRoom: Room) {
@@ -163,6 +193,13 @@ class RoomsFragment : Fragment() {
                 roomManger.createRoom(newRoom, object : CreateRoomCallback {
                     override fun onSuccess(message: String) {
                         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                        if(user!!.availableRooms != "") {
+                            user!!.availableRooms += "|${newRoom.idRoom}"
+                        }else{
+                            user!!.availableRooms += "${newRoom.idRoom}"
+                        }
+                        rebuildRoomPanel()
+                        updateUserForAPI(user!!)
                     }
 
                     override fun onFailure(message: String) {
@@ -171,25 +208,12 @@ class RoomsFragment : Fragment() {
 
                     override fun onRoomCreated(idRoom: Long) {
                         idRoomDef = idRoom
-                        Log.d("MyTag", "Комната создана с id $idRoom")
                     }
                 })
             }
 
             override fun onFailure(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-
-    private fun updateRoomPasswordForAPI(newRoom: Room) {
-        roomManger.updateRoom(newRoom, object : CreateMessageCallback {
-            override fun onSuccess(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
-            }
-
-            override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
             }
         })
     }
@@ -204,8 +228,14 @@ class RoomsFragment : Fragment() {
                     binding.dataPickerButton.visibility = View.VISIBLE
                 } else {
                     if (gettingRoom.password == gotRoom.password) {
-                        //TODO: тут все норм, добавить на панель
-                        Toast.makeText(requireContext(), "Комнату нашел!", Toast.LENGTH_LONG).show()
+                        if(user!!.availableRooms != "") {
+                            user!!.availableRooms += "|${gettingRoom.idRoom}"
+                        }else{
+                            user!!.availableRooms += "${gettingRoom.idRoom}"
+                        }
+                        idRoomDef = gettingRoom.idRoom
+                        rebuildRoomPanel()
+                        updateUserForAPI(user!!)
                     } else {
                         Toast.makeText(
                             requireContext(),
@@ -228,6 +258,28 @@ class RoomsFragment : Fragment() {
                 }
             }
         })
+    }
+
+    private fun updateUserForAPI(newUser: User) {
+        userManager.updateUser(newUser, object : CreateMessageCallback {
+            override fun onSuccess(message: String) {
+                //Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                dbHelper.updateUser(user!!)
+                dbHelper.updateRoomId(idRoomDef)
+                rebuildPage()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        }, true)
+    }
+
+    private fun rebuildPage(){
+        hideRoomPanel()
+        idRoomDef = dbHelper.getRoomId()
+        getRoomFromAPI(Room(idRoomDef,"",""),true)
+        changeScrollView()
     }
 
 
@@ -370,6 +422,101 @@ class RoomsFragment : Fragment() {
     }
 
 
+    private fun showRoomPanel(){
+        binding.dataPickerButton.visibility = View.INVISIBLE
+        binding.addButton.visibility = View.INVISIBLE
+
+        binding.createTaskPanel.visibility = View.INVISIBLE
+        binding.createEventPanel.visibility = View.INVISIBLE
+        binding.createRoomPanel.visibility = View.INVISIBLE
+        binding.addRoomPanel.visibility = View.INVISIBLE
+
+        binding.showRoomPanel.visibility = View.VISIBLE
+    }
+
+    private fun rebuildRoomPanel(){
+        if(user!=null && user!!.availableRooms != "") {
+            val availableRooms: List<Int> = user!!.availableRooms.split("|").map { it.toInt() }.toMutableList()
+            for (room in availableRooms)
+            {
+                val roomTextView = TextView(requireContext())
+                roomTextView.layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, // width
+                    LinearLayout.LayoutParams.WRAP_CONTENT // height
+                ).apply {
+                    setMargins(5, 5, 5, 5) // left, top, right, bottom margins
+                }
+                roomTextView.id = room
+                roomTextView.setBackgroundResource(R.drawable.border_room)
+                roomManger.getRoom(room.toLong(),object :GetRoomCallback{
+                    override fun onSuccess(gotRoom: Room) {
+                        val text = "${gotRoom.name}\nНомер: ${gotRoom.idRoom}\nПароль: ${gotRoom.password}"
+                        roomTextView.text = text
+                        roomTextView.textSize = textSize
+                        binding.roomLayout.addView(roomTextView)
+
+                        roomTextView.setOnClickListener{
+                            idRoomDef = roomTextView.id.toLong()
+                            dbHelper.updateRoomId(idRoomDef)
+                            rebuildPage()
+                        }
+                    }
+
+                    override fun onFailure(message: String) {}
+                })
+
+            }
+        }
+    }
+
+    private fun hideRoomPanel(){
+        binding.showRoomPanel.visibility = View.GONE
+        binding.createRoomPanel.visibility = View.GONE
+        binding.addRoomPanel.visibility = View.GONE
+        binding.addButton.visibility = View.VISIBLE
+        binding.dataPickerButton.visibility = View.VISIBLE
+        binding.createNameRoom.setText("")
+        binding.createPasswordRoom.setText("")
+        binding.addIdRoom.setText("")
+        binding.addPasswordRoom.setText("")
+    }
+
+    private fun createRoom(){
+        if(binding.createNameRoom.text.toString().trim().length <= 25) {
+            val newRoom = Room(
+                0,
+                binding.createNameRoom.text.toString().trim(),
+                binding.createPasswordRoom.text.toString().trim()
+            )
+            createRoomForAPI(newRoom)
+        }
+        else{
+            createError("Слишком большое название!")
+        }
+    }
+
+    private fun addRoom(){
+        val newRoom = Room(
+            binding.addIdRoom.text.toString().trim().toLong(),
+            "",
+            binding.addPasswordRoom.text.toString().trim()
+        )
+        var availableRooms: List<Long> = ArrayList()
+        if(user!!.availableRooms != "") {
+            availableRooms =
+                user!!.availableRooms.split("|").map { it.toLong() }.toMutableList()
+        }
+        if(!availableRooms.contains(newRoom.idRoom)){
+            getRoomFromAPI(newRoom,false)
+        }
+
+        else{
+            hideRoomPanel()
+            createError("Такая комната вам уже известна")
+        }
+    }
+
+
 
     private fun createNewText(item: Int) {
         binding.saveEventButton.setOnClickListener {
@@ -382,6 +529,7 @@ class RoomsFragment : Fragment() {
             0 -> {
                 //Делаем задачу
                 clearEventPanel()
+                clearTaskPanel()
                 countOfPoint = 1
                 binding.createTaskPanel.visibility = View.VISIBLE
                 binding.addButton.isEnabled = false
@@ -389,6 +537,7 @@ class RoomsFragment : Fragment() {
             1 -> {
                 //Делаем событие
                 clearTaskPanel()
+                clearEventPanel()
                 binding.createEventPanel.visibility = View.VISIBLE
                 binding.addButton.isEnabled = false
             }
@@ -439,9 +588,6 @@ class RoomsFragment : Fragment() {
                 points += binding.pointsPlace.findViewById<EditText>(j + TASK_ID).text.toString()
                     .trim()
                 checkBoxes += false
-                    points += binding.pointsPlace.findViewById<EditText>(j + TASK_ID).text.toString()
-                        .trim()
-                    checkBoxes += false
             }
             j += 1
         }
@@ -485,7 +631,7 @@ class RoomsFragment : Fragment() {
             binding.layout.removeView(binding.layout.findViewById(TEXT_VIEW_NOTHING_TO_DO_ID))
         }
 
-        val layout = createRelativeLayout(tasks.indexOf(task))
+        val layout = createRelativeLayout(tasks.indexOf(task),false)
         val nameTextView: TextView
 
         if (task.name.isEmpty())
@@ -524,9 +670,9 @@ class RoomsFragment : Fragment() {
             i += 1
         }
         tempPoints += (points[points.count() - 2] + points[points.count() - 1])
-        deleteTaskForAPI(task)
-        task.points = tempPoints.joinToString("|")
-        createTaskForAPI(task)
+        val newTask = task
+        newTask.points = tempPoints.joinToString("|")
+        updateTaskForAPI(task,newTask)
     }
 
     private fun createNewEvent(i: Int) {
@@ -609,7 +755,7 @@ class RoomsFragment : Fragment() {
                 )
             }
         }
-        textView.setTextColor(R.color.text_color_button)
+        textView.setTextColor(R.color.text_color)
         textView.setLayoutParams(params)
         textView.text = text
         textView.textSize = textSize
@@ -626,15 +772,15 @@ class RoomsFragment : Fragment() {
         params.setMargins(5, 5, 5, 5)
         button.setLayoutParams(params)
 
-        button.setBackgroundColor(resources.getColor(R.color.bottom_nav_bg))
-        button.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_color_button))
+        button.setBackgroundColor(resources.getColor(R.color.button_color))
+        button.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_color))
         button.text = text
         button.textSize = textSize
         button.visibility = View.GONE
         return button
     }
 
-    private fun createRelativeLayout(id: Int): RelativeLayout {
+    private fun createRelativeLayout(id: Int,isForRoom : Boolean): RelativeLayout {
         val layout = RelativeLayout(context)
         layout.id = REL_LAYOUT_ID + id
         val params = RelativeLayout.LayoutParams(
@@ -643,26 +789,27 @@ class RoomsFragment : Fragment() {
         )
         params.setMargins(5, 5, 5, 5)
 
+        if (!isForRoom) {
+            if (binding.layout.childCount == 0 || (binding.layout.childCount == 1 && binding.layout.getChildAt(
+                    0
+                ) == deleteButton)
+            ) {
+                params.addRule(RelativeLayout.ALIGN_PARENT_START)
+            } else if (binding.layout.getChildAt(binding.layout.childCount - 1) != deleteButton) {
+                params.addRule(
+                    RelativeLayout.BELOW,
+                    binding.layout.getChildAt(binding.layout.childCount - 1).id
+                )
+            } else {
+                params.addRule(
+                    RelativeLayout.BELOW,
+                    binding.layout.getChildAt(binding.layout.childCount - 2).id
+                )
+            }
 
-        if (binding.layout.childCount == 0 || (binding.layout.childCount == 1 && binding.layout.getChildAt(
-                0
-            ) == deleteButton)
-        ) {
-            params.addRule(RelativeLayout.ALIGN_PARENT_START)
-        } else if (binding.layout.getChildAt(binding.layout.childCount - 1) != deleteButton) {
-            params.addRule(
-                RelativeLayout.BELOW,
-                binding.layout.getChildAt(binding.layout.childCount - 1).id
-            )
-        } else {
-            params.addRule(
-                RelativeLayout.BELOW,
-                binding.layout.getChildAt(binding.layout.childCount - 2).id
-            )
+            layout.setLayoutParams(params)
+            layout.setPadding(0, 0, 0, 10)
         }
-
-        layout.setLayoutParams(params)
-        layout.setPadding(0, 0, 0, 10)
         return layout
     }
 
@@ -681,7 +828,7 @@ class RoomsFragment : Fragment() {
         editText.id = countOfPoint + TASK_ID
         editText.setPadding(10, 10, 10, 40)
         binding.pointsPlace.addView(editText)
-        editText.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_color_button))
+        editText.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_color))
 
         //Подвинуть новый пункт
         if (countOfPoint == 1) {
@@ -782,6 +929,7 @@ class RoomsFragment : Fragment() {
     @SuppressLint("SetTextI18n")
     private fun changeBackgroundOfPoint(textView: TextView, checkBox: CheckBox, i: Int, j: Int) {
         val newCheckBoxes = tasks[i].checkBoxes.split("|").map { it.toBoolean() }.toMutableList()
+        val checkboxStateChanged = newCheckBoxes[j] != checkBox.isChecked
 
         if (checkBox.isChecked) {
             textView.apply {
@@ -796,10 +944,11 @@ class RoomsFragment : Fragment() {
             }
             newCheckBoxes[j] = false
         }
-        val newTask = tasks[i]
+        if (checkboxStateChanged) {
+            val newTask = tasks[i]
             newTask.checkBoxes = newCheckBoxes.map { it.toString() }.joinToString("|")
-
-        updateTaskForAPI(tasks[i],newTask)
+            updateTaskForAPI(tasks[i],newTask)
+        }
     }
 
     private fun clearEventPanel() {
@@ -940,10 +1089,25 @@ class RoomsFragment : Fragment() {
             true
         }
 
-        setTouchListener(view)
-        setTouchListener(binding.layout)
-        setTouchListener(binding.conLayout)
+        setTouchListenerForButtons(view)
+        setTouchListenerForButtons(binding.layout)
+        setTouchListenerForButtons(binding.showRoomPanelButton)
+        setTouchListenerForButtons(binding.roomNameTextView)
     }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setTouchListenerForButtons(view: View) {
+        view.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                deleteButton.visibility = View.GONE
+                editButton.visibility = View.GONE
+                hideRoomPanel()
+            }
+            false
+        }
+    }
+
+
 
     private fun editEvent(event: Event) {
         binding.createEventPanel.visibility = View.VISIBLE
@@ -966,8 +1130,11 @@ class RoomsFragment : Fragment() {
                 binding.placeEvent.text.toString(),
                 binding.eventEvent.text.toString()
             )
-            updateEventForAPI(event,newEvent)
-            getEventsByDateForAPI()
+            if(newEvent.date != event.date || newEvent.time !=event.time || newEvent.place != event.place || newEvent.event != event.event){
+                updateEventForAPI(event,newEvent)
+                rebuildPage()
+            }
+
             clearEventPanel()
             hideEventPanel()
         }
@@ -1022,8 +1189,10 @@ class RoomsFragment : Fragment() {
                     points.joinToString("|"),
                     checkBoxes.map { it.toString() }.joinToString("|")
                 )
-                updateTaskForAPI(task,newTask)
-                getTasksByDateForAPI()
+                if(newTask.date != task.date || newTask.time !=task.time || newTask.name != task.name || newTask.points != task.points){
+                    updateTaskForAPI(task,newTask)
+                    rebuildPage()
+                }
             }else{
                 createError("Ошибка! Задача была пуста")
             }
@@ -1032,21 +1201,8 @@ class RoomsFragment : Fragment() {
         }
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    private fun setTouchListener(view: View) {
-        view.setOnTouchListener { _, event ->
-            if (event.action == MotionEvent.ACTION_DOWN) {
-                deleteButton.visibility = View.GONE
-                editButton.visibility = View.GONE
-            }
-            false
-        }
-    }
-
     private fun createAllEventsAndTasks() {
         binding.layout.removeAllViews()
-        deleteButton = createButton("Удалить")
-        editButton = createButton("Редактировать")
 
         val newList = (events + tasks).sortedBy { it.time }
         for (item in newList) {
@@ -1142,7 +1298,7 @@ class RoomsFragment : Fragment() {
     }
 
     private fun showDialog() {
-        val langArray: Array<String> = arrayOf("Задача", "Событие", "Комната")
+        val langArray: Array<String> = arrayOf("Задача", "Событие")
         var selectedEvent = 0 // Инициализируем в 0, который является первым элементом
         val builder: androidx.appcompat.app.AlertDialog.Builder =
             androidx.appcompat.app.AlertDialog.Builder(requireContext())
@@ -1169,13 +1325,4 @@ class RoomsFragment : Fragment() {
 
         builder.show()
     }
-
-
-
-    //TODO: убрать потом сообщения об успехе
-
-    //TODO: добавить строки ниже потом для даты и времени для ивента и таск
-    //android:editable="false"
-    //android:focusable="false"
-    //android:inputType="date"
 }

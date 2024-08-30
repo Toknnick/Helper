@@ -70,6 +70,7 @@ class HomeFragment : Fragment(){
     private lateinit var timePickerDialog: TimePickerDialog
     private lateinit var deleteButton: Button
     private lateinit var editButton: Button
+    private var user : User? = null
 
     private var chosenDate: String = ""
     private var events: List<Event> = ArrayList()
@@ -97,19 +98,6 @@ class HomeFragment : Fragment(){
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        dbHelper = DBHelper(requireContext())
-        //requireContext().deleteDatabase(dbHelper.databaseName)
-        val user = dbHelper.getUser()
-        if(user == null){
-            binding.createUserPanel.visibility = View.VISIBLE
-            binding.saveUserButton.setOnClickListener{
-                createUserForAPI()
-            }
-        }else{
-            idRoomDef = user.ownRoom
-        }
-
         mainActivity = (activity as MainActivity)
         addParamsToButtons(binding.point0)
         val apiClient = ApiClient(retrofit)
@@ -117,6 +105,34 @@ class HomeFragment : Fragment(){
         roomManger = RoomManager(apiClient)
         eventManager = EventManager(apiClient)
         taskManager = TaskManager(apiClient)
+        dbHelper = DBHelper(requireContext())
+
+
+
+        //requireContext().deleteDatabase(dbHelper.databaseName)
+
+
+        user = dbHelper.getUser()
+        if(user == null){
+            binding.addButton.visibility = View.GONE
+            binding.dataPickerButton.visibility = View.GONE
+            binding.createUserPanel.visibility = View.VISIBLE
+            binding.saveUserButton.setOnClickListener{
+                if(binding.passwordUser.text.toString().trim().isEmpty()){
+                    createError("Пароль не может быть пустым")
+                } else if(binding.passwordUser.text.toString().trim().length < 5){
+                    createError("Минимальная длина пароля 6 символов")
+                } else if(binding.loginUser.text.toString().trim().isEmpty()){
+                    createError("Ошибка! Не указан логин пользователя")
+                }
+                else {
+                    createUserForAPI()
+                }
+            }
+        }else{
+            loginUserForAPI(user!!,true)
+            idRoomDef = user!!.ownRoom
+        }
         initDatePicker()
         initTimePicker()
 
@@ -154,7 +170,17 @@ class HomeFragment : Fragment(){
         }
 
         binding.loginUserButton.setOnClickListener{
-            loginUserForAPI()
+            var loggingUser = User(
+                    binding.loginUser.text.toString().trim(),
+            binding.passwordUser.text.toString().trim(),
+            0,
+            ""
+            )
+            if(loggingUser.login.isNotEmpty() && loggingUser.password.isNotEmpty()) {
+                loginUserForAPI(loggingUser, false)
+            }else{
+                createError("Ошибка! Заполните данные")
+            }
         }
     }
 
@@ -162,33 +188,40 @@ class HomeFragment : Fragment(){
         super.onResume()
         chosenDate = dbHelper.getChosenDate()
         binding.dataPickerButton.text = chosenDate
-        changeScrollView()
+        if (user != null) {
+            changeScrollView()
+        }
     }
 
-    private fun loginUserForAPI(){
-        val loggingUser = User(
-            binding.loginUser.text.toString().trim(),
-            binding.passwordUser.text.toString().trim(),
-            0,
-            ""
-        )
+    private fun loginUserForAPI(loggingUser : User, isUpdateUserData : Boolean){
+        Log.d("MyTag","Зашел в метод")
         userManager.getUser(binding.loginUser.text.toString().trim(),object : GetUserCallback {
             override fun onSuccess(gotUser: User) {
-                if(loggingUser.password == gotUser.password){
-                    dbHelper.createUser(loggingUser)
-                    binding.createUserPanel.visibility = View.GONE
-                    Toast.makeText(requireContext(),"Успешно!", Toast.LENGTH_LONG).show()
-                }
-                else{
-                    Toast.makeText(requireContext(),"Неверный пароль!", Toast.LENGTH_LONG).show()
+                if(!isUpdateUserData) {
+                    if (loggingUser.password == gotUser.password) {
+                        dbHelper.createUser(loggingUser)
+                        binding.createUserPanel.visibility = View.GONE
+                    } else {
+                        Toast.makeText(requireContext(), "Неверный пароль!", Toast.LENGTH_LONG)
+                            .show()
 
+                    }
+                }else{
+                    loggingUser.password = gotUser.password
+                    loggingUser.availableRooms = gotUser.availableRooms
+                    mainActivity.startActivity()
+                    dbHelper.updateUser(loggingUser)
                 }
             }
+
 
             override fun onFailure(isExist: Boolean) {
-                Toast.makeText(requireContext(),"Ошибка! Пользователь не найден", Toast.LENGTH_LONG).show()
+                if(!isUpdateUserData)
+                    Toast.makeText(requireContext(),"Ошибка! Пользователь не найден", Toast.LENGTH_LONG).show()
             }
         })
+
+        Log.d("MyTag",loggingUser.toString())
     }
 
     private fun createUserForAPI() {
@@ -223,9 +256,11 @@ class HomeFragment : Fragment(){
             }
 
             override fun onUserCreated(user: User) {
-                //TODO: передается куда-то пользователь
                 dbHelper.createUser(user)
+                mainActivity.startActivity()
                 binding.createUserPanel.visibility = View.GONE
+                binding.addButton.visibility = View.VISIBLE
+                binding.dataPickerButton.visibility = View.VISIBLE
             }
 
             override fun onFailure(message: String) {
@@ -234,7 +269,7 @@ class HomeFragment : Fragment(){
         })
     }
 
-    private fun updateUserPasswordForAPI(newUser: User) {
+    private fun updateUserForAPI(newUser: User) {
         userManager.updateUser(newUser, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
@@ -265,7 +300,6 @@ class HomeFragment : Fragment(){
 
                     override fun onRoomCreated(idRoom: Long) {
                         idRoomDef = idRoom
-                        Log.d("MyTag", "Комната создана с id $idRoom")
                         if (isNewUser) {
                             createUser(idRoomDef)
                         }
@@ -519,9 +553,6 @@ class HomeFragment : Fragment(){
                 points += binding.pointsPlace.findViewById<EditText>(j + TASK_ID).text.toString()
                     .trim()
                 checkBoxes += false
-                points += binding.pointsPlace.findViewById<EditText>(j + TASK_ID).text.toString()
-                    .trim()
-                checkBoxes += false
             }
             j += 1
         }
@@ -689,7 +720,7 @@ class HomeFragment : Fragment(){
                 )
             }
         }
-        textView.setTextColor(R.color.text_color_button)
+        textView.setTextColor(R.color.text_color)
         textView.setLayoutParams(params)
         textView.text = text
         textView.textSize = textSize
@@ -706,8 +737,8 @@ class HomeFragment : Fragment(){
         params.setMargins(5, 5, 5, 5)
         button.setLayoutParams(params)
 
-        button.setBackgroundColor(resources.getColor(R.color.bottom_nav_bg))
-        button.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_color_button))
+        button.setBackgroundColor(resources.getColor(R.color.button_color))
+        button.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_color))
         button.text = text
         button.textSize = textSize
         button.visibility = View.GONE
@@ -761,7 +792,7 @@ class HomeFragment : Fragment(){
         editText.id = countOfPoint + TASK_ID
         editText.setPadding(10, 10, 10, 40)
         binding.pointsPlace.addView(editText)
-        editText.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_color_button))
+        editText.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_color))
 
         //Подвинуть новый пункт
         if (countOfPoint == 1) {

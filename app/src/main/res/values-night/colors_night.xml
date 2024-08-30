@@ -7,8 +7,8 @@
     <color name="edit_text">#000000</color>
     <color name="main_background">#393838</color>
     <color name="panel_background">#337cff</color>
-    <color name="bottom_nav_bg">#000000</color>
+    <color name="button_color">#000000</color>
     <color name="bottom_nav_item">#337cff</color>
     <color name="nav_selected_item">#FFFFFF</color>
-    <color name="text_color_button">#FFFFFFFF</color>
+    <color name="text_color">#FFFFFFFF</color>
 </resources>

@@ -4,7 +4,6 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import android.util.Log
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -59,7 +58,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null,
         db.close()
     }
 
-    fun updateRoomId(roomId :Int) {
+    fun updateRoomId(roomId :Long) {
         val db = writableDatabase
         val contentValues = ContentValues()
         contentValues.put("room_id", roomId.toString())
@@ -73,6 +72,9 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null,
         var roomId = -1
         if (cursor.moveToFirst()) {
             roomId = cursor.getString(1).toInt()
+        }
+        if(roomId == -1){
+            addRoomId(-1)
         }
         cursor.close()
         db.close()
@@ -96,7 +98,6 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null,
 
         cursor.close()
         db.close()
-        Log.d("MyTag",chosenDate)
         return chosenDate
     }
 

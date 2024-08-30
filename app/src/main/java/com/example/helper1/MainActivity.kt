@@ -21,11 +21,22 @@ class MainActivity : AppCompatActivity() {
         this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
         setContentView(binding.root)
 
+        var dbHelper = DBHelper(this)
+        if(dbHelper.getUser() != null) {
+            val navController = findNavController(R.id.mainContainer)
+            val bottomNavigationView = binding.bottomNavigationView
+            bottomNavigationView.setupWithNavController(navController)
+            fm = supportFragmentManager
+        }
+    }
+
+    fun startActivity(){
         val navController = findNavController(R.id.mainContainer)
         val bottomNavigationView = binding.bottomNavigationView
         bottomNavigationView.setupWithNavController(navController)
         fm = supportFragmentManager
     }
+
 
     override fun onStop() {
         super.onStop()

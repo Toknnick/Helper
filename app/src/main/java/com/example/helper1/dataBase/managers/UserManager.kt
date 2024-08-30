@@ -32,9 +32,6 @@ class UserManager(private val apiClient: ApiClient) {
                 val user = response.body()
                 if (user != null) {
                     newUser.ownRoom = user.ownRoom
-                    if(!isGetNewRoom) {
-                        newUser.availableRooms = user.availableRooms
-                    }
                 }
                 apiClient.updateUser(newUser, object : Callback<Void> {
                     override fun onResponse(call: Call<Void>, response: Response<Void>) {

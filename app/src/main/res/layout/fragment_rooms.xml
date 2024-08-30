@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/conLayout"
@@ -10,84 +10,152 @@
     tools:context=".fragments.HomeFragment">
 
 
-    <LinearLayout
-        android:id="@+id/RoomLayout"
+    <TextView
+        android:id="@+id/roomNameTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_margin="2dp"
+        android:padding="2dp"
+        android:textColor="@color/text_color"
+        android:textSize="18sp"
+        android:layout_centerHorizontal="true"/>
+
+    <LinearLayout
+        android:id="@+id/showRoomPanelButton"
+        android:layout_width="41dp"
+        android:layout_height="match_parent"
+        android:background="@color/panel_background"
         android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0">
+        android:layout_alignParentStart="true">
+
 
         <TextView
-            android:id="@+id/roomNameTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="2dp"
+            android:id="@+id/showRoomPanelTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
             android:gravity="center"
-            android:padding="2dp"
-            android:textColor="@color/text_color_button"
-            android:textSize="18sp" />
+            android:lineSpacingMultiplier="1.5"
+            android:text="К
+            о
+            м
+            н
+            а
+            т
+            ы"
+            android:textColor="@color/text_color"
+            android:textSize="18sp">
+
+        </TextView>
     </LinearLayout>
+
 
     <ScrollView
         android:id="@+id/scrView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="3dp"
-        android:layout_marginBottom="50dp"
-        app:layout_constraintBottom_toTopOf="@+id/addButton"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.666"
-        app:layout_constraintStart_toStartOf="@id/RoomLayout"
-        app:layout_constraintTop_toTopOf="@id/RoomLayout"
-        app:layout_constraintVertical_bias="0.0">
+        android:layout_height="match_parent"
+        android:layout_toRightOf="@id/showRoomPanelButton"
+        android:layout_below="@id/roomNameTextView"
+        android:layout_above="@id/addButton">
 
         <RelativeLayout
             android:id="@+id/layout"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:orientation="vertical" />
     </ScrollView>
+
+    <RelativeLayout
+        android:id="@+id/showRoomPanel"
+        android:layout_width="300dp"
+        android:layout_height="match_parent"
+        android:background="@color/panel_background"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:clickable="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0">
+
+        <ScrollView
+            android:id="@+id/roomScrollView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="3dp"
+            android:layout_marginBottom="50dp"
+            android:layout_alignParentTop="true">
+
+            <LinearLayout
+                android:id="@+id/roomLayout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical" >
+            </LinearLayout>
+        </ScrollView>
+
+        <Button
+            android:id="@+id/createRoomButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:backgroundTint="@color/button_color"
+            android:layout_alignParentBottom="true"
+            android:gravity="bottom"
+            android:scaleType="fitStart"
+            android:src="@drawable/ic_add_button"
+            android:text="Создать"
+            android:layout_margin="5sp"
+            android:textColor="@color/text_color"
+            android:textSize="20sp">
+
+        </Button>
+        <Button
+            android:id="@+id/addRoomButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:backgroundTint="@color/button_color"
+            android:layout_alignParentBottom="true"
+            android:gravity="bottom"
+            android:scaleType="fitStart"
+            android:src="@drawable/ic_add_button"
+            android:text="Добавить"
+            android:layout_alignParentEnd="true"
+            android:layout_margin="5sp"
+            android:textColor="@color/text_color"
+            android:textSize="20sp">
+        </Button>
+    </RelativeLayout>
 
     <Button
         android:id="@+id/addButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="5dp"
-        android:backgroundTint="@color/bottom_nav_bg"
+        android:backgroundTint="@color/button_color"
         android:gravity="bottom"
-        android:onClick="createTextView"
         android:scaleType="fitStart"
         android:src="@drawable/ic_add_button"
         android:text="Добавить"
-        android:textColor="@color/text_color_button"
-        android:textSize="20sp"
+        android:textColor="@color/text_color"
+        android:textSize="17sp"
         android:tooltipText="text"
         android:visibility="visible"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.94"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.994" />
+        android:layout_toRightOf="@id/dataPickerButton"
+        android:layout_alignBottom="@id/dataPickerButton"/>
 
     <Button
         android:id="@+id/dataPickerButton"
         style="?android:spinnerStyle"
-        android:layout_width="200dp"
-        android:layout_height="wrap_content"
-        android:textColor="@color/text_color_button"
-        android:backgroundTint="@color/bottom_nav_bg"
-        android:textSize="22sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.066"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/addButton"
-        app:layout_constraintVertical_bias="0.0"/>
+        android:layout_width="160dp"
+        android:layout_height="48dp"
+        android:backgroundTint="@color/button_color"
+        android:textColor="@color/text_color"
+        android:textSize="20sp"
+        android:layout_alignBottom="@id/showRoomPanelButton"
+        android:layout_toRightOf="@id/showRoomPanelButton"
+        android:layout_margin="8dp"/>
 
     <RelativeLayout
         android:id="@+id/createUserPanel"
@@ -106,10 +174,10 @@
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
             android:layout_margin="10dp"
-            android:backgroundTint="@color/bottom_nav_bg"
+            android:backgroundTint="@color/button_color"
             android:padding="10dp"
             android:text="Назад"
-            android:textColor="@color/text_color_button"
+            android:textColor="@color/text_color"
             android:textSize="15sp" />
 
         <EditText
@@ -123,7 +191,7 @@
             android:hint="Логин"
             android:inputType="text"
             android:padding="10dp"
-            android:textColor="@color/text_color_button" />
+            android:textColor="@color/text_color" />
 
         <EditText
             android:id="@+id/passwordUser"
@@ -136,7 +204,7 @@
             android:hint="Пароль"
             android:inputType="textPassword"
             android:padding="10dp"
-            android:textColor="@color/text_color_button" />
+            android:textColor="@color/text_color" />
 
         <Button
             android:id="@+id/saveUserButton"
@@ -144,10 +212,10 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/passwordUser"
             android:layout_margin="10dp"
-            android:backgroundTint="@color/bottom_nav_bg"
+            android:backgroundTint="@color/button_color"
             android:padding="10dp"
             android:text="Готово"
-            android:textColor="@color/text_color_button"
+            android:textColor="@color/text_color"
             android:textSize="15sp" />
         <Button
             android:id="@+id/updateUserButton"
@@ -155,10 +223,10 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/saveUserButton"
             android:layout_margin="10dp"
-            android:backgroundTint="@color/bottom_nav_bg"
+            android:backgroundTint="@color/button_color"
             android:padding="10dp"
             android:text="Обновить"
-            android:textColor="@color/text_color_button"
+            android:textColor="@color/text_color"
             android:textSize="15sp" />
     </RelativeLayout>
 
@@ -175,65 +243,118 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <Button
-            android:id="@+id/backRoomButton"
+            android:id="@+id/backCreateRoomButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
             android:layout_margin="10dp"
-            android:backgroundTint="@color/bottom_nav_bg"
+            android:backgroundTint="@color/button_color"
             android:padding="10dp"
             android:text="Назад"
-            android:textColor="@color/text_color_button"
+            android:textColor="@color/text_color"
             android:textSize="15sp" />
 
         <EditText
-            android:id="@+id/nameRoom"
+            android:id="@+id/createNameRoom"
             android:layout_width="match_parent"
+            android:maxLines="1"
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
-            android:layout_toRightOf="@id/backRoomButton"
+            android:layout_toRightOf="@id/backCreateRoomButton"
             android:background="@color/edit_text"
             android:ems="10"
             android:hint="Название комнаты"
             android:inputType="text"
             android:padding="10dp"
-            android:textColor="@color/text_color_button" />
+            android:textColor="@color/text_color" />
 
         <EditText
-            android:id="@+id/passwordRoom"
+            android:id="@+id/createPasswordRoom"
+            android:maxLines="1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/nameRoom"
+            android:layout_below="@id/createNameRoom"
             android:layout_margin="10dp"
             android:background="@color/edit_text"
             android:ems="10"
             android:hint="Пароль"
             android:inputType="textPassword"
             android:padding="10dp"
-            android:textColor="@color/text_color_button" />
+            android:textColor="@color/text_color" />
 
         <Button
             android:id="@+id/saveRoomButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/passwordRoom"
+            android:layout_below="@id/createPasswordRoom"
             android:layout_margin="10dp"
-            android:backgroundTint="@color/bottom_nav_bg"
+            android:backgroundTint="@color/button_color"
             android:padding="10dp"
-            android:text="Готово"
-            android:textColor="@color/text_color_button"
+            android:text="Создать"
+            android:textColor="@color/text_color"
             android:textSize="15sp" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/addRoomPanel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@color/panel_background"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <Button
-            android:id="@+id/updateRoomButton"
+            android:id="@+id/backAddRoomButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/saveRoomButton"
+            android:layout_alignParentStart="true"
             android:layout_margin="10dp"
-            android:backgroundTint="@color/bottom_nav_bg"
+            android:backgroundTint="@color/button_color"
             android:padding="10dp"
-            android:text="Обновить"
-            android:textColor="@color/text_color_button"
+            android:text="Назад"
+            android:textColor="@color/text_color"
+            android:textSize="15sp" />
+
+        <EditText
+            android:id="@+id/addIdRoom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_toRightOf="@id/backAddRoomButton"
+            android:background="@color/edit_text"
+            android:ems="10"
+            android:digits="0123456789"
+            android:hint="Номер комнаты"
+            android:inputType="text"
+            android:padding="10dp"
+            android:textColor="@color/text_color" />
+
+        <EditText
+            android:id="@+id/addPasswordRoom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/addIdRoom"
+            android:layout_margin="10dp"
+            android:background="@color/edit_text"
+            android:ems="10"
+            android:hint="Пароль"
+            android:inputType="textPassword"
+            android:padding="10dp"
+            android:textColor="@color/text_color" />
+
+        <Button
+            android:id="@+id/getRoomButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/addPasswordRoom"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/button_color"
+            android:padding="10dp"
+            android:text="Добавить"
+            android:textColor="@color/text_color"
             android:textSize="15sp" />
     </RelativeLayout>
 
@@ -254,10 +375,10 @@
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
             android:layout_margin="10dp"
-            android:backgroundTint="@color/bottom_nav_bg"
+            android:backgroundTint="@color/button_color"
             android:padding="10dp"
             android:text="Назад"
-            android:textColor="@color/text_color_button"
+            android:textColor="@color/text_color"
             android:textSize="15sp" />
 
         <EditText
@@ -272,7 +393,7 @@
             android:background="@color/edit_text"
             android:hint="Дата"
             android:padding="10dp"
-            android:textColor="@color/text_color_button" />
+            android:textColor="@color/text_color" />
 
         <EditText
             android:id="@+id/timeTask"
@@ -285,7 +406,7 @@
             android:background="@color/edit_text"
             android:hint="Время"
             android:padding="10dp"
-            android:textColor="@color/text_color_button" />
+            android:textColor="@color/text_color" />
 
         <EditText
             android:id="@+id/nameTask"
@@ -296,7 +417,7 @@
             android:background="@color/edit_text"
             android:hint="Название"
             android:padding="10dp"
-            android:textColor="@color/text_color_button" />
+            android:textColor="@color/text_color" />
 
         <ScrollView
             android:layout_width="wrap_content"
@@ -318,7 +439,7 @@
                     android:background="@color/edit_text"
                     android:hint="Пункт"
                     android:padding="10dp"
-                    android:textColor="@color/text_color_button" />
+                    android:textColor="@color/text_color" />
 
                 <Button
                     android:id="@+id/addNewPoint"
@@ -327,10 +448,10 @@
                     android:layout_below="@id/point0"
                     android:layout_alignEnd="@id/point0"
                     android:layout_margin="10dp"
-                    android:backgroundTint="@color/bottom_nav_bg"
+                    android:backgroundTint="@color/button_color"
                     android:padding="10dp"
                     android:text="Добавить пункт"
-                    android:textColor="@color/text_color_button"
+                    android:textColor="@color/text_color"
                     android:textSize="14sp"/>
 
                 <Button
@@ -340,10 +461,10 @@
                     android:layout_below="@id/point0"
                     android:layout_margin="10dp"
                     android:layout_toLeftOf="@id/addNewPoint"
-                    android:backgroundTint="@color/bottom_nav_bg"
+                    android:backgroundTint="@color/button_color"
                     android:padding="10dp"
                     android:text="Удалить пункт"
-                    android:textColor="@color/text_color_button"
+                    android:textColor="@color/text_color"
                     android:textSize="14sp" />
 
                 <Button
@@ -353,10 +474,10 @@
                     android:layout_below="@id/point0"
                     android:layout_alignStart="@id/point0"
                     android:layout_marginTop="10dp"
-                    android:backgroundTint="@color/bottom_nav_bg"
+                    android:backgroundTint="@color/button_color"
                     android:padding="10dp"
                     android:text="Сохранить"
-                    android:textColor="@color/text_color_button"
+                    android:textColor="@color/text_color"
                     android:textSize="14sp" />
             </RelativeLayout>
         </ScrollView>
@@ -380,10 +501,10 @@
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
             android:layout_margin="10dp"
-            android:backgroundTint="@color/bottom_nav_bg"
+            android:backgroundTint="@color/button_color"
             android:padding="10dp"
             android:text="Назад"
-            android:textColor="@color/text_color_button"
+            android:textColor="@color/text_color"
             android:textSize="15sp" />
 
         <EditText
@@ -398,7 +519,7 @@
             android:background="@color/edit_text"
             android:hint="Дата"
             android:padding="10dp"
-            android:textColor="@color/text_color_button" />
+            android:textColor="@color/text_color" />
 
         <EditText
             android:id="@+id/timeEvent"
@@ -411,7 +532,7 @@
             android:background="@color/edit_text"
             android:hint="Время"
             android:padding="10dp"
-            android:textColor="@color/text_color_button" />
+            android:textColor="@color/text_color" />
 
         <EditText
             android:id="@+id/placeEvent"
@@ -422,7 +543,7 @@
             android:background="@color/edit_text"
             android:hint="Место"
             android:padding="10dp"
-            android:textColor="@color/text_color_button" />
+            android:textColor="@color/text_color" />
 
         <EditText
             android:id="@+id/eventEvent"
@@ -435,7 +556,7 @@
             android:hint="Описание"
             android:lines="8"
             android:padding="10dp"
-            android:textColor="@color/text_color_button" />
+            android:textColor="@color/text_color" />
 
         <Button
             android:id="@+id/saveEventButton"
@@ -444,13 +565,13 @@
             android:layout_below="@id/eventEvent"
             android:layout_gravity="left"
             android:layout_margin="10dp"
-            android:backgroundTint="@color/bottom_nav_bg"
+            android:backgroundTint="@color/button_color"
             android:padding="10dp"
             android:text="Готово"
-            android:textColor="@color/text_color_button"
+            android:textColor="@color/text_color"
             android:textSize="20sp" />
 
 
     </RelativeLayout>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</RelativeLayout>
