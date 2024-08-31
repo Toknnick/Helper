@@ -170,7 +170,8 @@ class HomeFragment : ParentFragment(){
         val newRoom = Room(
             0,
             loginUser.text.toString().trim(),
-            passwordUser.text.toString().trim()
+            passwordUser.text.toString().trim(),
+            true
         )
         userManager.getUser(loginUser.text.toString().trim(), object : GetUserCallback {
             override fun onSuccess(user: User) {
@@ -216,6 +217,7 @@ class HomeFragment : ParentFragment(){
             override fun onSuccess(rooms: List<Room>) {
                 val idRoom = (rooms.count() + 1).toLong()
                 newRoom.idRoom = idRoom
+                newRoom.single = true
                 roomManger.createRoom(newRoom, object : CreateRoomCallback {
                     override fun onSuccess(message: String) {}
 

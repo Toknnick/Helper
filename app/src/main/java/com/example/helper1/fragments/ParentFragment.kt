@@ -66,8 +66,8 @@ open class ParentFragment : Fragment() {
     protected var user: User? = null
 
     protected var chosenDate: String = ""
-    protected var events: List<Event> = ArrayList()
-    protected var tasks: List<Task> = ArrayList()
+    protected var events: MutableList<Event> = ArrayList<Event>().toMutableList()
+    protected var tasks: MutableList<Task> = ArrayList<Task>().toMutableList()
     private var countOfPoint = 1
     protected var textSize = 21F
 
@@ -101,6 +101,8 @@ open class ParentFragment : Fragment() {
     protected lateinit var placeEvent: EditText
     protected lateinit var eventEvent: EditText
     protected lateinit var saveEventButton: Button
+    protected lateinit var taskTextView: TextView
+    protected lateinit var eventTextView: TextView
 
     protected lateinit var roomNameTextView: TextView
     protected lateinit var showRoomPanelButton: LinearLayout
@@ -153,6 +155,8 @@ open class ParentFragment : Fragment() {
         placeEvent = requireView().findViewById<EditText>(R.id.placeEvent)
         eventEvent = requireView().findViewById<EditText>(R.id.eventEvent)
         saveEventButton = requireView().findViewById<Button>(R.id.saveEventButton)
+        taskTextView = requireView().findViewById<TextView>(R.id.taskTextView)
+        eventTextView = requireView().findViewById<TextView>(R.id.eventTextView)
 
         roomNameTextView = requireView().findViewById<TextView>(R.id.roomNameTextView)
         showRoomPanelButton = requireView().findViewById<LinearLayout>(R.id.showRoomPanelButton)
@@ -259,8 +263,8 @@ open class ParentFragment : Fragment() {
     protected fun updateEventForAPI(previousEvent: Event, updatingEvent: Event){
         eventManager.updateEvent(previousEvent, updatingEvent, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
-                changeScrollView()
-                checkToNothingToDo()
+                //changeScrollView()
+                createAllEventsAndTasks()
             }
 
             override fun onFailure(message: String) {
@@ -273,8 +277,8 @@ open class ParentFragment : Fragment() {
     protected fun deleteEventForAPI(deletingEvent: Event){
         eventManager.deleteEvent(deletingEvent,object : CreateMessageCallback {
             override fun onSuccess(message: String) {
-                changeScrollView()
-                checkToNothingToDo()
+                events.remove(deletingEvent)
+                createAllEventsAndTasks()
             }
 
             override fun onFailure(message: String) {
@@ -312,7 +316,7 @@ open class ParentFragment : Fragment() {
 
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     protected fun getTasksByDateForAPI(){
-        tasks = mutableListOf()
+        tasks = mutableListOf<Task>()
         taskManager.getAllTasksByIdRoom(idRoomDef, object : GetAllTaskCallback {
             override fun onSuccess(tempTasks: List<Task>) {
                 for (task in tempTasks) {
@@ -334,8 +338,8 @@ open class ParentFragment : Fragment() {
     protected fun updateTaskForAPI(previousTask: Task, updatingTask: Task){
         taskManager.updateTask(previousTask, updatingTask, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
-                getTasksByDateForAPI()
-                checkToNothingToDo()
+                //changeScrollView()
+                createAllEventsAndTasks()
             }
 
             override fun onFailure(message: String) {
@@ -347,8 +351,8 @@ open class ParentFragment : Fragment() {
     protected fun deleteTaskForAPI(deletingTask: Task){
         taskManager.deleteTask(deletingTask,object : CreateMessageCallback {
             override fun onSuccess(message: String) {
-                changeScrollView()
-                checkToNothingToDo()
+                tasks.remove(deletingTask)
+                createAllEventsAndTasks()
             }
 
             override fun onFailure(message: String) {
@@ -372,6 +376,7 @@ open class ParentFragment : Fragment() {
         }
         when (item) {
             0 -> {
+                taskTextView.text = "Создание задачи"
                 //Делаем задачу
                 clearEventPanel()
                 clearTaskPanel()
@@ -380,6 +385,7 @@ open class ParentFragment : Fragment() {
                 addButton.isEnabled = false
             }
             1 -> {
+                eventTextView.text = "Создание события"
                 //Делаем событие
                 clearTaskPanel()
                 clearEventPanel()
@@ -791,6 +797,7 @@ open class ParentFragment : Fragment() {
             val newTask = tasks[i]
             newTask.checkBoxes = newCheckBoxes.map { it.toString() }.joinToString("|")
             updateTaskForAPI(tasks[i],newTask)
+            tasks[i] = newTask
         }
     }
 
@@ -945,6 +952,7 @@ open class ParentFragment : Fragment() {
         }
     }
     protected fun editEvent(event: Event) {
+        eventTextView.text = "Редактирование события"
         createEventPanel.visibility = View.VISIBLE
         dateEvent.setText(event.date)
         if(event.time.length < 7){
@@ -967,7 +975,7 @@ open class ParentFragment : Fragment() {
             )
             if(newEvent.date != event.date || newEvent.time !=event.time || newEvent.place != event.place || newEvent.event != event.event){
                 updateEventForAPI(event,newEvent)
-                rebuildPage()
+                events[events.indexOf(event)] = newEvent
             }
 
             clearEventPanel()
@@ -976,6 +984,7 @@ open class ParentFragment : Fragment() {
     }
 
     protected fun editTask(task: Task) {
+        taskTextView.text = "Редактирование задачи"
         createTaskPanel.visibility = View.VISIBLE
         dateTask.setText(task.date)
         if(task.time.length < 7){
@@ -1025,8 +1034,8 @@ open class ParentFragment : Fragment() {
                     checkBoxes.map { it.toString() }.joinToString("|")
                 )
                 if(newTask.date != task.date || newTask.time !=task.time || newTask.name != task.name || newTask.points != task.points){
+                    tasks[tasks.indexOf(task)] = newTask
                     updateTaskForAPI(task,newTask)
-                    rebuildPage()
                 }
             }else{
                 createError("Ошибка! Задача была пуста")

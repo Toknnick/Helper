@@ -26,7 +26,8 @@ data class Task(
 data class Room(
     var idRoom: Long,
     var name: String,
-    var password: String
+    var password: String,
+    var single: Boolean
 )
 
 data class User(
