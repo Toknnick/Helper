@@ -1,0 +1,1163 @@
+package com.example.helper1.fragments
+
+import android.annotation.SuppressLint
+import android.app.AlertDialog
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import android.content.res.Resources
+import android.graphics.Color
+import android.graphics.Paint
+import android.os.Bundle
+import android.util.Log
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.CheckBox
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.RelativeLayout
+import android.widget.TextView
+import android.widget.Toast
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import com.example.helper1.MainActivity
+import com.example.helper1.R
+import com.example.helper1.dataBase.ApiClient
+import com.example.helper1.dataBase.CreateMessageCallback
+import com.example.helper1.dataBase.DBHelper
+import com.example.helper1.dataBase.Event
+import com.example.helper1.dataBase.GetAllEventsCallback
+import com.example.helper1.dataBase.GetAllTaskCallback
+import com.example.helper1.dataBase.Task
+import com.example.helper1.dataBase.User
+import com.example.helper1.dataBase.managers.EventManager
+import com.example.helper1.dataBase.managers.RoomManager
+import com.example.helper1.dataBase.managers.TaskManager
+import com.example.helper1.dataBase.managers.UserManager
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.Calendar
+
+@Suppress("DEPRECATION", "NAME_SHADOWING")
+open class ParentFragment : Fragment() {
+    private val retrofit = Retrofit.Builder()
+        .baseUrl("https://api-helper-toknnick.amvera.io/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+
+    protected lateinit var userManager: UserManager
+    protected lateinit var roomManger: RoomManager
+    protected lateinit var eventManager: EventManager
+    protected lateinit var taskManager: TaskManager
+    protected lateinit var mainActivity: MainActivity
+    protected lateinit var datePickerDialog: DatePickerDialog
+    protected lateinit var datePickerDialogForObject: DatePickerDialog
+    protected lateinit var timePickerDialog: TimePickerDialog
+    protected lateinit var deleteButton: Button
+    protected lateinit var editButton: Button
+
+    protected var user: User? = null
+
+    protected var chosenDate: String = ""
+    protected var events: List<Event> = ArrayList()
+    protected var tasks: List<Task> = ArrayList()
+    private var countOfPoint = 1
+    protected var textSize = 21F
+
+    private val ENENT_ID = 10000
+    private val TASK_ID = 232320
+    private val REL_LAYOUT_ID = 145632223
+    private val TEXT_VIEW_NOTHING_TO_DO_ID = 11111111
+
+    protected lateinit var dbHelper: DBHelper
+
+
+    protected lateinit var mainLayout: RelativeLayout
+    protected lateinit var createRoomButton: Button
+    protected lateinit var addRoomButton: Button
+    protected lateinit var addButton: Button
+    protected lateinit var dataPickerButton: Button
+    protected lateinit var createTaskPanel: RelativeLayout
+    protected lateinit var backTaskButton: Button
+    protected lateinit var dateTask: EditText
+    protected lateinit var timeTask: EditText
+    protected lateinit var nameTask: EditText
+    protected lateinit var point0: EditText
+    protected lateinit var pointsPlace: RelativeLayout
+    protected lateinit var addNewPoint: Button
+    protected lateinit var deletePoint: Button
+    protected lateinit var saveTaskButton: Button
+    protected lateinit var createEventPanel: RelativeLayout
+    protected lateinit var backEventButton: Button
+    protected lateinit var dateEvent: EditText
+    protected lateinit var timeEvent: EditText
+    protected lateinit var placeEvent: EditText
+    protected lateinit var eventEvent: EditText
+    protected lateinit var saveEventButton: Button
+
+    protected lateinit var roomNameTextView: TextView
+    protected lateinit var showRoomPanelButton: LinearLayout
+    protected lateinit var createRoomPanel: RelativeLayout
+    protected lateinit var addRoomPanel: RelativeLayout
+    protected lateinit var saveRoomButton: Button
+    protected lateinit var backCreateRoomButton: Button
+    protected lateinit var createNameRoom: EditText
+    protected lateinit var createPasswordRoom: EditText
+    protected lateinit var getRoomButton: Button
+    protected lateinit var backAddRoomButton: Button
+    protected lateinit var addIdRoom: EditText
+    protected lateinit var addPasswordRoom: EditText
+    protected lateinit var roomLayout: LinearLayout
+    protected lateinit var showRoomPanel: RelativeLayout
+
+
+    protected lateinit var createUserPanel: RelativeLayout
+    protected lateinit var saveUserButton: Button
+    protected lateinit var passwordUser: EditText
+    protected lateinit var loginUser: EditText
+    protected lateinit var loginUserButton: Button
+
+
+    protected var idRoomDef: Long = -1
+
+    //TODO: менять у нынешнего пользователя availableRooms после подключения к комнате
+    //TODO: перенести метод с обновлением пароля пользователя в settingsFragment
+
+    private fun initDefElements(){
+        mainLayout = requireView().findViewById<RelativeLayout>(R.id.layout)
+        createRoomButton = requireView().findViewById<Button>(R.id.createRoomButton)
+        addRoomButton = requireView().findViewById<Button>(R.id.addRoomButton)
+        addButton = requireView().findViewById<Button>(R.id.addButton)
+        dataPickerButton = requireView().findViewById<Button>(R.id.dataPickerButton)
+        createTaskPanel = requireView().findViewById<RelativeLayout>(R.id.createTaskPanel)
+        backTaskButton = requireView().findViewById<Button>(R.id.backTaskButton)
+        dateTask = requireView().findViewById<EditText>(R.id.dateTask)
+        timeTask = requireView().findViewById<EditText>(R.id.timeTask)
+        nameTask = requireView().findViewById<EditText>(R.id.nameTask)
+        point0 = requireView().findViewById<EditText>(R.id.point0)
+        pointsPlace = requireView().findViewById<RelativeLayout>(R.id.pointsPlace)
+        addNewPoint = requireView().findViewById<Button>(R.id.addNewPoint)
+        deletePoint = requireView().findViewById<Button>(R.id.deletePoint)
+        saveTaskButton = requireView().findViewById<Button>(R.id.saveTaskButton)
+        createEventPanel = requireView().findViewById<RelativeLayout>(R.id.createEventPanel)
+        backEventButton = requireView().findViewById<Button>(R.id.backEventButton)
+        dateEvent = requireView().findViewById<EditText>(R.id.dateEvent)
+        timeEvent = requireView().findViewById<EditText>(R.id.timeEvent)
+        placeEvent = requireView().findViewById<EditText>(R.id.placeEvent)
+        eventEvent = requireView().findViewById<EditText>(R.id.eventEvent)
+        saveEventButton = requireView().findViewById<Button>(R.id.saveEventButton)
+
+        roomNameTextView = requireView().findViewById<TextView>(R.id.roomNameTextView)
+        showRoomPanelButton = requireView().findViewById<LinearLayout>(R.id.showRoomPanelButton)
+        createRoomPanel = requireView().findViewById<RelativeLayout>(R.id.createRoomPanel)
+        addRoomPanel = requireView().findViewById<RelativeLayout>(R.id.addRoomPanel)
+        saveRoomButton = requireView().findViewById<Button>(R.id.saveRoomButton)
+        backCreateRoomButton = requireView().findViewById<Button>(R.id.backCreateRoomButton)
+        createNameRoom = requireView().findViewById<EditText>(R.id.createNameRoom)
+        createPasswordRoom = requireView().findViewById<EditText>(R.id.createPasswordRoom)
+        getRoomButton = requireView().findViewById<Button>(R.id.getRoomButton)
+        backAddRoomButton = requireView().findViewById<Button>(R.id.backAddRoomButton)
+        addIdRoom = requireView().findViewById<EditText>(R.id.addIdRoom)
+        addPasswordRoom = requireView().findViewById<EditText>(R.id.addPasswordRoom)
+        roomLayout = requireView().findViewById<LinearLayout>(R.id.roomLayout)
+        showRoomPanel = requireView().findViewById<RelativeLayout>(R.id.showRoomPanel)
+
+        createUserPanel = requireView().findViewById<RelativeLayout>(R.id.createUserPanel)
+        saveUserButton = requireView().findViewById<Button>(R.id.saveUserButton)
+        passwordUser = requireView().findViewById<EditText>(R.id.passwordUser)
+        loginUser = requireView().findViewById<EditText>(R.id.loginUser)
+        loginUserButton = requireView().findViewById<Button>(R.id.loginUserButton)
+    }
+
+    protected open fun setUpButtons(){
+        Log.d("MyTag","стартуем")
+    }
+
+    protected fun defSetup(){
+        dbHelper = DBHelper(requireContext())
+        mainActivity = (activity as MainActivity)
+        val apiClient = ApiClient(retrofit)
+        userManager = UserManager(apiClient)
+        roomManger = RoomManager(apiClient)
+        eventManager = EventManager(apiClient)
+        taskManager = TaskManager(apiClient)
+        initDefElements()
+        setUpButtons()
+        addParamsToButtons(point0)
+        initDatePicker()
+        initTimePicker()
+        user = dbHelper.getUser()
+
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        val view = inflater.inflate(R.layout.fragment_rooms, container, false)
+        return view
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.d("MyTag","parenFragment.onResume()")
+    }
+
+    protected fun createEventForAPI(newEvent: Event) {
+        eventManager.getAllEvents(object : GetAllEventsCallback {
+            override fun onSuccess(events: List<Event>) {
+                if(events.isNotEmpty()) {
+                    newEvent.idEvent = (events.last().idEvent + 1)
+                }else{
+                    newEvent.idEvent = 1
+                }
+                eventManager.createEvent(newEvent, object : CreateMessageCallback {
+                    override fun onSuccess(message: String) {
+                        createAllEventsAndTasks()
+                    }
+
+                    override fun onFailure(message: String) {
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                    }
+                })
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    private fun getEventsByDateForAPI(){
+        events = mutableListOf()
+        eventManager.getAllEventsByIdRoom(idRoomDef, object : GetAllEventsCallback {
+            override fun onSuccess(tempEvents: List<Event>) {
+                for (event in tempEvents) {
+                    if(event.date == chosenDate){
+                        events += event
+                    }
+                }
+                events.sortedBy { it.time }
+                createAllEventsAndTasks()
+
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    protected fun updateEventForAPI(previousEvent: Event, updatingEvent: Event){
+        eventManager.updateEvent(previousEvent, updatingEvent, object : CreateMessageCallback {
+            override fun onSuccess(message: String) {
+                changeScrollView()
+                checkToNothingToDo()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+
+    }
+
+    protected fun deleteEventForAPI(deletingEvent: Event){
+        eventManager.deleteEvent(deletingEvent,object : CreateMessageCallback {
+            override fun onSuccess(message: String) {
+                changeScrollView()
+                checkToNothingToDo()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+
+    protected fun createTaskForAPI(newTask: Task) {
+        taskManager.getAllTasks(object : GetAllTaskCallback {
+            override fun onSuccess(tasks: List<Task>) {
+                if(tasks.isNotEmpty()) {
+                    newTask.idTask = (tasks.last().idTask + 1)
+                }
+                else{
+                    newTask.idTask = 1
+                }
+                taskManager.createTask(newTask, object : CreateMessageCallback {
+                    override fun onSuccess(message: String) {
+                        createAllEventsAndTasks()
+                    }
+
+                    override fun onFailure(message: String) {
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                    }
+                })
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    protected fun getTasksByDateForAPI(){
+        tasks = mutableListOf()
+        taskManager.getAllTasksByIdRoom(idRoomDef, object : GetAllTaskCallback {
+            override fun onSuccess(tempTasks: List<Task>) {
+                for (task in tempTasks) {
+                    if(task.date == chosenDate){
+                        tasks += task
+                    }
+                }
+                tasks.sortedBy { it.time }
+
+                createAllEventsAndTasks()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    protected fun updateTaskForAPI(previousTask: Task, updatingTask: Task){
+        taskManager.updateTask(previousTask, updatingTask, object : CreateMessageCallback {
+            override fun onSuccess(message: String) {
+                getTasksByDateForAPI()
+                checkToNothingToDo()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    protected fun deleteTaskForAPI(deletingTask: Task){
+        taskManager.deleteTask(deletingTask,object : CreateMessageCallback {
+            override fun onSuccess(message: String) {
+                changeScrollView()
+                checkToNothingToDo()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+
+    protected open fun rebuildPage(){
+        idRoomDef = user!!.ownRoom
+        changeScrollView()
+    }
+
+    protected fun createNewText(item: Int) {
+        saveEventButton.setOnClickListener {
+            addNewEventIntoScrollView()
+        }
+        saveTaskButton.setOnClickListener {
+            addNewTaskIntoScrollView()
+        }
+        when (item) {
+            0 -> {
+                //Делаем задачу
+                clearEventPanel()
+                clearTaskPanel()
+                countOfPoint = 1
+                createTaskPanel.visibility = View.VISIBLE
+                addButton.isEnabled = false
+            }
+            1 -> {
+                //Делаем событие
+                clearTaskPanel()
+                clearEventPanel()
+                createEventPanel.visibility = View.VISIBLE
+                addButton.isEnabled = false
+            }
+        }
+    }
+
+    protected fun addNewEventIntoScrollView() {
+        if (eventEvent.text.toString().trim().isEmpty()) {
+            createError("Ошибка! Нет описания!")
+            return
+        }
+
+        //Сохраняем в БД
+        val event = Event(
+            0,
+            idRoomDef,
+            stringToDate(dateEvent.text.toString()),
+            stringToTime(timeEvent.text.toString()),
+            placeEvent.text.toString(),
+            eventEvent.text.toString()
+        )
+
+        createError("Созданно на " + event.date)
+
+        if (chosenDate == event.date) {
+            events += event
+        }
+
+        hideEventPanel()
+        clearEventPanel()
+        createEventForAPI(event)
+    }
+
+    protected fun addNewTaskIntoScrollView() {
+        //Добавляем пункты
+        var points: List<String> = ArrayList()
+        var checkBoxes: List<Boolean> = ArrayList()
+        if(point0.text.toString().trim().isNotEmpty() && point0.text.toString().trim()!=""){
+            points += point0.text.toString().trim()
+            checkBoxes += false
+        }
+
+        var j = 1
+        while (countOfPoint > j) {
+            if (pointsPlace.findViewById<EditText>(j + TASK_ID).text.trim().toString()
+                    .isNotEmpty()
+            ) {
+                points += pointsPlace.findViewById<EditText>(j + TASK_ID).text.toString()
+                    .trim()
+                checkBoxes += false
+            }
+            j += 1
+        }
+
+        if (timeTask.text.toString().trim().isEmpty()) {
+            timeTask.setText(
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
+            )
+        }
+
+        if(points.isNotEmpty()) {
+            //Сохраняем в БД
+            val newTask = Task(
+                0,
+                idRoomDef,
+                stringToDate(dateTask.text.toString().trim()),
+                stringToTime(timeTask.text.toString().trim()),
+                nameTask.text.toString().trim(),
+                points.joinToString("|"),
+                checkBoxes.map { it.toString() }.joinToString("|")
+            )
+
+            if (chosenDate == newTask.date) {
+                tasks += newTask
+            }
+
+            createError("Созданно на " + newTask.date)
+            createTaskForAPI(newTask)
+        }
+        else{
+            createError("Задача не создана. Она была пуста")
+        }
+
+        hideTaskPanel()
+        clearTaskPanel()
+    }
+
+    @SuppressLint("ResourceType")
+    protected fun createNewTask(task: Task) {
+        if (mainLayout.findViewById<TextView>(TEXT_VIEW_NOTHING_TO_DO_ID) != null) {
+            mainLayout.removeView(mainLayout.findViewById(TEXT_VIEW_NOTHING_TO_DO_ID))
+        }
+
+        val layout = createRelativeLayout(tasks.indexOf(task))
+        val nameTextView: TextView
+
+        if (task.name.isEmpty())
+            nameTextView = createText("Без названия", true)
+        else
+            nameTextView = createText(task.name, true)
+        layout.addView(nameTextView)
+        nameTextView.id = 666
+        nameTextView.textSize = textSize + 1
+        nameTextView.gravity = Gravity.CENTER
+
+        val points: List<String> = task.points.splitToSequence("|").toList()
+        val checkBoxes: List<Boolean> = task.checkBoxes.split("|").map { it.toBoolean() }
+
+        if (points.count() > points.count()) {
+            repairTask(task, points)
+        }
+
+        var j = 0
+        while (points.count() > j) {
+            val textView = createText(points[j])
+            addParamsToNewPoint(textView, layout, j, checkBoxes[j])
+            j += 1
+        }
+
+        layout.setBackgroundResource(R.drawable.border_task)
+        mainLayout.addView(layout)
+        setupLongClickListeners(layout, tasks.indexOf(task))
+    }
+
+    private fun repairTask(task: Task, points:List<String>) {
+        val tempPoints: MutableList<String> = ArrayList<String>().toMutableList()
+        var i = 0
+        while (i < points.count() - 2) {
+            tempPoints += points[i]
+            i += 1
+        }
+        tempPoints += (points[points.count() - 2] + points[points.count() - 1])
+        val newTask = task
+        newTask.points = tempPoints.joinToString("|")
+        updateTaskForAPI(task,newTask)
+    }
+
+    protected fun createNewEvent(i: Int) {
+        if (mainLayout.findViewById<TextView>(TEXT_VIEW_NOTHING_TO_DO_ID) != null) {
+            mainLayout.removeView(mainLayout.findViewById(TEXT_VIEW_NOTHING_TO_DO_ID))
+        }
+
+        val textView: TextView
+
+        if (events[i].place.isNotEmpty() && events[i].time.length < 7) {
+            textView = createText(
+                "Время: " + events[i].time + System.lineSeparator() +
+                        "Место: " + events[i].place + System.lineSeparator() +
+                        events[i].event, false, true
+            )
+        } else if (events[i].time.length < 7) {
+            textView = createText(
+                "Время: " + events[i].time + System.lineSeparator() +
+                        events[i].event, false, true
+            )
+        } else if (events[i].place.isNotEmpty() && events[i].event.isNotEmpty()) {
+            textView = createText(
+                "Место: " + events[i].place + System.lineSeparator() +
+                        events[i].event, false, true
+            )
+        } else {
+            textView = createText(events[i].event, false, true)
+        }
+
+        textView.setBackgroundResource(R.drawable.border_event)
+        textView.id = i + ENENT_ID
+        mainLayout.addView(textView)
+        setupLongClickListeners(textView, i)
+    }
+
+    protected fun addNewPoint(text: String = "") {
+        val editText = EditText(context)
+        //Подвинуть пункт
+        addParamsToEditText(editText,text)
+        //Подвинуть кнопки
+        addParamsToButtons(editText)
+        countOfPoint += 1
+    }
+
+    //TODO: добавить возможность менять цветa в настройках
+    @SuppressLint("ResourceAsColor")
+    protected fun createText(
+        text: String,
+        isNameText: Boolean = false,
+        isNeedBelow: Boolean = false
+    ): TextView {
+        val textView = TextView(context)
+        val params = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.MATCH_PARENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+        params.setMargins(15, 15, 15, 15)
+
+        if (isNameText) {
+            params.addRule(RelativeLayout.CENTER_HORIZONTAL)
+            params.setMargins(1, 1, 1, 1)
+        }
+
+        if (isNeedBelow) {
+            textView.id = 1488632223 + events.size
+            if (mainLayout.childCount == 0 || (mainLayout.childCount == 1 && mainLayout.getChildAt(
+                    0
+                ) == deleteButton)
+            ) {
+                params.addRule(RelativeLayout.ALIGN_PARENT_START)
+            } else if (mainLayout.getChildAt(mainLayout.childCount - 1) != deleteButton) {
+                params.addRule(
+                    RelativeLayout.BELOW,
+                    mainLayout.getChildAt(mainLayout.childCount - 1).id
+                )
+            } else {
+                params.addRule(
+                    RelativeLayout.BELOW,
+                    mainLayout.getChildAt(mainLayout.childCount - 2).id
+                )
+            }
+        }
+        textView.setTextColor(R.color.text_color)
+        textView.setLayoutParams(params)
+        textView.text = text
+        textView.textSize = textSize
+        return textView
+    }
+
+    @SuppressLint("ResourceAsColor")
+    protected fun createButton(text: String): Button {
+        val button = Button(requireContext())
+        val params = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.WRAP_CONTENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+        params.setMargins(5, 5, 5, 5)
+        button.setLayoutParams(params)
+
+        button.setBackgroundColor(resources.getColor(R.color.button_color))
+        button.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_color))
+        button.text = text
+        button.textSize = textSize
+        button.visibility = View.GONE
+        return button
+    }
+
+    private fun createRelativeLayout(id: Int): RelativeLayout {
+        val layout = RelativeLayout(context)
+        layout.id = REL_LAYOUT_ID + id
+        val params = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.MATCH_PARENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+        params.setMargins(5, 5, 5, 5)
+
+        if (mainLayout.childCount == 0 || (mainLayout.childCount == 1 && mainLayout.getChildAt(
+                0
+            ) == deleteButton)
+        ) {
+            params.addRule(RelativeLayout.ALIGN_PARENT_START)
+        } else if (mainLayout.getChildAt(mainLayout.childCount - 1) != deleteButton) {
+            params.addRule(
+                RelativeLayout.BELOW,
+                mainLayout.getChildAt(mainLayout.childCount - 1).id
+            )
+        } else {
+            params.addRule(
+                RelativeLayout.BELOW,
+                mainLayout.getChildAt(mainLayout.childCount - 2).id
+            )
+        }
+
+        layout.setLayoutParams(params)
+        layout.setPadding(0, 0, 0, 10)
+        return layout
+    }
+
+    @SuppressLint("ResourceAsColor")
+    protected fun addParamsToEditText(editText: EditText, text: String = "") {
+        val params = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.MATCH_PARENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+        //Установить новый пункт
+        params.setMargins(30, 30, 30, 30)
+        editText.setLayoutParams(params)
+        editText.setBackgroundResource(R.color.edit_text)
+        editText.hint = "Пункт"
+        editText.setText(text)
+        editText.id = countOfPoint + TASK_ID
+        editText.setPadding(10, 10, 10, 40)
+        pointsPlace.addView(editText)
+        editText.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_color))
+
+        //Подвинуть новый пункт
+        if (countOfPoint == 1) {
+            params.addRule(RelativeLayout.BELOW, point0.id)
+        } else {
+            params.addRule(
+                RelativeLayout.BELOW,
+                createTaskPanel.findViewById<EditText>(countOfPoint + TASK_ID - 1).id
+            )
+        }
+        editText.setLayoutParams(params)
+    }
+
+    @SuppressLint("ResourceType")
+    protected fun addParamsToNewPoint(
+        textView: TextView,
+        relLayout: RelativeLayout,
+        j: Int,
+        isChecked: Boolean
+    ) {
+        val checkBox = CheckBox(context)
+        val params = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.WRAP_CONTENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+        val checkBoxParams = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.WRAP_CONTENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+
+        if (j == 0) {
+            checkBoxParams.addRule(RelativeLayout.BELOW, relLayout.findViewById<TextView>(666).id)
+        } else {
+            checkBoxParams.addRule(
+                RelativeLayout.BELOW,
+                relLayout.findViewById<TextView>(j + 1321210 - 1).id
+            )
+        }
+
+        params.setMargins(0, 0, 0, 0)
+        textView.maxWidth = (Resources.getSystem().displayMetrics.widthPixels * 0.9f).toInt()
+
+        checkBox.isChecked = isChecked
+
+        if (checkBox.isChecked)
+            textView.apply {
+                paintFlags = paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+                text = textView.text
+            }
+        else
+            textView.apply {
+                paintFlags = paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+                text = textView.text
+            }
+
+        checkBox.id = j + 121210
+        textView.id = j + 1321210
+        params.addRule(RelativeLayout.ALIGN_TOP, checkBox.id)
+        params.addRule(RelativeLayout.RIGHT_OF, checkBox.id)
+        checkBox.setLayoutParams(checkBoxParams)
+        textView.setLayoutParams(params)
+
+        checkBox.setOnClickListener {
+            changeBackgroundOfPoint(textView, checkBox, relLayout.id - REL_LAYOUT_ID, j)
+        }
+
+        relLayout.addView(checkBox)
+        relLayout.addView(textView)
+    }
+
+    protected fun addParamsToButtons(editText: EditText) {
+        val btn1Params = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.WRAP_CONTENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+        val btn2Params = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.WRAP_CONTENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+        val btn3Params = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.WRAP_CONTENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+
+        btn1Params.addRule(RelativeLayout.ALIGN_START, editText.id)
+        btn1Params.addRule(RelativeLayout.BELOW, editText.id)
+        saveTaskButton.setLayoutParams(btn1Params)
+
+        btn2Params.addRule(RelativeLayout.ALIGN_END, editText.id)
+        btn2Params.addRule(RelativeLayout.BELOW, editText.id)
+        addNewPoint.setLayoutParams(btn2Params)
+
+        btn3Params.addRule(RelativeLayout.BELOW, editText.id)
+        btn3Params.addRule(RelativeLayout.LEFT_OF, addNewPoint.id)
+        deletePoint.setLayoutParams(btn3Params)
+    }
+
+    @SuppressLint("SetTextI18n")
+    protected fun changeBackgroundOfPoint(textView: TextView, checkBox: CheckBox, i: Int, j: Int) {
+        val newCheckBoxes = tasks[i].checkBoxes.split("|").map { it.toBoolean() }.toMutableList()
+        val checkboxStateChanged = newCheckBoxes[j] != checkBox.isChecked
+
+        if (checkBox.isChecked) {
+            textView.apply {
+                paintFlags = paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+                text = textView.text
+            }
+            newCheckBoxes[j] = true
+        } else {
+            textView.apply {
+                paintFlags = paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+                text = textView.text
+            }
+            newCheckBoxes[j] = false
+        }
+        if (checkboxStateChanged) {
+            val newTask = tasks[i]
+            newTask.checkBoxes = newCheckBoxes.map { it.toString() }.joinToString("|")
+            updateTaskForAPI(tasks[i],newTask)
+        }
+    }
+
+    protected fun clearEventPanel() {
+        dateEvent.setText("")
+        timeEvent.setText("")
+        placeEvent.setText("")
+        eventEvent.setText("")
+    }
+
+    protected fun clearTaskPanel() {
+        dateTask.setText("")
+        timeTask.setText("")
+        nameTask.setText("")
+        point0.setText("")
+        addParamsToButtons(point0)
+
+        while (countOfPoint > 1) {
+            pointsPlace.removeView(
+                createTaskPanel.findViewById<EditText>(
+                    countOfPoint + TASK_ID - 1
+                )
+            )
+            countOfPoint -= 1
+        }
+    }
+
+    protected fun deletePoint() {
+        if (countOfPoint > 2) {
+            pointsPlace.removeView(pointsPlace.findViewById<EditText>(countOfPoint + TASK_ID - 1))
+            countOfPoint -= 1
+            addParamsToButtons(pointsPlace.findViewById(countOfPoint + TASK_ID - 1))
+        } else if (countOfPoint > 1) {
+            pointsPlace.removeView(pointsPlace.findViewById<EditText>(countOfPoint + TASK_ID - 1))
+            countOfPoint -= 1
+            addParamsToButtons(point0)
+        } else {
+            createError("Ошибка! Нельзя удалить этот пункт!")
+        }
+    }
+
+    protected fun createError(text: String) {
+        Toast.makeText(requireContext(), text, Toast.LENGTH_SHORT).show()
+    }
+
+    protected fun hideTaskPanel() {
+        addButton.isEnabled = true
+        createTaskPanel.visibility = View.GONE
+    }
+
+    protected fun hideEventPanel() {
+        addButton.isEnabled = true
+        createEventPanel.visibility = View.GONE
+    }
+
+    protected fun stringToDate(string: String): String {
+        val newString: String
+
+        if (string.length == 8)
+            newString = string.replace(Regex("(\\d{2})$"), "20$1")
+        else if (string.isEmpty())
+            newString = chosenDate
+        else
+            newString = string
+
+        return newString
+    }
+
+    protected fun stringToTime(string: String): String {
+        val newString: String
+        if (string.isEmpty())
+            newString = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
+        else
+            newString = string
+
+        return newString
+    }
+    protected open fun setupLongClickListeners(view: View, id: Int) {
+        view.setOnLongClickListener {
+            val params = RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT
+            )
+            val paramsToEdit = RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT
+            )
+            params.setMargins(5, 5, 5, 5)
+            paramsToEdit.setMargins(5, 5, 5, 5)
+
+            if (mainLayout.indexOfChild(view) == 0) {
+                params.addRule(RelativeLayout.BELOW, view.id)
+                params.addRule(RelativeLayout.ALIGN_LEFT, view.id)
+            } else {
+                params.addRule(RelativeLayout.ABOVE, view.id)
+                params.addRule(RelativeLayout.ALIGN_LEFT, view.id)
+            }
+            deleteButton.setLayoutParams(params)
+            deleteButton.visibility = View.VISIBLE
+
+            deleteButton.setOnClickListener {
+                editButton.visibility = View.GONE
+                deleteButton.visibility = View.GONE
+                when (view) {
+                    is TextView -> {
+                        deleteEventForAPI(events[id])
+                    }
+
+                    is RelativeLayout -> {
+                        deleteTaskForAPI(tasks[id])
+                    }
+                }
+            }
+
+            if (mainLayout.indexOfChild(view) == 0) {
+                paramsToEdit.addRule(RelativeLayout.BELOW, view.id)
+                paramsToEdit.addRule(RelativeLayout.ALIGN_RIGHT, view.id)
+            } else {
+                paramsToEdit.addRule(RelativeLayout.ABOVE, view.id)
+                paramsToEdit.addRule(RelativeLayout.ALIGN_RIGHT, view.id)
+            }
+            editButton.setLayoutParams(paramsToEdit)
+            editButton.visibility = View.VISIBLE
+
+            editButton.setOnClickListener {
+                editButton.visibility = View.GONE
+                deleteButton.visibility = View.GONE
+                when (view) {
+                    is TextView -> {
+                        editEvent(events[id])
+                    }
+
+                    is RelativeLayout -> {
+                        editTask(tasks[id])
+                    }
+                }
+            }
+            true
+        }
+
+        setTouchListenerForButtons(view)
+        setTouchListenerForButtons(mainLayout)
+    }
+    @SuppressLint("ClickableViewAccessibility")
+    protected open fun setTouchListenerForButtons(view: View) {
+        view.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                deleteButton.visibility = View.GONE
+                editButton.visibility = View.GONE
+            }
+            false
+        }
+    }
+    protected fun editEvent(event: Event) {
+        createEventPanel.visibility = View.VISIBLE
+        dateEvent.setText(event.date)
+        if(event.time.length < 7){
+            timeEvent.setText(event.time)}
+        placeEvent.setText(event.place)
+        eventEvent.setText(event.event)
+        addButton.isEnabled = false
+        saveEventButton.setOnClickListener {
+
+            if (timeEvent.text.toString().isEmpty()) {
+                timeEvent.setText(event.time)
+            }
+            val newEvent = Event(
+                0,
+                idRoomDef,
+                stringToDate(dateEvent.text.toString()),
+                stringToTime(timeEvent.text.toString()),
+                placeEvent.text.toString(),
+                eventEvent.text.toString()
+            )
+            if(newEvent.date != event.date || newEvent.time !=event.time || newEvent.place != event.place || newEvent.event != event.event){
+                updateEventForAPI(event,newEvent)
+                rebuildPage()
+            }
+
+            clearEventPanel()
+            hideEventPanel()
+        }
+    }
+
+    protected fun editTask(task: Task) {
+        createTaskPanel.visibility = View.VISIBLE
+        dateTask.setText(task.date)
+        if(task.time.length < 7){
+            timeTask.setText(task.time)}
+        nameTask.setText(task.name)
+        val previousPoints: List<String> = task.points.splitToSequence("|").toMutableList()
+        point0.setText(previousPoints[0])
+        addParamsToButtons(point0)
+
+        var i = 1
+        while (previousPoints.count() > i) {
+            addNewPoint(previousPoints[i])
+            i+=1
+        }
+
+        saveTaskButton.setOnClickListener {
+            if(previousPoints.isNotEmpty()) {
+                var points: List<String> = ArrayList()
+                var checkBoxes: List<Boolean> = ArrayList()
+                if(point0.text.trim().toString().isNotEmpty()){
+                    points += point0.text.toString()
+                    checkBoxes += false
+                }
+
+                var j = 1
+                while (countOfPoint > j) {
+                    if (pointsPlace.findViewById<EditText>(j + TASK_ID).text.trim().toString()
+                            .isNotEmpty()
+                    ) {
+                        points += pointsPlace.findViewById<EditText>(j + TASK_ID).text.toString()
+                            .trim()
+                        checkBoxes += false
+                    }
+                    j += 1
+                }
+
+                if(timeTask.text.toString().isEmpty()){
+                    timeTask.setText(task.time)}
+
+                val newTask = Task(
+                    0,
+                    idRoomDef,
+                    stringToDate(dateTask.text.toString()),
+                    stringToTime(timeTask.text.toString()),
+                    nameTask.text.toString(),
+                    points.joinToString("|"),
+                    checkBoxes.map { it.toString() }.joinToString("|")
+                )
+                if(newTask.date != task.date || newTask.time !=task.time || newTask.name != task.name || newTask.points != task.points){
+                    updateTaskForAPI(task,newTask)
+                    rebuildPage()
+                }
+            }else{
+                createError("Ошибка! Задача была пуста")
+            }
+            clearTaskPanel()
+            hideTaskPanel()
+        }
+    }
+
+    protected fun createAllEventsAndTasks() {
+        mainLayout.removeAllViews()
+
+        val newList = (events + tasks).sortedBy { it.time }
+        for (item in newList) {
+            when (item) {
+                is Event -> createNewEvent(events.indexOf(item))
+                is Task -> createNewTask(item)
+            }
+        }
+        mainLayout.addView(deleteButton)
+        mainLayout.addView(editButton)
+        checkToNothingToDo()
+    }
+
+    protected fun checkToNothingToDo() {
+        if (mainLayout.childCount == 1) {
+            val textView = createText("На этот день ничего не запланировано")
+            textView.setTextColor(Color.GRAY)
+            textView.id = TEXT_VIEW_NOTHING_TO_DO_ID
+            mainLayout.addView(textView)
+        }
+    }
+
+    protected fun changeScrollView() {
+        getEventsByDateForAPI()
+        getTasksByDateForAPI()
+    }
+
+    protected fun initDatePicker() {
+        val dateSetListener = dateListener(true)
+        val dateSetListenerForObject = dateListener(false)
+        val cal: Calendar = Calendar.getInstance()
+        val year: Int = cal.get(Calendar.YEAR)
+        val month: Int = cal.get(Calendar.MONTH)
+        val day: Int = cal.get(Calendar.DAY_OF_MONTH)
+
+        val style: Int = AlertDialog.THEME_HOLO_LIGHT
+
+        datePickerDialog =
+            DatePickerDialog(requireContext(), style, dateSetListener, year, month, day)
+        datePickerDialogForObject =
+            DatePickerDialog(requireContext(), style, dateSetListenerForObject, year, month, day)
+
+    }
+
+    protected fun dateListener(isMainDatePicker: Boolean = false): DatePickerDialog.OnDateSetListener {
+        val dateSetListener = DatePickerDialog.OnDateSetListener { _, year, month, day ->
+            val date: String
+            var month = month
+            month += 1
+
+            if (month > 9)
+                date = "$day.$month.$year"
+            else
+                date = "$day.0$month.$year"
+
+            if (isMainDatePicker) {
+                dataPickerButton.text = date
+                chosenDate = date
+                dbHelper.updateChosenDate(chosenDate)
+                changeScrollView()
+            } else {
+                dateEvent.setText(date)
+                dateTask.setText(date)
+            }
+        }
+        return dateSetListener
+    }
+
+    protected fun initTimePicker() {
+        val timeSetListener = TimePickerDialog.OnTimeSetListener { _, hour, minute ->
+            val time: String
+            if (hour > 9 && minute > 9)
+                time = "$hour:$minute"
+            else if (hour > 9)
+                time = "$hour:0$minute"
+            else if (minute > 9)
+                time = "0$hour:$minute"
+            else
+                time = "0$hour:0$minute"
+
+            timeEvent.setText(time)
+            timeTask.setText(time)
+        }
+
+        val cal: Calendar = Calendar.getInstance()
+        val hour: Int = cal.get(Calendar.HOUR_OF_DAY)
+        val minute: Int = cal.get(Calendar.MINUTE)
+
+        val style: Int = AlertDialog.THEME_HOLO_LIGHT
+
+        timePickerDialog =
+            TimePickerDialog(requireContext(), style, timeSetListener, hour, minute, true)
+    }
+
+    protected fun showDialog() {
+        val langArray: Array<String> = arrayOf("Задача", "Событие")
+        var selectedEvent = 0 // Инициализируем в 0, который является первым элементом
+        val builder: androidx.appcompat.app.AlertDialog.Builder =
+            androidx.appcompat.app.AlertDialog.Builder(requireContext())
+        builder.setTitle("Выберите тип")
+        builder.setCancelable(false)
+
+        builder.setSingleChoiceItems(
+            langArray, 0
+        ) { _, i ->
+            selectedEvent = i
+        }
+
+        builder.setPositiveButton(
+            "OK"
+        ) { _, _ ->
+            createNewText(selectedEvent)
+        }
+
+        builder.setNegativeButton(
+            "Отмена"
+        ) { dialogInterface, _ -> // закрыть диалог
+            dialogInterface.dismiss()
+        }
+
+        builder.show()
+    }
+}

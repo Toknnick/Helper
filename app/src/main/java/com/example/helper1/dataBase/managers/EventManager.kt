@@ -26,8 +26,29 @@ class EventManager(private val apiClient: ApiClient) {
         })
     }
 
-    fun getAllEvents(idRoom: Long, callback: GetAllEventsCallback) {
-        apiClient.getAllEvents(idRoom, object : Callback<List<Event>> {
+    fun getAllEvents(callback: GetAllEventsCallback) {
+        apiClient.getAllEvents(object : Callback<List<Event>> {
+            override fun onResponse(call: Call<List<Event>>, response: Response<List<Event>>) {
+                if (response.isSuccessful) {
+                    val events = response.body()
+                    if (events != null) {
+                        callback.onSuccess(events)
+                    } else {
+                        callback.onFailure("Ошибка получения событий")
+                    }
+                } else {
+                    callback.onFailure("Ошибка получения событий")
+                }
+            }
+
+            override fun onFailure(call: Call<List<Event>>, t: Throwable) {
+                callback.onFailure("Ошибка получения событий")
+            }
+        })
+    }
+
+    fun getAllEventsByIdRoom(idRoom: Long, callback: GetAllEventsCallback) {
+        apiClient.getAllEventsByIdRoom(idRoom, object : Callback<List<Event>> {
             override fun onResponse(call: Call<List<Event>>, response: Response<List<Event>>) {
                 if (response.isSuccessful) {
                     val events = response.body()

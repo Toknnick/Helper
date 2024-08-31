@@ -29,8 +29,29 @@ class TaskManager(private val apiClient: ApiClient) {
 
 
 
-    fun getAllTasks(idRoom: Long, callback: GetAllTaskCallback) {
-        apiClient.getAllTasks(idRoom, object : Callback<List<Task>> {
+    fun getAllTasks(callback: GetAllTaskCallback) {
+        apiClient.getAllTasks(object : Callback<List<Task>> {
+            override fun onResponse(call: Call<List<Task>>, response: Response<List<Task>>) {
+                if (response.isSuccessful) {
+                    val tasks = response.body()
+                    if (tasks != null) {
+                        callback.onSuccess(tasks)
+                    } else {
+                        callback.onFailure("Ошибка1 получения задач")
+                    }
+                } else {
+                    callback.onFailure("Ошибка2 получения задач")
+                }
+            }
+
+            override fun onFailure(call: Call<List<Task>>, t: Throwable) {
+                callback.onFailure("Ошибка3 получения задач")
+            }
+        })
+    }
+
+    fun getAllTasksByIdRoom(idRoom: Long,callback: GetAllTaskCallback) {
+        apiClient.getAllTasksByIdRoom(idRoom,object : Callback<List<Task>> {
             override fun onResponse(call: Call<List<Task>>, response: Response<List<Task>>) {
                 if (response.isSuccessful) {
                     val tasks = response.body()

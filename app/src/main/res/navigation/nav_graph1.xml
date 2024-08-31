@@ -8,8 +8,7 @@
     <fragment
         android:id="@+id/homeFragment"
         android:name="com.example.helper1.fragments.HomeFragment"
-        android:label="fragment_home"
-        tools:layout="@layout/fragment_home" />
+        android:label="fragment_home" />
     <fragment
         android:id="@+id/roomsFragment"
         android:name="com.example.helper1.fragments.RoomsFragment"

@@ -48,8 +48,13 @@ class ApiClient(private val retrofit: Retrofit) {
         call.enqueue(callback)
     }
 
-    fun getAllEvents(idRoom:Long,callback: Callback<List<Event>>)  {
-        val call = apiInterface.getAllEvent(idRoom)
+    fun getAllEvents(callback: Callback<List<Event>>)  {
+        val call = apiInterface.getAllEvent()
+        call.enqueue(callback)
+    }
+
+    fun getAllEventsByIdRoom(idRoom: Long ,callback: Callback<List<Event>>) {
+        val call = apiInterface.getAllEventsByIdRoom(idRoom)
         call.enqueue(callback)
     }
 
@@ -74,8 +79,13 @@ class ApiClient(private val retrofit: Retrofit) {
         call.enqueue(callback)
     }
 
-    fun getAllTasks(idRoom:Long,callback: Callback<List<Task>>)  {
-        val call = apiInterface.getAllTasks(idRoom)
+    fun getAllTasks(callback: Callback<List<Task>>)  {
+        val call = apiInterface.getAllTasks()
+        call.enqueue(callback)
+    }
+
+    fun getAllTasksByIdRoom(idRoom: Long ,callback: Callback<List<Task>>) {
+        val call = apiInterface.getAllTasksByIdRoom(idRoom)
         call.enqueue(callback)
     }
 

@@ -39,8 +39,11 @@ interface ApiInterface {
     fun getEvent(@Path("idRoom") idRoom:Long, @Path("date") date:String, @Path("time") time:String,
                  @Path("place") place:String, @Path("event") event:String): Call<Event>
 
+    @GET("events/get/all")
+    fun getAllEvent(): Call<List<Event>>
+
     @GET("events/get/all/{idRoom}")
-    fun getAllEvent(@Path("idRoom") idRoom:Long): Call<List<Event>>
+    fun getAllEventsByIdRoom(@Path("idRoom") idRoom:Long): Call<List<Event>>
 
     @PUT("events/update")
     fun updateEvent(@Body event: Event): Call<Void>
@@ -56,8 +59,11 @@ interface ApiInterface {
     fun getTask(@Path("idRoom") idRoom:Long, @Path("date") date:String, @Path("time") time:String,
                  @Path("name") name:String, @Path("points") points:String, @Path("checkBoxes") checkBoxes:String): Call<Task>
 
+    @GET("tasks/get/all")
+    fun getAllTasks(): Call<List<Task>>
+
     @GET("tasks/get/all/{idRoom}")
-    fun getAllTasks(@Path("idRoom") idRoom:Long): Call<List<Task>>
+    fun getAllTasksByIdRoom(@Path("idRoom") idRoom:Long): Call<List<Task>>
 
     @PUT("tasks/update")
     fun updateTask(@Body task: Task): Call<Void>
