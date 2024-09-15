@@ -58,16 +58,16 @@
         android:id="@+id/scrView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_toRightOf="@id/showRoomPanelButton"
+        android:layout_toEndOf="@id/showRoomPanelButton"
         android:layout_above="@id/addButton"
         android:layout_below="@id/roomNameTextView" >
 
-        <LinearLayout
-            android:id="@+id/layout"
-            android:layout_width="wrap_content"
+        <RelativeLayout
+            android:id="@+id/mainLayout"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-        </LinearLayout>
+        </RelativeLayout>
     </ScrollView>
 
     <RelativeLayout
@@ -96,7 +96,7 @@
             <LinearLayout
                 android:id="@+id/roomLayout"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:orientation="vertical" >
             </LinearLayout>
         </ScrollView>

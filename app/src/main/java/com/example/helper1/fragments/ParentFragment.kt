@@ -5,12 +5,18 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.content.ContentValues
 import android.content.Intent
 import android.content.res.Resources
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Paint
+import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
 import android.view.LayoutInflater
@@ -48,8 +54,13 @@ import com.example.helper1.dataBase.managers.UserManager
 import com.squareup.picasso.Picasso
 import io.minio.MinioClient
 import io.minio.PutObjectArgs
+import io.minio.RemoveObjectArgs
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.io.InputStream
+import java.io.OutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -94,7 +105,7 @@ open class ParentFragment : Fragment() {
     protected lateinit var dbHelper: DBHelper
 
 
-    protected lateinit var mainLayout: LinearLayout
+    protected lateinit var mainLayout: RelativeLayout
     protected lateinit var createRoomButton: Button
     protected lateinit var addRoomButton: Button
     protected lateinit var addButton: Button
@@ -155,11 +166,10 @@ open class ParentFragment : Fragment() {
 
     protected var idRoomDef: Long = -1
 
-    //TODO: менять у нынешнего пользователя availableRooms после подключения к комнате
     //TODO: перенести метод с обновлением пароля пользователя в settingsFragment
 
     private fun initDefElements() {
-        mainLayout = requireView().findViewById<LinearLayout>(R.id.layout)
+        mainLayout = requireView().findViewById<RelativeLayout>(R.id.mainLayout)
         createRoomButton = requireView().findViewById<Button>(R.id.createRoomButton)
         addRoomButton = requireView().findViewById<Button>(R.id.addRoomButton)
         addButton = requireView().findViewById<Button>(R.id.addButton)
@@ -286,7 +296,7 @@ open class ParentFragment : Fragment() {
                     }
                 }
                 events.sortedBy { it.time }
-                createAllEventsAndTasksAndImages()
+                //createAllEventsAndTasksAndImages()
 
             }
 
@@ -361,7 +371,7 @@ open class ParentFragment : Fragment() {
                 }
                 tasks.sortedBy { it.time }
 
-                createAllEventsAndTasksAndImages()
+                //createAllEventsAndTasksAndImages()
             }
 
             override fun onFailure(message: String) {
@@ -408,8 +418,6 @@ open class ParentFragment : Fragment() {
                 }
                 imageManager.createImage(image, object : CreateMessageCallback {
                     override fun onSuccess(message: String) {
-                        Toast.makeText(requireContext(), "Изображение добавлено в БД", Toast.LENGTH_LONG).show()
-                        //createAllEventsAndTasksAndImages()
                     }
 
                     override fun onFailure(message: String) {
@@ -449,11 +457,36 @@ open class ParentFragment : Fragment() {
         imageManager.deleteImage(deletingImage, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 images.remove(deletingImage)
+
+                // Удаление изображения из бакета Timeweb Cloud
+                val thread = Thread {
+                    try {
+                        val minioClient = MinioClient.builder()
+                            .endpoint("https://s3.timeweb.cloud")
+                            .credentials("CG4IMNYH6V42KN9PNC68", "hTGbzvCw3xmaJZgcW0dPgiDf52BOdFB6b7YsZ7yf")
+                            .build()
+
+                        // Извлекаем имя файла из URL изображения
+                        val fileName = deletingImage.url.substringAfterLast("/")
+
+                        // Удаление файла из бакета
+                        minioClient.removeObject(
+                            RemoveObjectArgs.builder()
+                                .bucket("9f168657-helper-image-server")
+                                .`object`(fileName)
+                                .build()
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                thread.start()
+
                 createAllEventsAndTasksAndImages()
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), "Ошибка удаления", Toast.LENGTH_LONG).show()
             }
         })
     }
@@ -546,6 +579,7 @@ open class ParentFragment : Fragment() {
                 // Формируем URL для загруженного изображения
                 val imageUrl = "https://9f168657-helper-image-server.s3.timeweb.cloud/$fileName"
                 createImageForAPI(imageUrl)
+                images.last().url = imageUrl
 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -579,18 +613,31 @@ open class ParentFragment : Fragment() {
             ""
         )
 
+        // Проверяем размер изображения
+        val inputStream = requireContext().contentResolver.openInputStream(selectedImageUri!!)
+        val fileSizeInBytes = inputStream?.available()?.toLong() ?: 0
+        val fileSizeInMB = fileSizeInBytes / (1024 * 1024)
+
+        inputStream?.close()
+
+        if (fileSizeInMB > 10) {
+            createError("Ошибка: размер изображения превышает 10 МБ")
+            return
+        }
+
         // Запуск потока для загрузки изображения в Timeweb Cloud
         uploadImageToBucket(selectedImageUri)
 
         createError("Создано на ${image.date}")
         if (chosenDate == image.date) {
             images += image
-            createNewImage(images.indexOf(image),false)
+            createAllEventsAndTasksAndImages(false)
         }
 
         hideImagePanel()
         clearImagePanel()
     }
+
 
 
     private fun createNewImage(i : Int,isFromMySQL : Boolean){
@@ -600,6 +647,11 @@ open class ParentFragment : Fragment() {
 
         val image = images[i]
         val imageView = ImageView(requireContext())
+        imageView.minimumWidth = 200
+        imageView.minimumHeight = 200
+        imageView.maxHeight = 850
+        imageView.adjustViewBounds = true
+
         if(isFromMySQL) {
             Picasso.get()
                 .load(image.url)
@@ -611,14 +663,30 @@ open class ParentFragment : Fragment() {
 
         imageView.id = i + 55536
         val params = RelativeLayout.LayoutParams(
-            RelativeLayout.LayoutParams.WRAP_CONTENT,
-            650
+            RelativeLayout.LayoutParams.MATCH_PARENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
         )
         params.setMargins(5, 5, 5, 5)
 
+        if (mainLayout.childCount == 0 || (mainLayout.childCount == 1 && mainLayout.getChildAt(
+                0
+            ) == deleteButton)
+        ) {
+            params.addRule(RelativeLayout.ALIGN_PARENT_START)
+        } else if (mainLayout.getChildAt(mainLayout.childCount - 1) != deleteButton) {
+            params.addRule(
+                RelativeLayout.BELOW,
+                mainLayout.getChildAt(mainLayout.childCount - 1).id
+            )
+        } else {
+            params.addRule(
+                RelativeLayout.BELOW,
+                mainLayout.getChildAt(mainLayout.childCount - 2).id
+            )
+        }
+
         imageView.setLayoutParams(params)
         mainLayout.addView(imageView)
-        //TODO: добавить удаление картинки
         setupLongClickListeners(imageView, i)
     }
 
@@ -643,7 +711,7 @@ open class ParentFragment : Fragment() {
 
         if (chosenDate == event.date) {
             events += event
-            createNewEvent(events.indexOf(event))
+            createAllEventsAndTasksAndImages()
         }
 
         hideEventPanel()
@@ -692,7 +760,7 @@ open class ParentFragment : Fragment() {
 
             if (chosenDate == newTask.date) {
                 tasks += newTask
-                createNewTask(newTask)
+                createAllEventsAndTasksAndImages()
             }
 
             createError("Созданно на " + newTask.date)
@@ -1137,12 +1205,13 @@ open class ParentFragment : Fragment() {
                 params.addRule(RelativeLayout.ABOVE, view.id)
                 params.addRule(RelativeLayout.ALIGN_LEFT, view.id)
             }
-            deleteButton.setLayoutParams(params)
+            deleteButton.layoutParams = params
             deleteButton.visibility = View.VISIBLE
 
             deleteButton.setOnClickListener {
                 editButton.visibility = View.GONE
                 deleteButton.visibility = View.GONE
+
                 when (view) {
                     is TextView -> {
                         deleteEventForAPI(events[id])
@@ -1151,9 +1220,12 @@ open class ParentFragment : Fragment() {
                     is RelativeLayout -> {
                         deleteTaskForAPI(tasks[id])
                     }
+
+                    is ImageView -> {
+                        deleteImageForAPI(images[id])
+                    }
                 }
             }
-
             if (mainLayout.indexOfChild(view) == 0) {
                 paramsToEdit.addRule(RelativeLayout.BELOW, view.id)
                 paramsToEdit.addRule(RelativeLayout.ALIGN_RIGHT, view.id)
@@ -1161,30 +1233,98 @@ open class ParentFragment : Fragment() {
                 paramsToEdit.addRule(RelativeLayout.ABOVE, view.id)
                 paramsToEdit.addRule(RelativeLayout.ALIGN_RIGHT, view.id)
             }
-            editButton.setLayoutParams(paramsToEdit)
-            editButton.visibility = View.VISIBLE
 
-            editButton.setOnClickListener {
-                editButton.visibility = View.GONE
-                deleteButton.visibility = View.GONE
-                when (view) {
-                    is TextView -> {
-                        editEvent(events[id])
-                    }
+            if (view !is ImageView) {
+                editButton.text = "Редактировать"
+                editButton.layoutParams = paramsToEdit
+                editButton.visibility = View.VISIBLE
 
-                    is RelativeLayout -> {
-                        editTask(tasks[id])
+                editButton.setOnClickListener {
+                    editButton.visibility = View.GONE
+                    deleteButton.visibility = View.GONE
+                    when (view) {
+                        is TextView -> {
+                            editEvent(events[id])
+                        }
+
+                        is RelativeLayout -> {
+                            editTask(tasks[id])
+                        }
                     }
                 }
             }
+            else{
+
+                editButton.text = "Скачать"
+                editButton.layoutParams = paramsToEdit
+                editButton.visibility = View.VISIBLE
+
+                editButton.setOnClickListener {
+                    deleteButton.visibility = View.GONE
+                    editButton.visibility = View.GONE
+
+                    downloadImage(images[id])
+                    Toast.makeText(requireContext(), "Изображение сохранено в галерею", Toast.LENGTH_LONG).show()
+                }
+            }
+
             true
         }
-
-        setTouchListenerForButtons(view)
-        setTouchListenerForButtons(mainLayout)
+        setListeners(view)
     }
+
+    private fun downloadImage(image: Image) {
+        val thread = Thread {
+            try {
+                // Получаем изображение по URL
+                val url = URL(image.url)
+                val connection: HttpURLConnection = url.openConnection() as HttpURLConnection
+                connection.doInput = true
+                connection.connect()
+                val inputStream: InputStream = connection.inputStream
+                val bitmap = BitmapFactory.decodeStream(inputStream)
+
+                // Сохраняем изображение в галерею
+                saveImageToGallery(bitmap,image)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        thread.start()
+    }
+
+    private fun saveImageToGallery(bitmap: Bitmap,image:Image) {
+        val tempName = image.url.substringAfterLast("/")
+
+        val filename = "${tempName.substringBeforeLast(".")}.jpg"
+        val fos: OutputStream
+
+        val resolver = requireContext().contentResolver
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+        }
+        val imageUri: Uri? = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+        fos = resolver.openOutputStream(imageUri!!)!!
+
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+        fos.flush()
+        fos.close()
+
+        // Уведомляем медиа-сканер о новом изображении
+        MediaScannerConnection.scanFile(
+            requireContext(),
+            arrayOf(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString() + "/" + filename),
+            null,
+            null
+        )
+
+    }
+
+    protected open fun setListeners(view: View){}
     @SuppressLint("ClickableViewAccessibility")
-    protected open fun setTouchListenerForButtons(view: View) {
+    protected open fun setTouchListenerForButtons(view: View,) {
         view.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_DOWN) {
                 deleteButton.visibility = View.GONE
@@ -1287,17 +1427,23 @@ open class ParentFragment : Fragment() {
         }
     }
 
-    protected fun createAllEventsAndTasksAndImages() {
+    protected fun createAllEventsAndTasksAndImages(isFromMysql:Boolean = true) {
         mainLayout.removeAllViews()
 
         val newList = (events + tasks + images).sortedBy { it.time }
         for (item in newList) {
-            when (item) {
-                is Event -> createNewEvent(events.indexOf(item))
-                is Task -> createNewTask(item)
-                is Image -> createNewImage(images.indexOf(item),true)
+            if(images.isNotEmpty() && item == images.last() && !isFromMysql){
+                createNewImage(images.indexOf(item),isFromMysql)
+            }
+            else {
+                when (item) {
+                    is Event -> createNewEvent(events.indexOf(item))
+                    is Task -> createNewTask(item)
+                    is Image -> createNewImage(images.indexOf(item), true)
+                }
             }
         }
+
         mainLayout.addView(deleteButton)
         mainLayout.addView(editButton)
         checkToNothingToDo()
@@ -1371,7 +1517,7 @@ open class ParentFragment : Fragment() {
     }
 
     protected fun showDialog() {
-        val langArray: Array<String> = arrayOf("Задача", "Событие", "Изображение")
+        val langArray: Array<String> = arrayOf("Задача", "Мероприятие", "Изображение")
         var selectedEvent = 0 // Инициализируем в 0, который является первым элементом
         val builder: androidx.appcompat.app.AlertDialog.Builder =
             androidx.appcompat.app.AlertDialog.Builder(requireContext())

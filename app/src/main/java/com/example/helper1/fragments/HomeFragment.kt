@@ -2,7 +2,6 @@ package com.example.helper1.fragments
 
 import android.annotation.SuppressLint
 import android.util.Log
-import android.view.MotionEvent
 import android.view.View
 import android.widget.RelativeLayout
 import android.widget.ScrollView
@@ -84,9 +83,11 @@ class HomeFragment : ParentFragment(){
         }
         chooseImageButton.setOnClickListener{
             chooseImage()
+            selectedImageUri = null
         }
         saveImageButton.setOnClickListener{
-            addNewImageIntoScrollView()
+            if(selectedImageUri != null)
+                addNewImageIntoScrollView()
         }
 
         loginUserButton.setOnClickListener{
@@ -274,85 +275,9 @@ class HomeFragment : ParentFragment(){
         })
     }
 
-
-    override fun setupLongClickListeners(view: View, id: Int) {
-        view.setOnLongClickListener {
-            val params = RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT,
-                RelativeLayout.LayoutParams.WRAP_CONTENT
-            )
-            val paramsToEdit = RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT,
-                RelativeLayout.LayoutParams.WRAP_CONTENT
-            )
-            params.setMargins(5, 5, 5, 5)
-            paramsToEdit.setMargins(5, 5, 5, 5)
-
-            if (mainLayout.indexOfChild(view) == 0) {
-                params.addRule(RelativeLayout.BELOW, view.id)
-                params.addRule(RelativeLayout.ALIGN_LEFT, view.id)
-            } else {
-                params.addRule(RelativeLayout.ABOVE, view.id)
-                params.addRule(RelativeLayout.ALIGN_LEFT, view.id)
-            }
-            deleteButton.setLayoutParams(params)
-            deleteButton.visibility = View.VISIBLE
-
-            deleteButton.setOnClickListener {
-                editButton.visibility = View.GONE
-                deleteButton.visibility = View.GONE
-                when (view) {
-                    is TextView -> {
-                        deleteEventForAPI(events[id])
-                    }
-
-                    is RelativeLayout -> {
-                        deleteTaskForAPI(tasks[id])
-                    }
-                }
-            }
-
-            if (mainLayout.indexOfChild(view) == 0) {
-                paramsToEdit.addRule(RelativeLayout.BELOW, view.id)
-                paramsToEdit.addRule(RelativeLayout.ALIGN_RIGHT, view.id)
-            } else {
-                paramsToEdit.addRule(RelativeLayout.ABOVE, view.id)
-                paramsToEdit.addRule(RelativeLayout.ALIGN_RIGHT, view.id)
-            }
-            editButton.setLayoutParams(paramsToEdit)
-            editButton.visibility = View.VISIBLE
-
-            editButton.setOnClickListener {
-                editButton.visibility = View.GONE
-                deleteButton.visibility = View.GONE
-                when (view) {
-                    is TextView -> {
-                        editEvent(events[id])
-                    }
-
-                    is RelativeLayout -> {
-                        editTask(tasks[id])
-                    }
-                }
-            }
-            true
-        }
-
+    override fun setListeners(view: View){
         setTouchListenerForButtons(view)
         setTouchListenerForButtons(mainLayout)
         setTouchListenerForButtons(requireView().findViewById(R.id.conLayout))
     }
-
-
-    @SuppressLint("ClickableViewAccessibility")
-    override fun setTouchListenerForButtons(view: View) {
-        view.setOnTouchListener { _, event ->
-            if (event.action == MotionEvent.ACTION_DOWN) {
-                deleteButton.visibility = View.GONE
-                editButton.visibility = View.GONE
-            }
-            false
-        }
-    }
-
 }
