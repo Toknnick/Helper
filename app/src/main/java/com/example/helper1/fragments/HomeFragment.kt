@@ -42,7 +42,6 @@ class HomeFragment : ParentFragment(){
         }else{
             updateLocalUser()
             mainActivity.startActivity()
-            idRoomDef = user!!.ownRoom
         }
 
         addButton.setOnClickListener {
@@ -98,7 +97,7 @@ class HomeFragment : ParentFragment(){
                 ""
             )
             if(loggingUser.login.isNotEmpty() && loggingUser.password.isNotEmpty()) {
-                loginUserForAPI(loggingUser, false)
+                loginUserForAPI(loggingUser)
             }else{
                 createError("Ошибка! Заполните данные")
             }
@@ -120,6 +119,7 @@ class HomeFragment : ParentFragment(){
 
         dataPickerButton.text = chosenDate
         if (user != null) {
+            idRoomDef = user!!.ownRoom
             rebuildPage()
         }
     }
@@ -161,10 +161,10 @@ class HomeFragment : ParentFragment(){
         userManager.getUser(user!!.login, object : GetUserCallback {
             override fun onSuccess(gotUser: User) {
                 user!!.password = gotUser.password
+                user!!.ownRoom = gotUser.ownRoom
                 user!!.availableRooms = gotUser.availableRooms
                 dbHelper.updateUser(user!!)
                 createUserPanel.visibility = View.GONE
-
             }
 
             override fun onFailure(isExist: Boolean) {
@@ -177,11 +177,14 @@ class HomeFragment : ParentFragment(){
         })
     }
 
-    private fun loginUserForAPI(loggingUser : User, isUpdateUserData : Boolean){
+    private fun loginUserForAPI(loggingUser : User){
         userManager.getUser(loginUser.text.toString().trim(),object : GetUserCallback {
             override fun onSuccess(gotUser: User) {
                 if (loggingUser.password == gotUser.password) {
                     loggingUser.availableRooms = gotUser.availableRooms
+                    loggingUser.ownRoom = gotUser.ownRoom
+                    idRoomDef = gotUser.ownRoom
+                    rebuildPage()
                     mainActivity.startActivity()
                     dbHelper.createUser(loggingUser)
                     setUpElements()
@@ -196,8 +199,7 @@ class HomeFragment : ParentFragment(){
 
 
             override fun onFailure(isExist: Boolean) {
-                if(!isUpdateUserData)
-                    Toast.makeText(requireContext(),"Ошибка! Пользователь не найден", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(),"Ошибка! Пользователь не найден", Toast.LENGTH_LONG).show()
             }
         })
 

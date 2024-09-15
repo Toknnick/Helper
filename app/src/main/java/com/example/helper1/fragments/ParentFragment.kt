@@ -493,7 +493,6 @@ open class ParentFragment : Fragment() {
 
 
     protected open fun rebuildPage() {
-        idRoomDef = user!!.ownRoom
         changeScrollView()
     }
 
