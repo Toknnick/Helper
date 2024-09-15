@@ -1,22 +1,27 @@
 package com.example.helper1.fragments
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Color
 import android.graphics.Paint
+import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.util.Log
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.CalendarView
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
@@ -30,13 +35,19 @@ import com.example.helper1.dataBase.CreateMessageCallback
 import com.example.helper1.dataBase.DBHelper
 import com.example.helper1.dataBase.Event
 import com.example.helper1.dataBase.GetAllEventsCallback
+import com.example.helper1.dataBase.GetAllImagesCallback
 import com.example.helper1.dataBase.GetAllTaskCallback
+import com.example.helper1.dataBase.Image
 import com.example.helper1.dataBase.Task
 import com.example.helper1.dataBase.User
 import com.example.helper1.dataBase.managers.EventManager
+import com.example.helper1.dataBase.managers.ImageManager
 import com.example.helper1.dataBase.managers.RoomManager
 import com.example.helper1.dataBase.managers.TaskManager
 import com.example.helper1.dataBase.managers.UserManager
+import com.squareup.picasso.Picasso
+import io.minio.MinioClient
+import io.minio.PutObjectArgs
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.time.LocalDateTime
@@ -44,7 +55,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
-@Suppress("DEPRECATION", "NAME_SHADOWING")
+@Suppress("DEPRECATION")
 open class ParentFragment : Fragment() {
     private val retrofit = Retrofit.Builder()
         .baseUrl("https://api-helper-toknnick.amvera.io/")
@@ -56,6 +67,7 @@ open class ParentFragment : Fragment() {
     protected lateinit var roomManger: RoomManager
     protected lateinit var eventManager: EventManager
     protected lateinit var taskManager: TaskManager
+    protected lateinit var imageManager: ImageManager
     protected lateinit var mainActivity: MainActivity
     protected lateinit var datePickerDialog: DatePickerDialog
     protected lateinit var datePickerDialogForObject: DatePickerDialog
@@ -65,9 +77,12 @@ open class ParentFragment : Fragment() {
 
     protected var user: User? = null
 
+    protected var selectedImageUri: Uri? = null
+
     protected var chosenDate: String = ""
     protected var events: MutableList<Event> = ArrayList<Event>().toMutableList()
     protected var tasks: MutableList<Task> = ArrayList<Task>().toMutableList()
+    protected var images: MutableList<Image> = ArrayList<Image>().toMutableList()
     private var countOfPoint = 1
     protected var textSize = 21F
 
@@ -79,7 +94,7 @@ open class ParentFragment : Fragment() {
     protected lateinit var dbHelper: DBHelper
 
 
-    protected lateinit var mainLayout: RelativeLayout
+    protected lateinit var mainLayout: LinearLayout
     protected lateinit var createRoomButton: Button
     protected lateinit var addRoomButton: Button
     protected lateinit var addButton: Button
@@ -127,13 +142,24 @@ open class ParentFragment : Fragment() {
     protected lateinit var loginUserButton: Button
 
 
+    protected lateinit var createImagePanel: RelativeLayout
+    protected lateinit var imageTextView: TextView
+    protected lateinit var backImageButton: Button
+    protected lateinit var dateImage: EditText
+    protected lateinit var timeImage: EditText
+    protected lateinit var chooseImageButton: Button
+    protected lateinit var saveImageButton: Button
+    protected lateinit var imageIcon: ImageView
+    protected lateinit var calendarView: CalendarView
+
+
     protected var idRoomDef: Long = -1
 
     //TODO: менять у нынешнего пользователя availableRooms после подключения к комнате
     //TODO: перенести метод с обновлением пароля пользователя в settingsFragment
 
-    private fun initDefElements(){
-        mainLayout = requireView().findViewById<RelativeLayout>(R.id.layout)
+    private fun initDefElements() {
+        mainLayout = requireView().findViewById<LinearLayout>(R.id.layout)
         createRoomButton = requireView().findViewById<Button>(R.id.createRoomButton)
         addRoomButton = requireView().findViewById<Button>(R.id.addRoomButton)
         addButton = requireView().findViewById<Button>(R.id.addButton)
@@ -178,27 +204,38 @@ open class ParentFragment : Fragment() {
         passwordUser = requireView().findViewById<EditText>(R.id.passwordUser)
         loginUser = requireView().findViewById<EditText>(R.id.loginUser)
         loginUserButton = requireView().findViewById<Button>(R.id.loginUserButton)
+
+        createImagePanel = requireView().findViewById<RelativeLayout>(R.id.createImagePanel)
+        imageTextView = requireView().findViewById<TextView>(R.id.imageTextView)
+        backImageButton = requireView().findViewById<Button>(R.id.backImageButton)
+        dateImage = requireView().findViewById<EditText>(R.id.dateImage)
+        timeImage = requireView().findViewById<EditText>(R.id.timeImage)
+        saveImageButton = requireView().findViewById<Button>(R.id.saveImageButton)
+        chooseImageButton = requireView().findViewById<Button>(R.id.chooseImageButton)
+        imageIcon = requireView().findViewById<ImageView>(R.id.imageIcon)
+        calendarView = requireView().findViewById<CalendarView>(R.id.calendarView)
     }
 
-    protected open fun setUpButtons(){
-        Log.d("MyTag","стартуем")
+    protected open fun setUpButtons() {
+        Log.d("MyTag", "стартуем")
     }
 
-    protected fun defSetup(){
+    protected fun defSetup() {
         dbHelper = DBHelper(requireContext())
+        chosenDate = dbHelper.getChosenDate()
         mainActivity = (activity as MainActivity)
         val apiClient = ApiClient(retrofit)
         userManager = UserManager(apiClient)
         roomManger = RoomManager(apiClient)
         eventManager = EventManager(apiClient)
         taskManager = TaskManager(apiClient)
+        imageManager = ImageManager(apiClient)
         initDefElements()
         setUpButtons()
         addParamsToButtons(point0)
         initDatePicker()
         initTimePicker()
         user = dbHelper.getUser()
-
     }
 
     override fun onCreateView(
@@ -211,20 +248,19 @@ open class ParentFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        Log.d("MyTag","parenFragment.onResume()")
     }
 
     protected fun createEventForAPI(newEvent: Event) {
         eventManager.getAllEvents(object : GetAllEventsCallback {
             override fun onSuccess(events: List<Event>) {
-                if(events.isNotEmpty()) {
+                if (events.isNotEmpty()) {
                     newEvent.idEvent = (events.last().idEvent + 1)
-                }else{
+                } else {
                     newEvent.idEvent = 1
                 }
                 eventManager.createEvent(newEvent, object : CreateMessageCallback {
                     override fun onSuccess(message: String) {
-                        createAllEventsAndTasks()
+                        //createAllEventsAndTasksAndImages()
                     }
 
                     override fun onFailure(message: String) {
@@ -240,17 +276,17 @@ open class ParentFragment : Fragment() {
     }
 
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
-    private fun getEventsByDateForAPI(){
+    private fun getEventsByDateForAPI() {
         events = mutableListOf()
         eventManager.getAllEventsByIdRoom(idRoomDef, object : GetAllEventsCallback {
             override fun onSuccess(tempEvents: List<Event>) {
                 for (event in tempEvents) {
-                    if(event.date == chosenDate){
+                    if (event.date == chosenDate) {
                         events += event
                     }
                 }
                 events.sortedBy { it.time }
-                createAllEventsAndTasks()
+                createAllEventsAndTasksAndImages()
 
             }
 
@@ -260,11 +296,11 @@ open class ParentFragment : Fragment() {
         })
     }
 
-    protected fun updateEventForAPI(previousEvent: Event, updatingEvent: Event){
+    protected fun updateEventForAPI(previousEvent: Event, updatingEvent: Event) {
         eventManager.updateEvent(previousEvent, updatingEvent, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 //changeScrollView()
-                createAllEventsAndTasks()
+                createAllEventsAndTasksAndImages()
             }
 
             override fun onFailure(message: String) {
@@ -274,11 +310,11 @@ open class ParentFragment : Fragment() {
 
     }
 
-    protected fun deleteEventForAPI(deletingEvent: Event){
-        eventManager.deleteEvent(deletingEvent,object : CreateMessageCallback {
+    protected fun deleteEventForAPI(deletingEvent: Event) {
+        eventManager.deleteEvent(deletingEvent, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 events.remove(deletingEvent)
-                createAllEventsAndTasks()
+                createAllEventsAndTasksAndImages()
             }
 
             override fun onFailure(message: String) {
@@ -291,15 +327,14 @@ open class ParentFragment : Fragment() {
     protected fun createTaskForAPI(newTask: Task) {
         taskManager.getAllTasks(object : GetAllTaskCallback {
             override fun onSuccess(tasks: List<Task>) {
-                if(tasks.isNotEmpty()) {
+                if (tasks.isNotEmpty()) {
                     newTask.idTask = (tasks.last().idTask + 1)
-                }
-                else{
+                } else {
                     newTask.idTask = 1
                 }
                 taskManager.createTask(newTask, object : CreateMessageCallback {
                     override fun onSuccess(message: String) {
-                        createAllEventsAndTasks()
+                        //createAllEventsAndTasksAndImages()
                     }
 
                     override fun onFailure(message: String) {
@@ -315,18 +350,18 @@ open class ParentFragment : Fragment() {
     }
 
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
-    protected fun getTasksByDateForAPI(){
+    protected fun getTasksByDateForAPI() {
         tasks = mutableListOf<Task>()
         taskManager.getAllTasksByIdRoom(idRoomDef, object : GetAllTaskCallback {
             override fun onSuccess(tempTasks: List<Task>) {
                 for (task in tempTasks) {
-                    if(task.date == chosenDate){
+                    if (task.date == chosenDate) {
                         tasks += task
                     }
                 }
                 tasks.sortedBy { it.time }
 
-                createAllEventsAndTasks()
+                createAllEventsAndTasksAndImages()
             }
 
             override fun onFailure(message: String) {
@@ -335,11 +370,11 @@ open class ParentFragment : Fragment() {
         })
     }
 
-    protected fun updateTaskForAPI(previousTask: Task, updatingTask: Task){
+    protected fun updateTaskForAPI(previousTask: Task, updatingTask: Task) {
         taskManager.updateTask(previousTask, updatingTask, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 //changeScrollView()
-                createAllEventsAndTasks()
+                createAllEventsAndTasksAndImages()
             }
 
             override fun onFailure(message: String) {
@@ -348,11 +383,73 @@ open class ParentFragment : Fragment() {
         })
     }
 
-    protected fun deleteTaskForAPI(deletingTask: Task){
-        taskManager.deleteTask(deletingTask,object : CreateMessageCallback {
+    protected fun deleteTaskForAPI(deletingTask: Task) {
+        taskManager.deleteTask(deletingTask, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 tasks.remove(deletingTask)
-                createAllEventsAndTasks()
+                createAllEventsAndTasksAndImages()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    private fun createImageForAPI(url: String) {
+        val image = this.images.last()
+        imageManager.getAllImages(object : GetAllImagesCallback {
+            override fun onSuccess(images: List<Image>) {
+                image.url = url
+                if (images.isNotEmpty()) {
+                    image.idImage = (images.last().idImage + 1)
+                } else {
+                    image.idImage = 1
+                }
+                imageManager.createImage(image, object : CreateMessageCallback {
+                    override fun onSuccess(message: String) {
+                        Toast.makeText(requireContext(), "Изображение добавлено в БД", Toast.LENGTH_LONG).show()
+                        //createAllEventsAndTasksAndImages()
+                    }
+
+                    override fun onFailure(message: String) {
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                    }
+                })
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    private fun getImagesByDateForAPI() {
+        images = mutableListOf()
+        imageManager.getAllImagesByIdRoom(idRoomDef, object : GetAllImagesCallback {
+            override fun onSuccess(tempImages: List<Image>) {
+                for (image in tempImages) {
+                    if (image.date == chosenDate) {
+                        images += image
+                    }
+                }
+                events.sortedBy { it.time }
+                createAllEventsAndTasksAndImages()
+
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    protected fun deleteImageForAPI(deletingImage: Image) {
+        imageManager.deleteImage(deletingImage, object : CreateMessageCallback {
+            override fun onSuccess(message: String) {
+                images.remove(deletingImage)
+                createAllEventsAndTasksAndImages()
             }
 
             override fun onFailure(message: String) {
@@ -362,12 +459,12 @@ open class ParentFragment : Fragment() {
     }
 
 
-    protected open fun rebuildPage(){
+    protected open fun rebuildPage() {
         idRoomDef = user!!.ownRoom
         changeScrollView()
     }
 
-    protected fun createNewText(item: Int) {
+    private fun createNewObject(item: Int) {
         saveEventButton.setOnClickListener {
             addNewEventIntoScrollView()
         }
@@ -384,6 +481,7 @@ open class ParentFragment : Fragment() {
                 createTaskPanel.visibility = View.VISIBLE
                 addButton.isEnabled = false
             }
+
             1 -> {
                 eventTextView.text = "Создание события"
                 //Делаем событие
@@ -392,8 +490,138 @@ open class ParentFragment : Fragment() {
                 createEventPanel.visibility = View.VISIBLE
                 addButton.isEnabled = false
             }
+
+            2 -> {
+                imageTextView.text = "Создание изображения"
+                clearImagePanel()
+                createImagePanel.visibility = View.VISIBLE
+                addButton.isEnabled = false
+            }
         }
     }
+
+    private val PICK_IMAGE_REQUEST = 1
+
+    protected fun chooseImage() {
+        val intent = Intent(Intent.ACTION_PICK)
+        intent.type = "image/*"
+        startActivityForResult(intent, PICK_IMAGE_REQUEST)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null && data.data != null) {
+            selectedImageUri = data.data
+            imageIcon.setImageURI(selectedImageUri)
+        }
+    }
+
+    private fun uploadImageToBucket(imageUri: Uri?) {
+        val thread = Thread {
+            try {
+                val minioClient = MinioClient.builder()
+                    .endpoint("https://s3.timeweb.cloud")
+                    .credentials("CG4IMNYH6V42KN9PNC68", "hTGbzvCw3xmaJZgcW0dPgiDf52BOdFB6b7YsZ7yf")
+                    .build()
+
+                // Открываем InputStream для файла
+                val inputStream = requireContext().contentResolver.openInputStream(imageUri!!)
+
+                // Получаем имя файла из Uri
+                val fileName = getFileNameFromUri(imageUri)
+
+                // Загружаем файл в бакет TimeWeb Cloud
+                try {
+                    minioClient.putObject(
+                        PutObjectArgs.builder()
+                            .bucket("9f168657-helper-image-server")
+                            .`object`(fileName) // Используем извлеченное имя файла
+                            .stream(inputStream, -1, 10485760)
+                            .contentType("image/jpeg").build()
+                    )
+                } finally {
+                    inputStream?.close()
+                }
+
+                // Формируем URL для загруженного изображения
+                val imageUrl = "https://9f168657-helper-image-server.s3.timeweb.cloud/$fileName"
+                createImageForAPI(imageUrl)
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        thread.start()
+    }
+
+
+    private fun getFileNameFromUri(uri: Uri): String {
+        var fileName = "image.jpg" // Имя файла по умолчанию
+
+        val cursor = requireContext().contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (nameIndex != -1) {
+                    fileName = it.getString(nameIndex)
+                }
+            }
+        }
+        return fileName
+    }
+
+    protected fun addNewImageIntoScrollView() {
+        val image = Image(
+            (images.lastIndex + 1).toLong(),
+            idRoomDef,
+            stringToDate(dateImage.text.toString().trim()),
+            stringToTime(timeImage.text.toString().trim()),
+            ""
+        )
+
+        // Запуск потока для загрузки изображения в Timeweb Cloud
+        uploadImageToBucket(selectedImageUri)
+
+        createError("Создано на ${image.date}")
+        if (chosenDate == image.date) {
+            images += image
+            createNewImage(images.indexOf(image),false)
+        }
+
+        hideImagePanel()
+        clearImagePanel()
+    }
+
+
+    private fun createNewImage(i : Int,isFromMySQL : Boolean){
+        if (mainLayout.findViewById<TextView>(TEXT_VIEW_NOTHING_TO_DO_ID) != null) {
+            mainLayout.removeView(mainLayout.findViewById(TEXT_VIEW_NOTHING_TO_DO_ID))
+        }
+
+        val image = images[i]
+        val imageView = ImageView(requireContext())
+        if(isFromMySQL) {
+            Picasso.get()
+                .load(image.url)
+                .into(imageView)
+        }
+        else {
+            imageView.setImageURI(selectedImageUri)
+        }
+
+        imageView.id = i + 55536
+        val params = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.WRAP_CONTENT,
+            650
+        )
+        params.setMargins(5, 5, 5, 5)
+
+        imageView.setLayoutParams(params)
+        mainLayout.addView(imageView)
+        //TODO: добавить удаление картинки
+        setupLongClickListeners(imageView, i)
+    }
+
 
     protected fun addNewEventIntoScrollView() {
         if (eventEvent.text.toString().trim().isEmpty()) {
@@ -415,6 +643,7 @@ open class ParentFragment : Fragment() {
 
         if (chosenDate == event.date) {
             events += event
+            createNewEvent(events.indexOf(event))
         }
 
         hideEventPanel()
@@ -463,6 +692,7 @@ open class ParentFragment : Fragment() {
 
             if (chosenDate == newTask.date) {
                 tasks += newTask
+                createNewTask(newTask)
             }
 
             createError("Созданно на " + newTask.date)
@@ -483,16 +713,16 @@ open class ParentFragment : Fragment() {
         }
 
         val layout = createRelativeLayout(tasks.indexOf(task))
-        val nameTextView: TextView
+        //val nameTextView: TextView
 
-        if (task.name.isEmpty())
+        /*if (task.name.isEmpty())
             nameTextView = createText("Без названия", true)
         else
-            nameTextView = createText(task.name, true)
-        layout.addView(nameTextView)
-        nameTextView.id = 666
-        nameTextView.textSize = textSize + 1
-        nameTextView.gravity = Gravity.CENTER
+            nameTextView = createText(task.name, true)*/
+        //layout.addView(nameTextView)
+        //nameTextView.id = 666
+        //nameTextView.textSize = textSize + 1
+        //nameTextView.gravity = Gravity.CENTER
 
         val points: List<String> = task.points.splitToSequence("|").toList()
         val checkBoxes: List<Boolean> = task.checkBoxes.split("|").map { it.toBoolean() }
@@ -535,18 +765,18 @@ open class ParentFragment : Fragment() {
 
         if (events[i].place.isNotEmpty() && events[i].time.length < 7) {
             textView = createText(
-                "Время: " + events[i].time + System.lineSeparator() +
-                        "Место: " + events[i].place + System.lineSeparator() +
+                events[i].time + System.lineSeparator() +
+                        events[i].place + System.lineSeparator() +
                         events[i].event, false, true
             )
         } else if (events[i].time.length < 7) {
             textView = createText(
-                "Время: " + events[i].time + System.lineSeparator() +
+                events[i].time + System.lineSeparator() +
                         events[i].event, false, true
             )
         } else if (events[i].place.isNotEmpty() && events[i].event.isNotEmpty()) {
             textView = createText(
-                "Место: " + events[i].place + System.lineSeparator() +
+                events[i].place + System.lineSeparator() +
                         events[i].event, false, true
             )
         } else {
@@ -580,7 +810,7 @@ open class ParentFragment : Fragment() {
             RelativeLayout.LayoutParams.MATCH_PARENT,
             RelativeLayout.LayoutParams.WRAP_CONTENT
         )
-        params.setMargins(15, 15, 15, 15)
+        params.setMargins(5, 5, 5, 5)
 
         if (isNameText) {
             params.addRule(RelativeLayout.CENTER_HORIZONTAL)
@@ -672,7 +902,7 @@ open class ParentFragment : Fragment() {
         params.setMargins(30, 30, 30, 30)
         editText.setLayoutParams(params)
         editText.setBackgroundResource(R.color.edit_text)
-        editText.hint = "Пункт"
+        editText.hint = "Задача " + (countOfPoint + 1).toString()
         editText.setText(text)
         editText.id = countOfPoint + TASK_ID
         editText.setPadding(10, 10, 10, 40)
@@ -709,13 +939,14 @@ open class ParentFragment : Fragment() {
         )
 
         if (j == 0) {
-            checkBoxParams.addRule(RelativeLayout.BELOW, relLayout.findViewById<TextView>(666).id)
+            checkBoxParams.addRule(RelativeLayout.ALIGN_PARENT_START)
         } else {
             checkBoxParams.addRule(
                 RelativeLayout.BELOW,
                 relLayout.findViewById<TextView>(j + 1321210 - 1).id
             )
         }
+
 
         params.setMargins(0, 0, 0, 0)
         textView.maxWidth = (Resources.getSystem().displayMetrics.widthPixels * 0.9f).toInt()
@@ -801,6 +1032,12 @@ open class ParentFragment : Fragment() {
         }
     }
 
+    protected fun clearImagePanel(){
+        dateImage.setText("")
+        timeImage.setText("")
+        imageIcon.setImageURI(null)
+    }
+
     protected fun clearEventPanel() {
         dateEvent.setText("")
         timeEvent.setText("")
@@ -846,6 +1083,11 @@ open class ParentFragment : Fragment() {
     protected fun hideTaskPanel() {
         addButton.isEnabled = true
         createTaskPanel.visibility = View.GONE
+    }
+
+    protected fun hideImagePanel(){
+        addButton.isEnabled = true
+        createImagePanel.visibility = View.GONE
     }
 
     protected fun hideEventPanel() {
@@ -1045,14 +1287,15 @@ open class ParentFragment : Fragment() {
         }
     }
 
-    protected fun createAllEventsAndTasks() {
+    protected fun createAllEventsAndTasksAndImages() {
         mainLayout.removeAllViews()
 
-        val newList = (events + tasks).sortedBy { it.time }
+        val newList = (events + tasks + images).sortedBy { it.time }
         for (item in newList) {
             when (item) {
                 is Event -> createNewEvent(events.indexOf(item))
                 is Task -> createNewTask(item)
+                is Image -> createNewImage(images.indexOf(item),true)
             }
         }
         mainLayout.addView(deleteButton)
@@ -1060,7 +1303,7 @@ open class ParentFragment : Fragment() {
         checkToNothingToDo()
     }
 
-    protected fun checkToNothingToDo() {
+    private fun checkToNothingToDo() {
         if (mainLayout.childCount == 1) {
             val textView = createText("На этот день ничего не запланировано")
             textView.setTextColor(Color.GRAY)
@@ -1072,35 +1315,22 @@ open class ParentFragment : Fragment() {
     protected fun changeScrollView() {
         getEventsByDateForAPI()
         getTasksByDateForAPI()
+        getImagesByDateForAPI()
     }
 
-    protected fun initDatePicker() {
-        val dateSetListener = dateListener(true)
-        val dateSetListenerForObject = dateListener(false)
-        val cal: Calendar = Calendar.getInstance()
-        val year: Int = cal.get(Calendar.YEAR)
-        val month: Int = cal.get(Calendar.MONTH)
-        val day: Int = cal.get(Calendar.DAY_OF_MONTH)
+    private fun initDatePicker() {
+        val currentDate = Calendar.getInstance()
+        val year = currentDate.get(Calendar.YEAR)
+        val month = currentDate.get(Calendar.MONTH)
+        val day = currentDate.get(Calendar.DAY_OF_MONTH)
 
-        val style: Int = AlertDialog.THEME_HOLO_LIGHT
-
-        datePickerDialog =
-            DatePickerDialog(requireContext(), style, dateSetListener, year, month, day)
-        datePickerDialogForObject =
-            DatePickerDialog(requireContext(), style, dateSetListenerForObject, year, month, day)
-
+        datePickerDialog = DatePickerDialog(requireContext(), AlertDialog.THEME_HOLO_LIGHT, dateListener(true), year, month, day)
+        datePickerDialogForObject = DatePickerDialog(requireContext(), AlertDialog.THEME_HOLO_LIGHT, dateListener(false), year, month, day)
     }
 
-    protected fun dateListener(isMainDatePicker: Boolean = false): DatePickerDialog.OnDateSetListener {
-        val dateSetListener = DatePickerDialog.OnDateSetListener { _, year, month, day ->
-            val date: String
-            var month = month
-            month += 1
-
-            if (month > 9)
-                date = "$day.$month.$year"
-            else
-                date = "$day.0$month.$year"
+    private fun dateListener(isMainDatePicker: Boolean = false): DatePickerDialog.OnDateSetListener {
+        return DatePickerDialog.OnDateSetListener { _, year, month, day ->
+            val date = String.format("%d.%02d.%d", day, month + 1, year)
 
             if (isMainDatePicker) {
                 dataPickerButton.text = date
@@ -1112,10 +1342,9 @@ open class ParentFragment : Fragment() {
                 dateTask.setText(date)
             }
         }
-        return dateSetListener
     }
 
-    protected fun initTimePicker() {
+    private fun initTimePicker() {
         val timeSetListener = TimePickerDialog.OnTimeSetListener { _, hour, minute ->
             val time: String
             if (hour > 9 && minute > 9)
@@ -1142,7 +1371,7 @@ open class ParentFragment : Fragment() {
     }
 
     protected fun showDialog() {
-        val langArray: Array<String> = arrayOf("Задача", "Событие")
+        val langArray: Array<String> = arrayOf("Задача", "Событие", "Изображение")
         var selectedEvent = 0 // Инициализируем в 0, который является первым элементом
         val builder: androidx.appcompat.app.AlertDialog.Builder =
             androidx.appcompat.app.AlertDialog.Builder(requireContext())
@@ -1158,7 +1387,7 @@ open class ParentFragment : Fragment() {
         builder.setPositiveButton(
             "OK"
         ) { _, _ ->
-            createNewText(selectedEvent)
+            createNewObject(selectedEvent)
         }
 
         builder.setNegativeButton(

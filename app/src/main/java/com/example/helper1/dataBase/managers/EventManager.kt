@@ -95,7 +95,7 @@ class EventManager(private val apiClient: ApiClient) {
                     }
 
                     override fun onFailure(call: Call<Void>, t: Throwable) {
-                        callback.onFailure("Ошибка! Не удалось обновить!")
+                        callback.onFailure("Ошибка! Не удалось удалить!")
                     }
                 })
             }

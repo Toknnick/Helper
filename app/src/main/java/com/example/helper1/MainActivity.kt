@@ -21,7 +21,7 @@ class MainActivity : AppCompatActivity() {
         this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
         setContentView(binding.root)
 
-        var dbHelper = DBHelper(this)
+        val dbHelper = DBHelper(this)
         if(dbHelper.getUser() != null) {
             val navController = findNavController(R.id.mainContainer)
             val bottomNavigationView = binding.bottomNavigationView
@@ -35,8 +35,8 @@ class MainActivity : AppCompatActivity() {
         val bottomNavigationView = binding.bottomNavigationView
         bottomNavigationView.setupWithNavController(navController)
         fm = supportFragmentManager
+        bottomNavigationView.selectedItemId = R.id.homeFragment
     }
-
 
     override fun onStop() {
         super.onStop()

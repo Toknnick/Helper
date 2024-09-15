@@ -57,29 +57,35 @@ class RoomsFragment : ParentFragment() {
         }
         createRoomButton.setOnClickListener{
             createRoomPanel.visibility = View.VISIBLE
+            createRoomButton.isEnabled = false
             addRoomButton.isEnabled = false
         }
         addRoomButton.setOnClickListener{
             addRoomPanel.visibility = View.VISIBLE
             createRoomButton.isEnabled = false
+            addRoomButton.isEnabled = false
         }
         saveRoomButton.setOnClickListener {
             createRoom()
             createRoomButton.isEnabled = true
+            addRoomButton.isEnabled = true
         }
         backCreateRoomButton.setOnClickListener {
             createRoomPanel.visibility = View.GONE
             createRoomButton.isEnabled = true
+            addRoomButton.isEnabled = true
             createNameRoom.setText("")
             createPasswordRoom.setText("")
         }
         getRoomButton.setOnClickListener{
             addRoom()
             createRoomButton.isEnabled = true
+            addRoomButton.isEnabled = true
         }
         backAddRoomButton.setOnClickListener{
             addRoomPanel.visibility = View.GONE
             createRoomButton.isEnabled = true
+            addRoomButton.isEnabled = true
             addIdRoom.setText("")
             addPasswordRoom.setText("")
         }
@@ -261,14 +267,17 @@ class RoomsFragment : ParentFragment() {
     }
 
     private fun createRoom(){
-        if(createNameRoom.text.toString().trim().length <= 25) {
-            val newRoom = Room(
-                0,
-                createNameRoom.text.toString().trim(),
-                createPasswordRoom.text.toString().trim(),
-                false
-            )
+        val newRoom = Room(
+            0,
+            createNameRoom.text.toString().trim(),
+            createPasswordRoom.text.toString().trim(),
+            false
+        )
+        if(newRoom.name.length <= 25) {
             createRoomForAPI(newRoom)
+        }
+        else if(newRoom.password.isEmpty() || newRoom.password == ""){
+            createError("Ошибка! Нет пароля!")
         }
         else{
             createError("Слишком большое название!")

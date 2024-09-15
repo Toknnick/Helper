@@ -49,7 +49,12 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    implementation (libs.retrofit)
-    implementation (libs.converter.gson)
+    implementation(libs.retrofit)
+    implementation ("io.minio:minio:8.5.6")
+    implementation(libs.okhttp) // Для OkHttp
+    implementation(libs.converter.gson)
+    implementation ("javax.xml.stream:stax-api:1.0-2")
+    implementation ("com.squareup.picasso:picasso:2.71828")
+    implementation ("com.fasterxml:aalto-xml:1.2.2") // XML парсер для Android
 
 }

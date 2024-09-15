@@ -37,6 +37,14 @@ data class User(
     var availableRooms: String
 )
 
+data class Image(
+    var idImage: Long,
+    var idRoom: Long,
+    var date: String,
+    override var time: String,
+    var url : String,
+):Timable
+
 interface CreateMessageCallback {
     fun onSuccess(message: String)
     fun onFailure(message: String)
@@ -82,6 +90,11 @@ interface GetAllEventsCallback {
 }
 interface GetAllTaskCallback {
     fun onSuccess(tasks: List<Task>)
+    fun onFailure(message: String)
+}
+
+interface GetAllImagesCallback {
+    fun onSuccess(images: List<Image>)
     fun onFailure(message: String)
 }
 

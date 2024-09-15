@@ -41,7 +41,8 @@ class HomeFragment : ParentFragment(){
                 }
             }
         }else{
-            loginUserForAPI(user!!,true)
+            updateLocalUser()
+            mainActivity.startActivity()
             idRoomDef = user!!.ownRoom
         }
 
@@ -76,6 +77,16 @@ class HomeFragment : ParentFragment(){
         }
         timeTask.setOnClickListener {
             timePickerDialog.show()
+        }
+        backImageButton.setOnClickListener{
+            clearImagePanel()
+            hideImagePanel()
+        }
+        chooseImageButton.setOnClickListener{
+            chooseImage()
+        }
+        saveImageButton.setOnClickListener{
+            addNewImageIntoScrollView()
         }
 
         loginUserButton.setOnClickListener{
@@ -134,25 +145,51 @@ class HomeFragment : ParentFragment(){
         paramsDataPickerButton.addRule(RelativeLayout.ALIGN_PARENT_LEFT)
         dataPickerButton.layoutParams = paramsDataPickerButton
 
+        val paramsAddButton = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.WRAP_CONTENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+        paramsAddButton.setMargins(10,10,10,10)
+        paramsAddButton.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
+        paramsAddButton.addRule(RelativeLayout.ALIGN_PARENT_RIGHT)
+        addButton.layoutParams = paramsAddButton
+
+    }
+
+    private fun updateLocalUser(){
+        userManager.getUser(user!!.login, object : GetUserCallback {
+            override fun onSuccess(gotUser: User) {
+                user!!.password = gotUser.password
+                user!!.availableRooms = gotUser.availableRooms
+                dbHelper.updateUser(user!!)
+                createUserPanel.visibility = View.GONE
+
+            }
+
+            override fun onFailure(isExist: Boolean) {
+                Toast.makeText(
+                    requireContext(),
+                    "Ошибка! Пользователь не найден",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        })
     }
 
     private fun loginUserForAPI(loggingUser : User, isUpdateUserData : Boolean){
         userManager.getUser(loginUser.text.toString().trim(),object : GetUserCallback {
             override fun onSuccess(gotUser: User) {
-                if(!isUpdateUserData) {
-                    if (loggingUser.password == gotUser.password) {
-                        dbHelper.createUser(loggingUser)
-                        createUserPanel.visibility = View.GONE
-                    } else {
-                        Toast.makeText(requireContext(), "Неверный пароль!", Toast.LENGTH_LONG)
-                            .show()
-
-                    }
-                }else{
-                    loggingUser.password = gotUser.password
+                if (loggingUser.password == gotUser.password) {
                     loggingUser.availableRooms = gotUser.availableRooms
                     mainActivity.startActivity()
-                    dbHelper.updateUser(loggingUser)
+                    dbHelper.createUser(loggingUser)
+                    setUpElements()
+                    createUserPanel.visibility = View.GONE
+                    addButton.visibility = View.VISIBLE
+                    dataPickerButton.visibility = View.VISIBLE
+                }else{
+                    Toast.makeText(requireContext(), "Неверный пароль!", Toast.LENGTH_LONG)
+                        .show()
                 }
             }
 
@@ -201,6 +238,7 @@ class HomeFragment : ParentFragment(){
             override fun onUserCreated(user: User) {
                 dbHelper.createUser(user)
                 mainActivity.startActivity()
+                setUpElements()
                 createUserPanel.visibility = View.GONE
                 addButton.visibility = View.VISIBLE
                 dataPickerButton.visibility = View.VISIBLE

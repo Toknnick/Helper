@@ -71,4 +71,21 @@ interface ApiInterface {
     @DELETE("tasks/delete/{idTask}")
     fun deleteTask(@Path("idTask") idTask:Long): Call<Void>
 
+
+    @POST("images/create")
+    fun createImage(@Body image: Image): Call<Void>
+
+    @GET("images/get/one/{idRoom}/{date}/{time}/{url}")
+    fun getImage(@Path("idRoom") idRoom:Long, @Path("date") date:String, @Path("time") time:String, @Path("url") url:String): Call<Image>
+
+    @GET("images/get/all")
+    fun getAllImage(): Call<List<Image>>
+
+    @GET("images/get/all/{idRoom}")
+    fun getAllImageByIdRoom(@Path("idRoom") idRoom:Long): Call<List<Image>>
+
+
+    @DELETE("images/delete/{idImage}")
+    fun deleteImage(@Path("idImage") idImage:Long): Call<Void>
+
 }

@@ -10,15 +10,19 @@
     tools:context=".fragments.HomeFragment">
 
 
+
     <TextView
         android:id="@+id/roomNameTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="2dp"
+        android:layout_margin="10dp"
+        android:layout_toEndOf="@id/showRoomPanelButton"
+        android:layout_marginEnd="0dp"
+        android:layout_alignParentEnd="true"
+        android:gravity="center"
         android:padding="2dp"
         android:textColor="@color/text_color"
-        android:textSize="18sp"
-        android:layout_centerHorizontal="true"/>
+        android:textSize="18sp"/>
 
 
     <LinearLayout
@@ -58,12 +62,12 @@
         android:layout_above="@id/addButton"
         android:layout_below="@id/roomNameTextView" >
 
-        <RelativeLayout
+        <LinearLayout
             android:id="@+id/layout"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical" >
-        </RelativeLayout>
+            android:orientation="vertical">
+        </LinearLayout>
     </ScrollView>
 
     <RelativeLayout
@@ -381,6 +385,7 @@
             android:layout_height="wrap_content"
             android:layout_below="@+id/timeTask"
             android:layout_margin="10dp"
+            android:visibility="gone"
             android:background="@color/edit_text"
             android:hint="Название"
             android:padding="10dp"
@@ -404,7 +409,7 @@
                     android:layout_height="wrap_content"
                     android:layout_margin="10dp"
                     android:background="@color/edit_text"
-                    android:hint="Пункт"
+                    android:hint="Задача 1"
                     android:padding="10dp"
                     android:textColor="@color/text_color" />
 
@@ -449,6 +454,17 @@
             </RelativeLayout>
         </ScrollView>
     </RelativeLayout>
+
+
+    <CalendarView
+        android:id="@+id/calendarView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/panel_background"
+        android:visibility="gone"
+        android:layout_centerInParent="true"
+        android:translationZ="1dp"/>
+
 
     <RelativeLayout
         android:id="@+id/createEventPanel"
@@ -519,7 +535,7 @@
             android:layout_below="@id/timeEvent"
             android:layout_margin="10dp"
             android:background="@color/edit_text"
-            android:hint="Место"
+            android:hint="Краткое описание"
             android:padding="10dp"
             android:textColor="@color/text_color" />
 
@@ -531,7 +547,7 @@
             android:layout_margin="10dp"
             android:background="@color/edit_text"
             android:gravity="top"
-            android:hint="Описание"
+            android:hint="Полное описание"
             android:lines="8"
             android:padding="10dp"
             android:textColor="@color/text_color" />
@@ -542,6 +558,107 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/eventEvent"
             android:layout_gravity="left"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/button_color"
+            android:padding="10dp"
+            android:text="Готово"
+            android:textColor="@color/text_color"
+            android:textSize="20sp" />
+
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/createImagePanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/panel_background"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:layout_centerInParent="true">
+
+        <TextView
+            android:id="@+id/imageTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="2dp"
+            android:gravity="center"
+            android:autoSizeMaxTextSize="20dp"
+            android:text="Создание изображения"
+            android:layout_marginBottom="5dp"
+            android:layout_alignParentStart="true"
+            android:padding="2dp"
+            android:textColor="@color/text_color"
+            android:textSize="18sp" />
+
+        <Button
+            android:id="@+id/backImageButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/imageTextView"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/button_color"
+            android:padding="10dp"
+            android:text="Назад"
+            android:textColor="@color/text_color"
+            android:textSize="15sp" />
+
+        <EditText
+            android:id="@+id/dateImage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/imageTextView"
+            android:layout_margin="10dp"
+            android:editable="false"
+            android:focusable="false"
+            android:layout_toEndOf="@id/backImageButton"
+            android:background="@color/edit_text"
+            android:hint="Дата"
+            android:padding="10dp"
+            android:textColor="@color/text_color" />
+
+        <EditText
+            android:id="@+id/timeImage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/dateImage"
+            android:editable="false"
+            android:focusable="false"
+            android:layout_margin="10dp"
+            android:background="@color/edit_text"
+            android:hint="Время"
+            android:padding="10dp"
+            android:textColor="@color/text_color" />
+
+
+        <ImageView
+            android:id="@+id/imageIcon"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="3dp"
+            android:layout_marginEnd="16dp"
+            android:layout_below="@id/timeImage"
+            android:scaleType="centerCrop"
+            android:layout_toEndOf="@id/chooseImageButton"/>
+
+        <Button
+            android:id="@+id/chooseImageButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/timeImage"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/button_color"
+            android:padding="10dp"
+            android:text="Выбрать"
+            android:textColor="@color/text_color"
+            android:textSize="20sp" />
+
+        <Button
+            android:id="@+id/saveImageButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/chooseImageButton"
             android:layout_margin="10dp"
             android:backgroundTint="@color/button_color"
             android:padding="10dp"

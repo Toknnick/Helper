@@ -103,4 +103,29 @@ class ApiClient(private val retrofit: Retrofit) {
         val call = apiInterface.deleteTask(task.idTask)
         call.enqueue(callback)
     }
+
+    fun createImage(image: Image,
+                    callback: Callback<Void>) {
+        val call = apiInterface.createImage(image)
+        call.enqueue(callback)
+    }
+
+    fun getAllImages(callback: Callback<List<Image>>)  {
+        val call = apiInterface.getAllImage()
+        call.enqueue(callback)
+    }
+
+    fun getAllImageByIdRoom(idRoom: Long ,callback: Callback<List<Image>>) {
+        val call = apiInterface.getAllImageByIdRoom(idRoom)
+        call.enqueue(callback)
+    }
+
+    fun getImage(image: Image, callback: Callback<Image>) {
+        val call = apiInterface.getImage(image.idRoom,image.date,image.time,image.url)
+        call.enqueue(callback)
+    }
+    fun deleteImage(image: Image, callback: Callback<Void>) {
+        val call = apiInterface.deleteImage(image.idImage)
+        call.enqueue(callback)
+    }
 }
