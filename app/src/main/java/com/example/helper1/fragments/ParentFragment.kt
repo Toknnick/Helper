@@ -162,6 +162,7 @@ open class ParentFragment : Fragment() {
     protected lateinit var saveImageButton: Button
     protected lateinit var imageIcon: ImageView
     protected lateinit var calendarView: CalendarView
+    protected lateinit var mainCalendarView: CalendarView
 
 
     protected var idRoomDef: Long = -1
@@ -224,6 +225,19 @@ open class ParentFragment : Fragment() {
         chooseImageButton = requireView().findViewById<Button>(R.id.chooseImageButton)
         imageIcon = requireView().findViewById<ImageView>(R.id.imageIcon)
         calendarView = requireView().findViewById<CalendarView>(R.id.calendarView)
+        mainCalendarView = requireView().findViewById<CalendarView>(R.id.mainCalendarView)
+
+        //Небольшая заглушка, т.к. календарь не мог появлятся, если изначально был в GONE
+        val params = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.WRAP_CONTENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+        params.addRule(RelativeLayout.CENTER_IN_PARENT)
+
+        mainCalendarView.visibility = View.GONE
+        calendarView.visibility = View.GONE
+        calendarView.layoutParams = params
+        mainCalendarView.layoutParams = params
     }
 
     protected open fun setUpButtons() {
@@ -231,6 +245,8 @@ open class ParentFragment : Fragment() {
     }
 
     protected fun defSetup() {
+        initDefElements()
+
         dbHelper = DBHelper(requireContext())
         chosenDate = dbHelper.getChosenDate()
         mainActivity = (activity as MainActivity)
@@ -240,12 +256,79 @@ open class ParentFragment : Fragment() {
         eventManager = EventManager(apiClient)
         taskManager = TaskManager(apiClient)
         imageManager = ImageManager(apiClient)
-        initDefElements()
         setUpButtons()
+        setUpDefButtons()
         addParamsToButtons(point0)
-        initDatePicker()
         initTimePicker()
         user = dbHelper.getUser()
+    }
+
+    private fun setUpDefButtons(){
+        addButton.setOnClickListener {
+            showDialog()
+        }
+        addNewPoint.setOnClickListener {
+            addNewPoint()
+        }
+        deletePoint.setOnClickListener {
+            deletePoint()
+        }
+        dataPickerButton.setOnClickListener {
+            mainCalendarView.visibility = View.VISIBLE
+        }
+        backTaskButton.setOnClickListener {
+            hideTaskPanel()
+            clearTaskPanel()
+        }
+        backEventButton.setOnClickListener {
+            hideEventPanel()
+            clearEventPanel()
+        }
+        dateEvent.setOnClickListener {
+            openCalendar()
+        }
+        dateTask.setOnClickListener {
+            openCalendar()
+        }
+        dateImage.setOnClickListener {
+            openCalendar()
+        }
+        timeEvent.setOnClickListener {
+            timePickerDialog.show()
+        }
+        timeTask.setOnClickListener {
+            timePickerDialog.show()
+        }
+        timeImage.setOnClickListener {
+            timePickerDialog.show()
+        }
+        backImageButton.setOnClickListener{
+            clearImagePanel()
+            hideImagePanel()
+        }
+        chooseImageButton.setOnClickListener{
+            chooseImage()
+            selectedImageUri = null
+        }
+        saveImageButton.setOnClickListener{
+            if(selectedImageUri != null)
+                addNewImageIntoScrollView()
+        }
+        mainCalendarView.setOnDateChangeListener { view, year, month, dayOfMonth ->
+            // Преобразование выбранной даты в строку
+            if (month < 10)
+                chosenDate = "$dayOfMonth.0${month + 1}.$year"
+            else
+                chosenDate = "$dayOfMonth.${month + 1}.$year"
+
+            // Скрытие календаря
+            mainCalendarView.visibility = View.GONE
+
+            dataPickerButton.text = chosenDate
+            dbHelper.updateChosenDate(chosenDate)
+            changeScrollView()
+        }
+
     }
 
     override fun onCreateView(
@@ -1328,6 +1411,8 @@ open class ParentFragment : Fragment() {
             if (event.action == MotionEvent.ACTION_DOWN) {
                 deleteButton.visibility = View.GONE
                 editButton.visibility = View.GONE
+                calendarView.visibility = View.GONE
+                mainCalendarView.visibility = View.GONE
             }
             false
         }
@@ -1337,7 +1422,11 @@ open class ParentFragment : Fragment() {
         createEventPanel.visibility = View.VISIBLE
         dateEvent.setText(event.date)
         if(event.time.length < 7){
-            timeEvent.setText(event.time)}
+            timeEvent.setText(event.time)
+        }
+        else{
+            timeEvent.setText(event.time.substring(0, event.time.length - 2))
+        }
         placeEvent.setText(event.place)
         eventEvent.setText(event.event)
         addButton.isEnabled = false
@@ -1364,12 +1453,16 @@ open class ParentFragment : Fragment() {
         }
     }
 
-    protected fun editTask(task: Task) {
+    private fun editTask(task: Task) {
         taskTextView.text = "Редактирование задачи"
         createTaskPanel.visibility = View.VISIBLE
         dateTask.setText(task.date)
         if(task.time.length < 7){
-            timeTask.setText(task.time)}
+            timeEvent.setText(task.time)
+        }
+        else{
+            timeEvent.setText(task.time.substring(0, task.time.length - 2))
+        }
         nameTask.setText(task.name)
         val previousPoints: List<String> = task.points.splitToSequence("|").toMutableList()
         point0.setText(previousPoints[0])
@@ -1449,7 +1542,7 @@ open class ParentFragment : Fragment() {
     }
 
     private fun checkToNothingToDo() {
-        if (mainLayout.childCount == 1) {
+        if (mainLayout.childCount == 2) {
             val textView = createText("На этот день ничего не запланировано")
             textView.setTextColor(Color.GRAY)
             textView.id = TEXT_VIEW_NOTHING_TO_DO_ID
@@ -1462,33 +1555,6 @@ open class ParentFragment : Fragment() {
         getTasksByDateForAPI()
         getImagesByDateForAPI()
     }
-
-    private fun initDatePicker() {
-        val currentDate = Calendar.getInstance()
-        val year = currentDate.get(Calendar.YEAR)
-        val month = currentDate.get(Calendar.MONTH)
-        val day = currentDate.get(Calendar.DAY_OF_MONTH)
-
-        datePickerDialog = DatePickerDialog(requireContext(), AlertDialog.THEME_HOLO_LIGHT, dateListener(true), year, month, day)
-        datePickerDialogForObject = DatePickerDialog(requireContext(), AlertDialog.THEME_HOLO_LIGHT, dateListener(false), year, month, day)
-    }
-
-    private fun dateListener(isMainDatePicker: Boolean = false): DatePickerDialog.OnDateSetListener {
-        return DatePickerDialog.OnDateSetListener { _, year, month, day ->
-            val date = String.format("%d.%02d.%d", day, month + 1, year)
-
-            if (isMainDatePicker) {
-                dataPickerButton.text = date
-                chosenDate = date
-                dbHelper.updateChosenDate(chosenDate)
-                changeScrollView()
-            } else {
-                dateEvent.setText(date)
-                dateTask.setText(date)
-            }
-        }
-    }
-
     private fun initTimePicker() {
         val timeSetListener = TimePickerDialog.OnTimeSetListener { _, hour, minute ->
             val time: String
@@ -1503,6 +1569,7 @@ open class ParentFragment : Fragment() {
 
             timeEvent.setText(time)
             timeTask.setText(time)
+            timeImage.setText(time)
         }
 
         val cal: Calendar = Calendar.getInstance()
@@ -1515,7 +1582,26 @@ open class ParentFragment : Fragment() {
             TimePickerDialog(requireContext(), style, timeSetListener, hour, minute, true)
     }
 
-    protected fun showDialog() {
+
+    private fun openCalendar(){
+        calendarView.visibility = View.VISIBLE
+        calendarView.setOnDateChangeListener { view, year, month, dayOfMonth ->
+            // Преобразование выбранной даты в строку
+            var date =""
+            if (month < 10)
+                date = "$dayOfMonth.0${month + 1}.$year"
+            else
+                date = "$dayOfMonth.${month + 1}.$year"
+            calendarView.visibility = View.GONE
+
+            dateEvent.setText(date)
+            dateTask.setText(date)
+            dateImage.setText(date)
+        }
+    }
+
+
+    private fun showDialog() {
         val langArray: Array<String> = arrayOf("Задача", "Мероприятие", "Изображение")
         var selectedEvent = 0 // Инициализируем в 0, который является первым элементом
         val builder: androidx.appcompat.app.AlertDialog.Builder =

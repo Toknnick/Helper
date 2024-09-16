@@ -19,38 +19,7 @@ class RoomsFragment : ParentFragment() {
     //TODO: перенести метод с обновлением пароля пользователя в settingsFragment
 
     override fun setUpButtons() {
-        addButton.setOnClickListener {
-            showDialog()
-        }
-        addNewPoint.setOnClickListener {
-            addNewPoint()
-        }
-        deletePoint.setOnClickListener {
-            deletePoint()
-        }
-        dataPickerButton.setOnClickListener {
-            datePickerDialog.show()
-        }
-        backTaskButton.setOnClickListener {
-            hideTaskPanel()
-            clearTaskPanel()
-        }
-        backEventButton.setOnClickListener {
-            hideEventPanel()
-            clearEventPanel()
-        }
-        dateEvent.setOnClickListener {
-            datePickerDialogForObject.show()
-        }
-        dateTask.setOnClickListener {
-            datePickerDialogForObject.show()
-        }
-        timeEvent.setOnClickListener {
-            timePickerDialog.show()
-        }
-        timeTask.setOnClickListener {
-            timePickerDialog.show()
-        }
+
         showRoomPanelButton.setOnClickListener {
             showRoomPanel()
         }
@@ -320,6 +289,8 @@ class RoomsFragment : ParentFragment() {
             if (event.action == MotionEvent.ACTION_DOWN) {
                 deleteButton.visibility = View.GONE
                 editButton.visibility = View.GONE
+                calendarView.visibility = View.GONE
+                mainCalendarView.visibility = View.GONE
                 hideRoomPanel()
             }
             false

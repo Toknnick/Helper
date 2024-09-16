@@ -461,8 +461,17 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/panel_background"
-        android:visibility="gone"
-        android:layout_centerInParent="true"
+        android:visibility="visible"
+        android:layout_toStartOf="@id/showRoomPanelButton"
+        android:translationZ="1dp"/>
+
+    <CalendarView
+        android:id="@+id/mainCalendarView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/panel_background"
+        android:visibility="visible"
+        android:layout_toStartOf="@id/showRoomPanelButton"
         android:translationZ="1dp"/>
 
 

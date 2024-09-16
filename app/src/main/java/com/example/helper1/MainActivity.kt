@@ -17,11 +17,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val dbHelper = DBHelper(this)
+        dbHelper.updateChosenDate(LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
         binding = ActivityMainBinding.inflate(layoutInflater)
         this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
         setContentView(binding.root)
 
-        val dbHelper = DBHelper(this)
         if(dbHelper.getUser() != null) {
             val navController = findNavController(R.id.mainContainer)
             val bottomNavigationView = binding.bottomNavigationView

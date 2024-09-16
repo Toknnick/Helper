@@ -44,51 +44,6 @@ class HomeFragment : ParentFragment(){
             mainActivity.startActivity()
         }
 
-        addButton.setOnClickListener {
-            showDialog()
-        }
-        addNewPoint.setOnClickListener {
-            addNewPoint()
-        }
-        deletePoint.setOnClickListener {
-            deletePoint()
-        }
-        dataPickerButton.setOnClickListener {
-            datePickerDialog.show()
-        }
-        backTaskButton.setOnClickListener {
-            hideTaskPanel()
-            clearTaskPanel()
-        }
-        backEventButton.setOnClickListener {
-            hideEventPanel()
-            clearEventPanel()
-        }
-        dateEvent.setOnClickListener {
-            datePickerDialogForObject.show()
-        }
-        dateTask.setOnClickListener {
-            datePickerDialogForObject.show()
-        }
-        timeEvent.setOnClickListener {
-            timePickerDialog.show()
-        }
-        timeTask.setOnClickListener {
-            timePickerDialog.show()
-        }
-        backImageButton.setOnClickListener{
-            clearImagePanel()
-            hideImagePanel()
-        }
-        chooseImageButton.setOnClickListener{
-            chooseImage()
-            selectedImageUri = null
-        }
-        saveImageButton.setOnClickListener{
-            if(selectedImageUri != null)
-                addNewImageIntoScrollView()
-        }
-
         loginUserButton.setOnClickListener{
             val loggingUser = User(
                 loginUser.text.toString().trim(),
@@ -117,7 +72,6 @@ class HomeFragment : ParentFragment(){
         setTouchListenerForButtons(requireView().findViewById(R.id.conLayout))
         setTouchListenerForButtons(requireView().findViewById(R.id.scrView))
 
-        dataPickerButton.text = chosenDate
         if (user != null) {
             idRoomDef = user!!.ownRoom
             rebuildPage()
