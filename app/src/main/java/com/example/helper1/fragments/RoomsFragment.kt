@@ -64,10 +64,8 @@ class RoomsFragment : ParentFragment() {
         chosenDate = dbHelper.getChosenDate()
         user = dbHelper.getUser()
         dataPickerButton.text = chosenDate
-        rebuildPage()
         rebuildRoomPanel()
-        deleteButton = createButton("Удалить")
-        editButton = createButton("Редактировать")
+        rebuildPage()
         setTouchListenerForButtons(requireView().findViewById(R.id.conLayout))
         setTouchListenerForButtons(requireView().findViewById(R.id.scrView))
     }

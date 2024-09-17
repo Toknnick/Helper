@@ -62,13 +62,11 @@ class HomeFragment : ParentFragment(){
     override fun onResume() {
         super.onResume()
         defSetup()
-        setUpElements()
         chosenDate = dbHelper.getChosenDate()
         user = dbHelper.getUser()
+        setUpElements()
         addParamsToButtons(point0)
         dataPickerButton.text = chosenDate
-        deleteButton = createButton("Удалить")
-        editButton = createButton("Редактировать")
         setTouchListenerForButtons(requireView().findViewById(R.id.conLayout))
         setTouchListenerForButtons(requireView().findViewById(R.id.scrView))
 

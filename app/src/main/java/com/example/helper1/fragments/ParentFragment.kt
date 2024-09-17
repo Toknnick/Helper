@@ -12,6 +12,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Typeface
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Bundle
@@ -252,10 +253,8 @@ open class ParentFragment : Fragment() {
     }
 
     protected fun defSetup() {
-        initDefElements()
-
         dbHelper = DBHelper(requireContext())
-        chosenDate = dbHelper.getChosenDate()
+        initDefElements()
         mainActivity = (activity as MainActivity)
         val apiClient = ApiClient(retrofit)
         userManager = UserManager(apiClient)
@@ -272,6 +271,9 @@ open class ParentFragment : Fragment() {
     }
 
     private fun setUpDefButtons(){
+        deleteButton = createButton("Удалить")
+        editButton = createButton("Редактировать")
+
         addButton.setOnClickListener {
             showDialog()
             mainCalendarView.visibility = View.GONE
@@ -333,7 +335,7 @@ open class ParentFragment : Fragment() {
 
             dataPickerButton.text = chosenDate
             dbHelper.updateChosenDate(chosenDate)
-            changeScrollView()
+            rebuildPage()
         }
 
     }
@@ -386,8 +388,7 @@ open class ParentFragment : Fragment() {
                     }
                 }
                 events.sortedBy { it.time }
-                //createAllEventsAndTasksAndImages()
-
+                getTasksByDateForAPI()
             }
 
             override fun onFailure(message: String) {
@@ -399,7 +400,6 @@ open class ParentFragment : Fragment() {
     protected fun updateEventForAPI(previousEvent: Event, updatingEvent: Event) {
         eventManager.updateEvent(previousEvent, updatingEvent, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
-                //changeScrollView()
                 createAllEventsAndTasksAndImages()
             }
 
@@ -460,8 +460,7 @@ open class ParentFragment : Fragment() {
                     }
                 }
                 tasks.sortedBy { it.time }
-
-                //createAllEventsAndTasksAndImages()
+                getImagesByDateForAPI()
             }
 
             override fun onFailure(message: String) {
@@ -473,7 +472,6 @@ open class ParentFragment : Fragment() {
     protected fun updateTaskForAPI(previousTask: Task, updatingTask: Task) {
         taskManager.updateTask(previousTask, updatingTask, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
-                //changeScrollView()
                 createAllEventsAndTasksAndImages()
             }
 
@@ -532,9 +530,8 @@ open class ParentFragment : Fragment() {
                         images += image
                     }
                 }
-                events.sortedBy { it.time }
+                images.sortedBy { it.time }
                 createAllEventsAndTasksAndImages()
-
             }
 
             override fun onFailure(message: String) {
@@ -605,7 +602,7 @@ open class ParentFragment : Fragment() {
             }
 
             1 -> {
-                eventTextView.text = "Создание события"
+                eventTextView.text = "Создание мероприятия"
                 //Делаем событие
                 clearTaskPanel()
                 clearEventPanel()
@@ -714,6 +711,10 @@ open class ParentFragment : Fragment() {
             return
         }
 
+        if(selectedImageUri == null)
+            return
+
+
         // Запуск потока для загрузки изображения в Timeweb Cloud
         uploadImageToBucket(selectedImageUri)
 
@@ -781,11 +782,6 @@ open class ParentFragment : Fragment() {
 
 
     protected fun addNewEventIntoScrollView() {
-        if (eventEvent.text.toString().trim().isEmpty()) {
-            createError("Ошибка! Нет описания!")
-            return
-        }
-
         //Сохраняем в БД
         val event = Event(
             0,
@@ -795,6 +791,11 @@ open class ParentFragment : Fragment() {
             placeEvent.text.toString(),
             eventEvent.text.toString()
         )
+
+        if(event.event.trim().isEmpty() && event.place.trim().isEmpty()){
+            createError("Нельзя создать пустое мероприятие!")
+            return
+        }
 
         createError("Созданно на " + event.date)
 
@@ -918,32 +919,69 @@ open class ParentFragment : Fragment() {
             mainLayout.removeView(mainLayout.findViewById(TEXT_VIEW_NOTHING_TO_DO_ID))
         }
 
-        val textView: TextView
+        val event = events[i]
+        val eventLayout = LinearLayout(requireContext())
+        eventLayout.orientation = LinearLayout.VERTICAL
 
-        if (events[i].place.isNotEmpty() && events[i].time.length < 7) {
-            textView = createText(
-                events[i].time + System.lineSeparator() +
-                        events[i].place + System.lineSeparator() +
-                        events[i].event, false, true
-            )
-        } else if (events[i].time.length < 7) {
-            textView = createText(
-                events[i].time + System.lineSeparator() +
-                        events[i].event, false, true
-            )
-        } else if (events[i].place.isNotEmpty() && events[i].event.isNotEmpty()) {
-            textView = createText(
-                events[i].place + System.lineSeparator() +
-                        events[i].event, false, true
-            )
-        } else {
-            textView = createText(events[i].event, false, true)
+        val paramsForTextView = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT)
+
+
+        if(event.place.isNotEmpty()){
+            val textView = createText(event.place)
+            textView.textSize = 23f
+            paramsForTextView.setMargins(5,1,2,7)
+            textView.layoutParams = paramsForTextView
+            textView.setTypeface(null, Typeface.BOLD)
+            eventLayout.addView(textView)
         }
 
-        textView.setBackgroundResource(R.drawable.border_event)
-        textView.id = i + ENENT_ID
-        mainLayout.addView(textView)
-        setupLongClickListeners(textView, i)
+        if(event.event.isNotEmpty()){
+            val textView = createText(event.event)
+            textView.textSize = 19f
+            paramsForTextView.setMargins(5,5,2,5)
+            textView.layoutParams = paramsForTextView
+            eventLayout.addView(textView)
+        }
+
+        if(event.time.isNotEmpty()){
+            val textView = createText(event.time)
+            textView.textSize = 10f
+            paramsForTextView.setMargins(5,10,3,0)
+            textView.layoutParams = paramsForTextView
+            textView.setTypeface(null, Typeface.ITALIC)
+            eventLayout.addView(textView)
+        }
+
+        val params = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.MATCH_PARENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+        params.setMargins(5, 5, 5, 5)
+
+        if (mainLayout.childCount == 0 || (mainLayout.childCount == 1 && mainLayout.getChildAt(
+                0
+            ) == deleteButton)
+        ) {
+            params.addRule(RelativeLayout.ALIGN_PARENT_START)
+        } else if (mainLayout.getChildAt(mainLayout.childCount - 1) != deleteButton) {
+            params.addRule(
+                RelativeLayout.BELOW,
+                mainLayout.getChildAt(mainLayout.childCount - 1).id
+            )
+        } else {
+            params.addRule(
+                RelativeLayout.BELOW,
+                mainLayout.getChildAt(mainLayout.childCount - 2).id
+            )
+        }
+        eventLayout.layoutParams = params
+        eventLayout.setBackgroundResource(R.drawable.border_task)
+
+        eventLayout.id = i + ENENT_ID
+        mainLayout.addView(eventLayout)
+        setupLongClickListeners(eventLayout, i)
     }
 
     protected fun addNewPoint(text: String = "") {
@@ -958,43 +996,10 @@ open class ParentFragment : Fragment() {
     //TODO: добавить возможность менять цветa в настройках
     @SuppressLint("ResourceAsColor")
     protected fun createText(
-        text: String,
-        isNameText: Boolean = false,
-        isNeedBelow: Boolean = false
+        text: String
     ): TextView {
         val textView = TextView(context)
-        val params = RelativeLayout.LayoutParams(
-            RelativeLayout.LayoutParams.MATCH_PARENT,
-            RelativeLayout.LayoutParams.WRAP_CONTENT
-        )
-        params.setMargins(5, 5, 5, 5)
-
-        if (isNameText) {
-            params.addRule(RelativeLayout.CENTER_HORIZONTAL)
-            params.setMargins(1, 1, 1, 1)
-        }
-
-        if (isNeedBelow) {
-            textView.id = 1488632223 + events.size
-            if (mainLayout.childCount == 0 || (mainLayout.childCount == 1 && mainLayout.getChildAt(
-                    0
-                ) == deleteButton)
-            ) {
-                params.addRule(RelativeLayout.ALIGN_PARENT_START)
-            } else if (mainLayout.getChildAt(mainLayout.childCount - 1) != deleteButton) {
-                params.addRule(
-                    RelativeLayout.BELOW,
-                    mainLayout.getChildAt(mainLayout.childCount - 1).id
-                )
-            } else {
-                params.addRule(
-                    RelativeLayout.BELOW,
-                    mainLayout.getChildAt(mainLayout.childCount - 2).id
-                )
-            }
-        }
-        textView.setTextColor(R.color.text_color)
-        textView.setLayoutParams(params)
+        textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_color))
         textView.text = text
         textView.textSize = textSize
         return textView
@@ -1302,7 +1307,7 @@ open class ParentFragment : Fragment() {
                 deleteButton.visibility = View.GONE
 
                 when (view) {
-                    is TextView -> {
+                    is LinearLayout -> {
                         deleteEventForAPI(events[id])
                     }
 
@@ -1332,7 +1337,7 @@ open class ParentFragment : Fragment() {
                     editButton.visibility = View.GONE
                     deleteButton.visibility = View.GONE
                     when (view) {
-                        is TextView -> {
+                        is LinearLayout -> {
                             editEvent(events[id])
                         }
 
@@ -1425,14 +1430,14 @@ open class ParentFragment : Fragment() {
         }
     }
     protected fun editEvent(event: Event) {
-        eventTextView.text = "Редактирование события"
+        eventTextView.text = "Редактирование мероприятия"
         createEventPanel.visibility = View.VISIBLE
         dateEvent.setText(event.date)
         if(event.time.length < 7){
             timeEvent.setText(event.time)
         }
         else{
-            timeEvent.setText(event.time.substring(0, event.time.length - 2))
+            timeEvent.setText(event.time.substring(0, event.time.length - 3))
         }
         placeEvent.setText(event.place)
         eventEvent.setText(event.event)
@@ -1468,7 +1473,7 @@ open class ParentFragment : Fragment() {
             timeEvent.setText(task.time)
         }
         else{
-            timeEvent.setText(task.time.substring(0, task.time.length - 2))
+            timeEvent.setText(task.time.substring(0, task.time.length - 3))
         }
         nameTask.setText(task.name)
         val previousPoints: List<String> = task.points.splitToSequence("|").toMutableList()
@@ -1530,6 +1535,7 @@ open class ParentFragment : Fragment() {
         mainLayout.removeAllViews()
 
         val newList = (events + tasks + images).sortedBy { it.time }
+
         for (item in newList) {
             if(images.isNotEmpty() && item == images.last() && !isFromMysql){
                 createNewImage(images.indexOf(item),isFromMysql)
@@ -1559,8 +1565,6 @@ open class ParentFragment : Fragment() {
 
     protected fun changeScrollView() {
         getEventsByDateForAPI()
-        getTasksByDateForAPI()
-        getImagesByDateForAPI()
     }
     private fun initTimePicker() {
         val timeSetListener = TimePickerDialog.OnTimeSetListener { _, hour, minute ->
