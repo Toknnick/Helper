@@ -165,6 +165,9 @@ open class ParentFragment : Fragment() {
     protected lateinit var mainCalendarView: CalendarView
 
 
+    protected lateinit var plug: LinearLayout
+
+
     protected var idRoomDef: Long = -1
 
     //TODO: перенести метод с обновлением пароля пользователя в settingsFragment
@@ -226,18 +229,22 @@ open class ParentFragment : Fragment() {
         imageIcon = requireView().findViewById<ImageView>(R.id.imageIcon)
         calendarView = requireView().findViewById<CalendarView>(R.id.calendarView)
         mainCalendarView = requireView().findViewById<CalendarView>(R.id.mainCalendarView)
+        plug = requireView().findViewById<LinearLayout>(R.id.plug)
 
         //Небольшая заглушка, т.к. календарь не мог появлятся, если изначально был в GONE
-        val params = RelativeLayout.LayoutParams(
+        calendarView.visibility = View.GONE
+        mainCalendarView.visibility = View.GONE
+
+        /*val params = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.WRAP_CONTENT,
             RelativeLayout.LayoutParams.WRAP_CONTENT
         )
+        params.removeRule(RelativeLayout.START_OF)
         params.addRule(RelativeLayout.CENTER_IN_PARENT)
 
-        mainCalendarView.visibility = View.GONE
-        calendarView.visibility = View.GONE
         calendarView.layoutParams = params
         mainCalendarView.layoutParams = params
+        mainCalendarView*/
     }
 
     protected open fun setUpButtons() {
@@ -261,11 +268,13 @@ open class ParentFragment : Fragment() {
         addParamsToButtons(point0)
         initTimePicker()
         user = dbHelper.getUser()
+        plug.visibility = View.GONE
     }
 
     private fun setUpDefButtons(){
         addButton.setOnClickListener {
             showDialog()
+            mainCalendarView.visibility = View.GONE
         }
         addNewPoint.setOnClickListener {
             addNewPoint()
@@ -315,13 +324,11 @@ open class ParentFragment : Fragment() {
                 addNewImageIntoScrollView()
         }
         mainCalendarView.setOnDateChangeListener { view, year, month, dayOfMonth ->
-            // Преобразование выбранной даты в строку
             if (month < 10)
                 chosenDate = "$dayOfMonth.0${month + 1}.$year"
             else
                 chosenDate = "$dayOfMonth.${month + 1}.$year"
 
-            // Скрытие календаря
             mainCalendarView.visibility = View.GONE
 
             dataPickerButton.text = chosenDate
@@ -1049,13 +1056,13 @@ open class ParentFragment : Fragment() {
             RelativeLayout.LayoutParams.WRAP_CONTENT
         )
         //Установить новый пункт
-        params.setMargins(30, 30, 30, 30)
+        params.setMargins(20, 20, 20, 20)
         editText.setLayoutParams(params)
         editText.setBackgroundResource(R.color.edit_text)
         editText.hint = "Задача " + (countOfPoint + 1).toString()
         editText.setText(text)
         editText.id = countOfPoint + TASK_ID
-        editText.setPadding(10, 10, 10, 40)
+        editText.setPadding(10, 10, 10, 20)
         pointsPlace.addView(editText)
         editText.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_color))
 

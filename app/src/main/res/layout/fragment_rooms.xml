@@ -4,8 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/conLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#FFFFFF"
+    android:layout_height="wrap_content"
     android:backgroundTint="@color/main_background"
     tools:context=".fragments.HomeFragment">
 
@@ -29,7 +28,7 @@
         android:id="@+id/showRoomPanelButton"
         android:layout_width="41dp"
         android:layout_height="match_parent"
-        android:background="@color/panel_background"
+        android:background="@drawable/border_panel_background"
         android:orientation="vertical"
         android:layout_alignParentStart="true">
 
@@ -74,7 +73,7 @@
         android:id="@+id/showRoomPanel"
         android:layout_width="300dp"
         android:layout_height="match_parent"
-        android:background="@color/panel_background"
+        android:background="@drawable/border_panel_background"
         android:orientation="vertical"
         android:visibility="gone"
         android:clickable="true"
@@ -170,7 +169,7 @@
         android:id="@+id/createRoomPanel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@color/panel_background"
+        android:background="@drawable/border_panel_background"
         android:visibility="gone"
         android:layout_centerInParent="true">
 
@@ -246,7 +245,7 @@
         android:id="@+id/addRoomPanel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@color/panel_background"
+        android:background="@drawable/border_panel_background"
         android:visibility="gone"
         android:layout_centerInParent="true">
 
@@ -321,7 +320,7 @@
         android:id="@+id/createTaskPanel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@color/panel_background"
+        android:background="@drawable/border_panel_background"
         android:visibility="gone"
         android:layout_centerInParent="true">
 
@@ -400,7 +399,6 @@
                 android:id="@+id/pointsPlace"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@color/panel_background"
                 android:orientation="vertical">
 
                 <EditText
@@ -456,30 +454,35 @@
     </RelativeLayout>
 
 
-    <CalendarView
-        android:id="@+id/calendarView"
+    <LinearLayout
+        android:id="@+id/plug"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/panel_background"
-        android:visibility="visible"
-        android:layout_toStartOf="@id/showRoomPanelButton"
-        android:translationZ="1dp"/>
+        android:layout_height="match_parent"
+        android:background="@color/plug"
+        android:orientation="horizontal"
+        android:translationZ="2dp" />
 
     <CalendarView
         android:id="@+id/mainCalendarView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/panel_background"
-        android:visibility="visible"
-        android:layout_toStartOf="@id/showRoomPanelButton"
-        android:translationZ="1dp"/>
+        android:background="@drawable/border_panel_background"
+        android:layout_centerInParent="true"
+        android:visibility="visible"/>
 
+    <CalendarView
+        android:id="@+id/calendarView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/border_panel_background"
+        android:layout_centerInParent="true"
+        android:visibility="visible"/>
 
     <RelativeLayout
         android:id="@+id/createEventPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/panel_background"
+        android:background="@drawable/border_panel_background"
         android:orientation="vertical"
         android:visibility="gone"
         android:layout_centerInParent="true">
@@ -581,7 +584,7 @@
         android:id="@+id/createImagePanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/panel_background"
+        android:background="@drawable/border_panel_background"
         android:orientation="vertical"
         android:visibility="gone"
         android:layout_centerInParent="true">
@@ -682,7 +685,7 @@
         android:id="@+id/createUserPanel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@color/panel_background"
+        android:background="@drawable/border_panel_background"
         android:visibility="gone"
         android:layout_centerInParent="true"
         >
