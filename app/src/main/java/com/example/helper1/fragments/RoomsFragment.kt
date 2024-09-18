@@ -107,7 +107,7 @@ class RoomsFragment : ParentFragment() {
         roomManger.getRoom(gettingRoom.idRoom, object : GetRoomCallback {
             @SuppressLint("SetTextI18n")
             override fun onSuccess(gotRoom: Room) {
-                if(gotRoom.single == false) {
+                if(!gotRoom.single) {
                     if (isForText) {
                         roomNameTextView.text = gotRoom.name
                         addButton.visibility = View.VISIBLE
@@ -163,7 +163,7 @@ class RoomsFragment : ParentFragment() {
         hideRoomPanel()
         idRoomDef = dbHelper.getRoomId()
         if(idRoomDef != (-1).toLong()) {
-            getRoomFromAPI(Room(idRoomDef, "", "",false), true)
+            getRoomFromAPI(Room(idRoomDef, "", "",false,""), true)
         }else{
             addButton.visibility = View.INVISIBLE
             dataPickerButton.visibility = View.INVISIBLE
@@ -175,6 +175,7 @@ class RoomsFragment : ParentFragment() {
 
     private fun rebuildRoomPanel(){
         if(user!=null && user!!.availableRooms != "") {
+            roomLayout.removeAllViews()
             val availableRooms: List<Int> = user!!.availableRooms.split("|").map { it.toInt() }.toMutableList()
             for (room in availableRooms)
             {
@@ -237,16 +238,20 @@ class RoomsFragment : ParentFragment() {
             0,
             createNameRoom.text.toString().trim(),
             createPasswordRoom.text.toString().trim(),
-            false
+            false,
+            user!!.login
         )
-        if(newRoom.name.length <= 25) {
-            createRoomForAPI(newRoom)
+        if(newRoom.name.length > 25) {
+            createError("Слишком большое название комнаты")
         }
-        else if(newRoom.password.isEmpty() || newRoom.password == ""){
+        else if(newRoom.password.trim().isEmpty() || newRoom.password.trim() == ""){
             createError("Ошибка! Нет пароля!")
         }
+        else if(newRoom.password.length <= 8){
+            createError("Недостаточная длина пароля! Минимально 9 символов!")
+        }
         else{
-            createError("Слишком большое название!")
+            createRoomForAPI(newRoom)
         }
     }
 
@@ -255,7 +260,8 @@ class RoomsFragment : ParentFragment() {
             addIdRoom.text.toString().trim().toLong(),
             "",
             addPasswordRoom.text.toString().trim(),
-            false
+            false,
+            ""
         )
         var availableRooms: List<Long> = ArrayList()
         if(user!!.availableRooms != "") {

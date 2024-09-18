@@ -136,10 +136,10 @@ class HomeFragment : ParentFragment(){
                     loggingUser.availableRooms = gotUser.availableRooms
                     loggingUser.ownRoom = gotUser.ownRoom
                     idRoomDef = gotUser.ownRoom
-                    rebuildPage()
                     mainActivity.startActivity()
                     dbHelper.createUser(loggingUser)
                     setUpElements()
+                    rebuildPage()
                     createUserPanel.visibility = View.GONE
                     addButton.visibility = View.VISIBLE
                     dataPickerButton.visibility = View.VISIBLE
@@ -163,7 +163,8 @@ class HomeFragment : ParentFragment(){
             0,
             loginUser.text.toString().trim(),
             passwordUser.text.toString().trim(),
-            true
+            true,
+            loginUser.text.toString().trim()
         )
         userManager.getUser(loginUser.text.toString().trim(), object : GetUserCallback {
             override fun onSuccess(user: User) {

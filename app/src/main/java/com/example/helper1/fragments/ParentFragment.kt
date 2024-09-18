@@ -101,7 +101,7 @@ open class ParentFragment : Fragment() {
     private val ENENT_ID = 10000
     private val TASK_ID = 232320
     private val REL_LAYOUT_ID = 145632223
-    private val TEXT_VIEW_NOTHING_TO_DO_ID = 11111111
+    protected val TEXT_VIEW_NOTHING_TO_DO_ID = 11111111
 
     protected lateinit var dbHelper: DBHelper
 
@@ -931,7 +931,7 @@ open class ParentFragment : Fragment() {
         if(event.place.isNotEmpty()){
             val textView = createText(event.place)
             textView.textSize = 23f
-            paramsForTextView.setMargins(5,1,2,7)
+            paramsForTextView.setMargins(5,0,2,7)
             textView.layoutParams = paramsForTextView
             textView.setTypeface(null, Typeface.BOLD)
             eventLayout.addView(textView)
@@ -939,7 +939,7 @@ open class ParentFragment : Fragment() {
 
         if(event.event.isNotEmpty()){
             val textView = createText(event.event)
-            textView.textSize = 19f
+            textView.textSize = 18f
             paramsForTextView.setMargins(5,5,2,5)
             textView.layoutParams = paramsForTextView
             eventLayout.addView(textView)
@@ -947,7 +947,7 @@ open class ParentFragment : Fragment() {
 
         if(event.time.isNotEmpty()){
             val textView = createText(event.time)
-            textView.textSize = 10f
+            textView.textSize = 9f
             paramsForTextView.setMargins(5,10,3,0)
             textView.layoutParams = paramsForTextView
             textView.setTypeface(null, Typeface.ITALIC)
@@ -1555,7 +1555,7 @@ open class ParentFragment : Fragment() {
     }
 
     private fun checkToNothingToDo() {
-        if (mainLayout.childCount == 2) {
+        if (mainLayout.childCount == 2 && idRoomDef != -1L) {
             val textView = createText("На этот день ничего не запланировано")
             textView.setTextColor(Color.GRAY)
             textView.id = TEXT_VIEW_NOTHING_TO_DO_ID

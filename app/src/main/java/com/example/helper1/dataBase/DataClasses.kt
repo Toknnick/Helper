@@ -27,7 +27,8 @@ data class Room(
     var idRoom: Long,
     var name: String,
     var password: String,
-    var single: Boolean
+    var single: Boolean,
+    var owner: String
 )
 
 data class User(
