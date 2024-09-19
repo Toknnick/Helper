@@ -30,8 +30,8 @@ class HomeFragment : ParentFragment(){
             saveUserButton.setOnClickListener{
                 if(passwordUser.text.toString().trim().isEmpty()){
                     createError("Пароль не может быть пустым")
-                } else if(passwordUser.text.toString().trim().length < 5){
-                    createError("Минимальная длина пароля 6 символов")
+                } else if(passwordUser.text.toString().trim().length < 7){
+                    createError("Минимальная длина пароля 8 символов")
                 } else if(loginUser.text.toString().trim().isEmpty()){
                     createError("Ошибка! Не указан логин пользователя")
                 }

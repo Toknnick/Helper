@@ -24,6 +24,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.MimeTypeMap
 import android.widget.Button
 import android.widget.CalendarView
 import android.widget.CheckBox
@@ -34,6 +35,7 @@ import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import com.example.helper1.MainActivity
 import com.example.helper1.R
@@ -41,13 +43,16 @@ import com.example.helper1.dataBase.ApiClient
 import com.example.helper1.dataBase.CreateMessageCallback
 import com.example.helper1.dataBase.DBHelper
 import com.example.helper1.dataBase.Event
+import com.example.helper1.dataBase.File
 import com.example.helper1.dataBase.GetAllEventsCallback
+import com.example.helper1.dataBase.GetAllFilesCallback
 import com.example.helper1.dataBase.GetAllImagesCallback
 import com.example.helper1.dataBase.GetAllTaskCallback
 import com.example.helper1.dataBase.Image
 import com.example.helper1.dataBase.Task
 import com.example.helper1.dataBase.User
 import com.example.helper1.dataBase.managers.EventManager
+import com.example.helper1.dataBase.managers.FileManager
 import com.example.helper1.dataBase.managers.ImageManager
 import com.example.helper1.dataBase.managers.RoomManager
 import com.example.helper1.dataBase.managers.TaskManager
@@ -58,6 +63,7 @@ import io.minio.PutObjectArgs
 import io.minio.RemoveObjectArgs
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.HttpURLConnection
@@ -80,6 +86,8 @@ open class ParentFragment : Fragment() {
     protected lateinit var eventManager: EventManager
     protected lateinit var taskManager: TaskManager
     protected lateinit var imageManager: ImageManager
+    protected lateinit var fileManager: FileManager
+
     protected lateinit var mainActivity: MainActivity
     protected lateinit var datePickerDialog: DatePickerDialog
     protected lateinit var datePickerDialogForObject: DatePickerDialog
@@ -90,11 +98,13 @@ open class ParentFragment : Fragment() {
     protected var user: User? = null
 
     protected var selectedImageUri: Uri? = null
+    protected var selectedFileUri: Uri? = null
 
     protected var chosenDate: String = ""
     protected var events: MutableList<Event> = ArrayList<Event>().toMutableList()
     protected var tasks: MutableList<Task> = ArrayList<Task>().toMutableList()
     protected var images: MutableList<Image> = ArrayList<Image>().toMutableList()
+    protected var files: MutableList<File> = ArrayList<File>().toMutableList()
     private var countOfPoint = 1
     protected var textSize = 21F
 
@@ -111,6 +121,7 @@ open class ParentFragment : Fragment() {
     protected lateinit var addRoomButton: Button
     protected lateinit var addButton: Button
     protected lateinit var dataPickerButton: Button
+
     protected lateinit var createTaskPanel: RelativeLayout
     protected lateinit var backTaskButton: Button
     protected lateinit var dateTask: EditText
@@ -121,6 +132,7 @@ open class ParentFragment : Fragment() {
     protected lateinit var addNewPoint: Button
     protected lateinit var deletePoint: Button
     protected lateinit var saveTaskButton: Button
+
     protected lateinit var createEventPanel: RelativeLayout
     protected lateinit var backEventButton: Button
     protected lateinit var dateEvent: EditText
@@ -162,10 +174,18 @@ open class ParentFragment : Fragment() {
     protected lateinit var chooseImageButton: Button
     protected lateinit var saveImageButton: Button
     protected lateinit var imageIcon: ImageView
+
+    protected lateinit var createFilePanel: RelativeLayout
+    protected lateinit var fileTextView: TextView
+    protected lateinit var backFileButton: Button
+    protected lateinit var dateFile: EditText
+    protected lateinit var timeFile: EditText
+    protected lateinit var chooseFileButton: Button
+    protected lateinit var saveFileButton: Button
+    protected lateinit var fileIconName: TextView
+
     protected lateinit var calendarView: CalendarView
     protected lateinit var mainCalendarView: CalendarView
-
-
     protected lateinit var plug: LinearLayout
 
 
@@ -228,6 +248,16 @@ open class ParentFragment : Fragment() {
         saveImageButton = requireView().findViewById<Button>(R.id.saveImageButton)
         chooseImageButton = requireView().findViewById<Button>(R.id.chooseImageButton)
         imageIcon = requireView().findViewById<ImageView>(R.id.imageIcon)
+
+        createFilePanel = requireView().findViewById<RelativeLayout>(R.id.createFilePanel)
+        fileTextView = requireView().findViewById<TextView>(R.id.fileTextView)
+        backFileButton = requireView().findViewById<Button>(R.id.backFileButton)
+        dateFile = requireView().findViewById<EditText>(R.id.dateFile)
+        timeFile = requireView().findViewById<EditText>(R.id.timeFile)
+        saveFileButton = requireView().findViewById<Button>(R.id.saveFileButton)
+        chooseFileButton = requireView().findViewById<Button>(R.id.chooseFileButton)
+        fileIconName = requireView().findViewById<TextView>(R.id.fileIconName)
+
         calendarView = requireView().findViewById<CalendarView>(R.id.calendarView)
         mainCalendarView = requireView().findViewById<CalendarView>(R.id.mainCalendarView)
         plug = requireView().findViewById<LinearLayout>(R.id.plug)
@@ -262,6 +292,7 @@ open class ParentFragment : Fragment() {
         eventManager = EventManager(apiClient)
         taskManager = TaskManager(apiClient)
         imageManager = ImageManager(apiClient)
+        fileManager = FileManager(apiClient)
         setUpButtons()
         setUpDefButtons()
         addParamsToButtons(point0)
@@ -318,12 +349,31 @@ open class ParentFragment : Fragment() {
             hideImagePanel()
         }
         chooseImageButton.setOnClickListener{
-            chooseImage()
             selectedImageUri = null
+            chooseImage()
         }
         saveImageButton.setOnClickListener{
             if(selectedImageUri != null)
                 addNewImageIntoScrollView()
+        }
+
+        dateFile.setOnClickListener {
+            openCalendar()
+        }
+        timeFile.setOnClickListener {
+            timePickerDialog.show()
+        }
+        backFileButton.setOnClickListener{
+            clearFilePanel()
+            hideFilePanel()
+        }
+        chooseFileButton.setOnClickListener{
+            selectedFileUri = null
+            chooseFile()
+        }
+        saveFileButton.setOnClickListener{
+            if(selectedFileUri != null)
+                addNewFileIntoScrollView()
         }
         mainCalendarView.setOnDateChangeListener { view, year, month, dayOfMonth ->
             if (month < 10)
@@ -400,7 +450,7 @@ open class ParentFragment : Fragment() {
     protected fun updateEventForAPI(previousEvent: Event, updatingEvent: Event) {
         eventManager.updateEvent(previousEvent, updatingEvent, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
-                createAllEventsAndTasksAndImages()
+                createAllEventsAndTasksAndImagesAndFiles()
             }
 
             override fun onFailure(message: String) {
@@ -414,7 +464,7 @@ open class ParentFragment : Fragment() {
         eventManager.deleteEvent(deletingEvent, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 events.remove(deletingEvent)
-                createAllEventsAndTasksAndImages()
+                createAllEventsAndTasksAndImagesAndFiles()
             }
 
             override fun onFailure(message: String) {
@@ -472,7 +522,7 @@ open class ParentFragment : Fragment() {
     protected fun updateTaskForAPI(previousTask: Task, updatingTask: Task) {
         taskManager.updateTask(previousTask, updatingTask, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
-                createAllEventsAndTasksAndImages()
+                createAllEventsAndTasksAndImagesAndFiles()
             }
 
             override fun onFailure(message: String) {
@@ -485,7 +535,7 @@ open class ParentFragment : Fragment() {
         taskManager.deleteTask(deletingTask, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 tasks.remove(deletingTask)
-                createAllEventsAndTasksAndImages()
+                createAllEventsAndTasksAndImagesAndFiles()
             }
 
             override fun onFailure(message: String) {
@@ -531,7 +581,7 @@ open class ParentFragment : Fragment() {
                     }
                 }
                 images.sortedBy { it.time }
-                createAllEventsAndTasksAndImages()
+                getFilesByDateForAPI()
             }
 
             override fun onFailure(message: String) {
@@ -554,7 +604,7 @@ open class ParentFragment : Fragment() {
                             .build()
 
                         // Извлекаем имя файла из URL изображения
-                        val fileName = deletingImage.url.substringAfterLast("/")
+                        val fileName = user!!.login + "/" + deletingImage.url.substringAfterLast("/")
 
                         // Удаление файла из бакета
                         minioClient.removeObject(
@@ -569,7 +619,91 @@ open class ParentFragment : Fragment() {
                 }
                 thread.start()
 
-                createAllEventsAndTasksAndImages()
+                createAllEventsAndTasksAndImagesAndFiles()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), "Ошибка удаления", Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    private fun createFileForAPI(url: String) {
+        val file = this.files.last()
+        fileManager.getAllFiles(object : GetAllFilesCallback {
+            override fun onSuccess(files: List<File>) {
+                file.url = url
+                if (files.isNotEmpty()) {
+                    file.idFile = (files.last().idFile + 1)
+                } else {
+                    file.idFile = 1
+                }
+                fileManager.createFile(file, object : CreateMessageCallback {
+                    override fun onSuccess(message: String) {
+                    }
+
+                    override fun onFailure(message: String) {
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                    }
+                })
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    private fun getFilesByDateForAPI() {
+        files = mutableListOf()
+        fileManager.getAllFilesByIdRoom(idRoomDef, object : GetAllFilesCallback {
+            override fun onSuccess(tempFiles: List<File>) {
+                for (file in tempFiles) {
+                    if (file.date == chosenDate) {
+                        files += file
+                    }
+                }
+                files.sortedBy { it.time }
+                createAllEventsAndTasksAndImagesAndFiles()
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    protected fun deleteFileForAPI(deletingFile: File) {
+        fileManager.deleteFile(deletingFile, object : CreateMessageCallback {
+            override fun onSuccess(message: String) {
+                files.remove(deletingFile)
+
+                // Удаление изображения из бакета Timeweb Cloud
+                val thread = Thread {
+                    try {
+                        val minioClient = MinioClient.builder()
+                            .endpoint("https://s3.timeweb.cloud")
+                            .credentials("CG4IMNYH6V42KN9PNC68", "hTGbzvCw3xmaJZgcW0dPgiDf52BOdFB6b7YsZ7yf")
+                            .build()
+
+                        // Извлекаем имя файла из URL изображения
+                        val fileName = user!!.login + "/" + deletingFile.url.substringAfterLast("/")
+
+                        // Удаление файла из бакета
+                        minioClient.removeObject(
+                            RemoveObjectArgs.builder()
+                                .bucket("9f168657-helper-files-server")
+                                .`object`(fileName)
+                                .build()
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                thread.start()
+
+                createAllEventsAndTasksAndImagesAndFiles()
             }
 
             override fun onFailure(message: String) {
@@ -616,26 +750,91 @@ open class ParentFragment : Fragment() {
                 createImagePanel.visibility = View.VISIBLE
                 addButton.isEnabled = false
             }
+            3 ->{
+                fileIconName.text = "Файл не выбран"
+                clearFilePanel()
+                createFilePanel.visibility = View.VISIBLE
+                addButton.isEnabled = false
+            }
         }
     }
 
-    private val PICK_IMAGE_REQUEST = 1
+    private val PICK_FILE_REQUEST = 1
+    private fun chooseFile(){
+        val intent = Intent(Intent.ACTION_GET_CONTENT)
+        intent.type = "*/*" // Выбираем любой файл
+        val mimeTypes = arrayOf(
+            "application/pdf", // PDF файлы
+            "text/plain", // Текстовые файлы
+            "application/msword", // Word документы
+            "application/vnd.ms-excel", // Excel файлы
+            "application/zip", // ZIP архивы
+            "application/x-rar-compressed" // RAR архивы
+        )
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes) // Ограничиваем MIME-типы
 
-    protected fun chooseImage() {
-        val intent = Intent(Intent.ACTION_PICK)
-        intent.type = "image/*"
-        startActivityForResult(intent, PICK_IMAGE_REQUEST)
+        startActivityForResult(intent, PICK_FILE_REQUEST)
     }
+
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+
         if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null && data.data != null) {
             selectedImageUri = data.data
             imageIcon.setImageURI(selectedImageUri)
         }
+
+        if (requestCode == PICK_FILE_REQUEST && resultCode == Activity.RESULT_OK && data != null && data.data != null) {
+            // Получаем URI выбранного файла
+            selectedFileUri = data.data
+
+            // Здесь можно сделать что-то с файлом, например, вывести его имя
+            selectedFileUri?.let { uri ->
+                val fileName = getFileNameFromUri(uri)
+                fileIconName.text = "Имя файла: $fileName"
+            }
+        }
     }
 
-    private fun uploadImageToBucket(imageUri: Uri?) {
+    protected fun addNewFileIntoScrollView(){
+        val file = File(
+            (files.lastIndex + 1).toLong(),
+            idRoomDef,
+            stringToDate(dateFile.text.toString().trim()),
+            stringToTime(timeFile.text.toString().trim()),
+            ""
+        )
+
+        // Проверяем размер файла
+        val inputStream = requireContext().contentResolver.openInputStream(selectedImageUri!!)
+        val fileSizeInBytes = inputStream?.available()?.toLong() ?: 0
+        val fileSizeInMB = fileSizeInBytes / (1024 * 1024)
+
+        inputStream?.close()
+
+        if (fileSizeInMB > 30) {
+            createError("Ошибка: размер изображения превышает 30 МБ")
+            return
+        }
+
+        if(selectedFileUri == null)
+            return
+
+        createError("Создание файла...")
+        // Запуск потока для загрузки файла в Timeweb Cloud
+        uploadFileToBucket(selectedFileUri)
+
+        if (chosenDate == file.date) {
+            files += file
+            createError("Создано на ${file.date}")
+        }
+
+        hideFilePanel()
+        clearFilePanel()
+    }
+
+    private fun uploadFileToBucket(fileUri: Uri?) {
         val thread = Thread {
             try {
                 val minioClient = MinioClient.builder()
@@ -644,50 +843,40 @@ open class ParentFragment : Fragment() {
                     .build()
 
                 // Открываем InputStream для файла
-                val inputStream = requireContext().contentResolver.openInputStream(imageUri!!)
+                val inputStream = requireContext().contentResolver.openInputStream(fileUri!!)
 
                 // Получаем имя файла из Uri
-                val fileName = getFileNameFromUri(imageUri)
+                val fileName = user!!.login + "/" + getFileNameFromUri(fileUri)
+
+                // Получаем MIME-тип файла
+                val contentResolver = requireContext().contentResolver
+                val mimeType = contentResolver.getType(fileUri) ?: "application/octet-stream"
 
                 // Загружаем файл в бакет TimeWeb Cloud
                 try {
                     minioClient.putObject(
                         PutObjectArgs.builder()
-                            .bucket("9f168657-helper-image-server")
+                            .bucket("9f168657-helper-files-server")
                             .`object`(fileName) // Используем извлеченное имя файла
-                            .stream(inputStream, -1, 10485760)
-                            .contentType("image/jpeg").build()
+                            .stream(inputStream, -1, 31457280 ) // Ограничение на размер (например, 10MB)
+                            .contentType(mimeType) // Используем динамически определенный MIME-тип
+                            .build()
                     )
                 } finally {
                     inputStream?.close()
                 }
 
-                // Формируем URL для загруженного изображения
-                val imageUrl = "https://9f168657-helper-image-server.s3.timeweb.cloud/$fileName"
-                createImageForAPI(imageUrl)
-                images.last().url = imageUrl
+                // Формируем URL для загруженного файла
+                val fileUrl = "https://9f168657-helper-files-server.s3.timeweb.cloud/$fileName"
+                createFileForAPI(fileUrl) // Вызываем метод для обработки загруженного файла
+                files.last().url = fileUrl
+                rebuildPage()
 
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
         thread.start()
-    }
-
-
-    private fun getFileNameFromUri(uri: Uri): String {
-        var fileName = "image.jpg" // Имя файла по умолчанию
-
-        val cursor = requireContext().contentResolver.query(uri, null, null, null, null)
-        cursor?.use {
-            if (it.moveToFirst()) {
-                val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                if (nameIndex != -1) {
-                    fileName = it.getString(nameIndex)
-                }
-            }
-        }
-        return fileName
     }
 
     protected fun addNewImageIntoScrollView() {
@@ -721,11 +910,94 @@ open class ParentFragment : Fragment() {
         createError("Создано на ${image.date}")
         if (chosenDate == image.date) {
             images += image
-            createAllEventsAndTasksAndImages(false)
+            createAllEventsAndTasksAndImagesAndFiles(false)
         }
 
         hideImagePanel()
         clearImagePanel()
+    }
+
+    protected fun addNewEventIntoScrollView() {
+        //Сохраняем в БД
+        val event = Event(
+            0,
+            idRoomDef,
+            stringToDate(dateEvent.text.toString()),
+            stringToTime(timeEvent.text.toString()),
+            placeEvent.text.toString(),
+            eventEvent.text.toString()
+        )
+
+        if(event.event.trim().isEmpty() && event.place.trim().isEmpty()){
+            createError("Нельзя создать пустое мероприятие!")
+            return
+        }
+
+        createError("Созданно на " + event.date)
+
+        if (chosenDate == event.date) {
+            events += event
+            createAllEventsAndTasksAndImagesAndFiles()
+        }
+
+        hideEventPanel()
+        clearEventPanel()
+        createEventForAPI(event)
+    }
+
+    protected fun addNewTaskIntoScrollView() {
+        //Добавляем пункты
+        var points: List<String> = ArrayList()
+        var checkBoxes: List<Boolean> = ArrayList()
+        if(point0.text.toString().trim().isNotEmpty() && point0.text.toString().trim()!=""){
+            points += point0.text.toString().trim()
+            checkBoxes += false
+        }
+
+        var j = 1
+        while (countOfPoint > j) {
+            if (pointsPlace.findViewById<EditText>(j + TASK_ID).text.trim().toString()
+                    .isNotEmpty()
+            ) {
+                points += pointsPlace.findViewById<EditText>(j + TASK_ID).text.toString()
+                    .trim()
+                checkBoxes += false
+            }
+            j += 1
+        }
+
+        if (timeTask.text.toString().trim().isEmpty()) {
+            timeTask.setText(
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
+            )
+        }
+
+        if(points.isNotEmpty()) {
+            //Сохраняем в БД
+            val newTask = Task(
+                0,
+                idRoomDef,
+                stringToDate(dateTask.text.toString().trim()),
+                stringToTime(timeTask.text.toString().trim()),
+                nameTask.text.toString().trim(),
+                points.joinToString("|"),
+                checkBoxes.map { it.toString() }.joinToString("|")
+            )
+
+            if (chosenDate == newTask.date) {
+                tasks += newTask
+                createAllEventsAndTasksAndImagesAndFiles()
+            }
+
+            createError("Созданно на " + newTask.date)
+            createTaskForAPI(newTask)
+        }
+        else{
+            createError("Задача не создана. Она была пуста")
+        }
+
+        hideTaskPanel()
+        clearTaskPanel()
     }
 
 
@@ -777,92 +1049,136 @@ open class ParentFragment : Fragment() {
 
         imageView.setLayoutParams(params)
         mainLayout.addView(imageView)
-        setupLongClickListeners(imageView, i)
+        setupLongClickListeners(imageView, i,false)
     }
 
+    private fun createNewFile(i : Int){
+        if (mainLayout.findViewById<TextView>(TEXT_VIEW_NOTHING_TO_DO_ID) != null) {
+            mainLayout.removeView(mainLayout.findViewById(TEXT_VIEW_NOTHING_TO_DO_ID))
+        }
 
-    protected fun addNewEventIntoScrollView() {
-        //Сохраняем в БД
-        val event = Event(
-            0,
-            idRoomDef,
-            stringToDate(dateEvent.text.toString()),
-            stringToTime(timeEvent.text.toString()),
-            placeEvent.text.toString(),
-            eventEvent.text.toString()
+        val file = files[i]
+        val relativeLayout = createRelativeLayout(i+tasks.size)
+        val textView = createTextView(file.url.substringAfterLast("/"))
+        textView.id = 444444+i
+
+        val openButton = createButton("")
+        openButton.visibility = View.VISIBLE
+        openButton.id = 555555+i
+
+        val params = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.MATCH_PARENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
         )
+        params.setMargins(5, 5, 5, 5)
+        params.addRule(RelativeLayout.BELOW, textView.id)
 
-        if(event.event.trim().isEmpty() && event.place.trim().isEmpty()){
-            createError("Нельзя создать пустое мероприятие!")
-            return
+        openButton.layoutParams = params
+        relativeLayout.addView(textView)
+        relativeLayout.addView(openButton)
+
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val fileClass = java.io.File(downloadsDir, textView.text.toString().substringBeforeLast("."))
+
+        if (fileClass.exists()) {
+            openButton.text = "Открыть"
+            // Если файл существует, открываем его
+            openButton.setOnClickListener{
+                openFile(fileClass,file.url)
+            }
+        } else {
+            openButton.text = "скачать"
+            // Если файл не существует, скачиваем
+            openButton.setOnClickListener {
+                createError("Скачивание...")
+                openButton.isEnabled = false
+                downloadFile(file.url, fileClass, openButton)
+            }
         }
 
-        createError("Созданно на " + event.date)
-
-        if (chosenDate == event.date) {
-            events += event
-            createAllEventsAndTasksAndImages()
-        }
-
-        hideEventPanel()
-        clearEventPanel()
-        createEventForAPI(event)
+        relativeLayout.setBackgroundResource(R.drawable.border_panel_background)
+        mainLayout.addView(relativeLayout)
+        setupLongClickListeners(relativeLayout, i,true)
     }
 
-    protected fun addNewTaskIntoScrollView() {
-        //Добавляем пункты
-        var points: List<String> = ArrayList()
-        var checkBoxes: List<Boolean> = ArrayList()
-        if(point0.text.toString().trim().isNotEmpty() && point0.text.toString().trim()!=""){
-            points += point0.text.toString().trim()
-            checkBoxes += false
-        }
+    // Метод для скачивания файла
+    private fun downloadFile(fileUrl: String,file: java.io.File,openButton: Button) {
+        val thread = Thread {
+            try {
+                // Открываем соединение по URL файла
+                val url = URL(fileUrl)
+                val connection: HttpURLConnection = url.openConnection() as HttpURLConnection
+                connection.doInput = true
+                connection.connect()
 
-        var j = 1
-        while (countOfPoint > j) {
-            if (pointsPlace.findViewById<EditText>(j + TASK_ID).text.trim().toString()
-                    .isNotEmpty()
-            ) {
-                points += pointsPlace.findViewById<EditText>(j + TASK_ID).text.toString()
-                    .trim()
-                checkBoxes += false
+                // Получаем InputStream для чтения содержимого файла
+                val inputStream: InputStream = connection.inputStream
+
+                // Сохраняем файл в директорию "Download" на устройстве
+                saveFileToDownloads(inputStream, file)
+
+                // После скачивания открываем файл
+                openFile(file,fileUrl)
+                openButton.isEnabled = true
+
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            j += 1
         }
-
-        if (timeTask.text.toString().trim().isEmpty()) {
-            timeTask.setText(
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
-            )
-        }
-
-        if(points.isNotEmpty()) {
-            //Сохраняем в БД
-            val newTask = Task(
-                0,
-                idRoomDef,
-                stringToDate(dateTask.text.toString().trim()),
-                stringToTime(timeTask.text.toString().trim()),
-                nameTask.text.toString().trim(),
-                points.joinToString("|"),
-                checkBoxes.map { it.toString() }.joinToString("|")
-            )
-
-            if (chosenDate == newTask.date) {
-                tasks += newTask
-                createAllEventsAndTasksAndImages()
-            }
-
-            createError("Созданно на " + newTask.date)
-            createTaskForAPI(newTask)
-        }
-        else{
-            createError("Задача не создана. Она была пуста")
-        }
-
-        hideTaskPanel()
-        clearTaskPanel()
+        thread.start()
     }
+
+    // Метод для сохранения файла в папку "Downloads"
+    private fun saveFileToDownloads(inputStream: InputStream, file:java.io.File) {
+        try {
+
+            val outputStream = FileOutputStream(file)
+            inputStream.use { input ->
+                outputStream.use { output ->
+                    input.copyTo(output)
+                }
+            }
+
+            requireActivity().runOnUiThread {
+                createError("Файл успешно сохранен: ${file.absolutePath}")
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            requireActivity().runOnUiThread {
+                createError("Ошибка при сохранении файла")
+            }
+        }
+    }
+
+    // Метод для открытия файла
+    private fun openFile(file: java.io.File, url: String) {
+        try {
+            // Получаем Uri для файла через FileProvider
+            val uri = FileProvider.getUriForFile(requireContext(), "${requireContext().packageName}.provider", file)
+            val intent = Intent(Intent.ACTION_VIEW)
+
+            // Определяем расширение файла
+            val fileExtension = url.substringAfterLast(".")
+
+            // Получаем MIME-тип через MimeTypeMap
+            val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension.lowercase()) ?: "*/*"
+
+            intent.setDataAndType(uri, mimeType)
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+            // Запускаем Intent для открытия файла
+            startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            requireActivity().runOnUiThread {
+                Log.d("MyTag", e.toString())
+                createError("Ошибка при открытии файла, возможно, неподдерживаемый тип файла")
+            }
+        }
+    }
+
+
+
 
     @SuppressLint("ResourceType")
     protected fun createNewTask(task: Task) {
@@ -891,14 +1207,14 @@ open class ParentFragment : Fragment() {
 
         var j = 0
         while (points.count() > j) {
-            val textView = createText(points[j])
+            val textView = createTextView(points[j])
             addParamsToNewPoint(textView, layout, j, checkBoxes[j])
             j += 1
         }
 
         layout.setBackgroundResource(R.drawable.border_task)
         mainLayout.addView(layout)
-        setupLongClickListeners(layout, tasks.indexOf(task))
+        setupLongClickListeners(layout, tasks.indexOf(task),false)
     }
 
     private fun repairTask(task: Task, points:List<String>) {
@@ -929,7 +1245,7 @@ open class ParentFragment : Fragment() {
 
 
         if(event.place.isNotEmpty()){
-            val textView = createText(event.place)
+            val textView = createTextView(event.place)
             textView.textSize = 23f
             paramsForTextView.setMargins(5,0,2,7)
             textView.layoutParams = paramsForTextView
@@ -938,7 +1254,7 @@ open class ParentFragment : Fragment() {
         }
 
         if(event.event.isNotEmpty()){
-            val textView = createText(event.event)
+            val textView = createTextView(event.event)
             textView.textSize = 18f
             paramsForTextView.setMargins(5,5,2,5)
             textView.layoutParams = paramsForTextView
@@ -946,7 +1262,7 @@ open class ParentFragment : Fragment() {
         }
 
         if(event.time.isNotEmpty()){
-            val textView = createText(event.time)
+            val textView = createTextView(event.time)
             textView.textSize = 9f
             paramsForTextView.setMargins(5,10,3,0)
             textView.layoutParams = paramsForTextView
@@ -981,7 +1297,71 @@ open class ParentFragment : Fragment() {
 
         eventLayout.id = i + ENENT_ID
         mainLayout.addView(eventLayout)
-        setupLongClickListeners(eventLayout, i)
+        setupLongClickListeners(eventLayout, i,false)
+    }
+
+    private val PICK_IMAGE_REQUEST = 1
+
+    protected fun chooseImage() {
+        val intent = Intent(Intent.ACTION_PICK)
+        intent.type = "image/*"
+        startActivityForResult(intent, PICK_IMAGE_REQUEST)
+    }
+
+
+    private fun uploadImageToBucket(imageUri: Uri?) {
+        val thread = Thread {
+            try {
+                val minioClient = MinioClient.builder()
+                    .endpoint("https://s3.timeweb.cloud")
+                    .credentials("CG4IMNYH6V42KN9PNC68", "hTGbzvCw3xmaJZgcW0dPgiDf52BOdFB6b7YsZ7yf")
+                    .build()
+
+                // Открываем InputStream для файла
+                val inputStream = requireContext().contentResolver.openInputStream(imageUri!!)
+
+                // Получаем имя файла из Uri
+                val fileName = user!!.login + "/" + getFileNameFromUri(imageUri)
+
+                // Загружаем файл в бакет TimeWeb Cloud
+                try {
+                    minioClient.putObject(
+                        PutObjectArgs.builder()
+                            .bucket("9f168657-helper-image-server")
+                            .`object`(fileName) // Используем извлеченное имя файла
+                            .stream(inputStream, -1, 10485760)
+                            .contentType("image/jpeg").build()
+                    )
+                } finally {
+                    inputStream?.close()
+                }
+
+                // Формируем URL для загруженного изображения
+                val imageUrl = "https://9f168657-helper-image-server.s3.timeweb.cloud/$fileName"
+                createImageForAPI(imageUrl)
+                images.last().url = imageUrl
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        thread.start()
+    }
+
+
+    private fun getFileNameFromUri(uri: Uri): String {
+        var fileName = "image.jpg" // Имя файла по умолчанию
+
+        val cursor = requireContext().contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (nameIndex != -1) {
+                    fileName = it.getString(nameIndex)
+                }
+            }
+        }
+        return fileName
     }
 
     protected fun addNewPoint(text: String = "") {
@@ -995,7 +1375,7 @@ open class ParentFragment : Fragment() {
 
     //TODO: добавить возможность менять цветa в настройках
     @SuppressLint("ResourceAsColor")
-    protected fun createText(
+    protected fun createTextView(
         text: String
     ): TextView {
         val textView = TextView(context)
@@ -1200,6 +1580,12 @@ open class ParentFragment : Fragment() {
         imageIcon.setImageURI(null)
     }
 
+    protected fun clearFilePanel(){
+        dateFile.setText("")
+        timeFile.setText("")
+        fileTextView.text = "Создание файла"
+    }
+
     protected fun clearEventPanel() {
         dateEvent.setText("")
         timeEvent.setText("")
@@ -1252,6 +1638,11 @@ open class ParentFragment : Fragment() {
         createImagePanel.visibility = View.GONE
     }
 
+    protected fun hideFilePanel(){
+        addButton.isEnabled = true
+        createFilePanel.visibility = View.GONE
+    }
+
     protected fun hideEventPanel() {
         addButton.isEnabled = true
         createEventPanel.visibility = View.GONE
@@ -1279,7 +1670,7 @@ open class ParentFragment : Fragment() {
 
         return newString
     }
-    protected open fun setupLongClickListeners(view: View, id: Int) {
+    protected open fun setupLongClickListeners(view: View, id: Int,isFileLayut: Boolean) {
         view.setOnLongClickListener {
             val params = RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT,
@@ -1312,7 +1703,11 @@ open class ParentFragment : Fragment() {
                     }
 
                     is RelativeLayout -> {
-                        deleteTaskForAPI(tasks[id])
+                        if(!isFileLayut)
+                            deleteTaskForAPI(tasks[id])
+                        else{
+                            deleteFileForAPI(files[id])
+                        }
                     }
 
                     is ImageView -> {
@@ -1328,39 +1723,42 @@ open class ParentFragment : Fragment() {
                 paramsToEdit.addRule(RelativeLayout.ALIGN_RIGHT, view.id)
             }
 
-            if (view !is ImageView) {
-                editButton.text = "Редактировать"
-                editButton.layoutParams = paramsToEdit
-                editButton.visibility = View.VISIBLE
+            if(!isFileLayut)
+                if (view !is ImageView) {
+                    editButton.text = "Редактировать"
+                    editButton.layoutParams = paramsToEdit
+                    editButton.visibility = View.VISIBLE
 
-                editButton.setOnClickListener {
-                    editButton.visibility = View.GONE
-                    deleteButton.visibility = View.GONE
-                    when (view) {
-                        is LinearLayout -> {
-                            editEvent(events[id])
-                        }
+                    editButton.setOnClickListener {
+                        editButton.visibility = View.GONE
+                        deleteButton.visibility = View.GONE
+                        when (view) {
+                            is LinearLayout -> {
+                                editEvent(events[id])
+                            }
 
-                        is RelativeLayout -> {
-                            editTask(tasks[id])
+                            is RelativeLayout -> {
+                                editTask(tasks[id])
+                            }
                         }
                     }
+                } else {
+                    editButton.text = "Скачать"
+                    editButton.layoutParams = paramsToEdit
+                    editButton.visibility = View.VISIBLE
+
+                    editButton.setOnClickListener {
+                        deleteButton.visibility = View.GONE
+                        editButton.visibility = View.GONE
+
+                        downloadImage(images[id])
+                        Toast.makeText(
+                            requireContext(),
+                            "Изображение сохранено в галерею",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
                 }
-            }
-            else{
-
-                editButton.text = "Скачать"
-                editButton.layoutParams = paramsToEdit
-                editButton.visibility = View.VISIBLE
-
-                editButton.setOnClickListener {
-                    deleteButton.visibility = View.GONE
-                    editButton.visibility = View.GONE
-
-                    downloadImage(images[id])
-                    Toast.makeText(requireContext(), "Изображение сохранено в галерею", Toast.LENGTH_LONG).show()
-                }
-            }
 
             true
         }
@@ -1531,20 +1929,21 @@ open class ParentFragment : Fragment() {
         }
     }
 
-    protected fun createAllEventsAndTasksAndImages(isFromMysql:Boolean = true) {
+    protected fun createAllEventsAndTasksAndImagesAndFiles(isFromMysql:Boolean = true) {
         mainLayout.removeAllViews()
 
-        val newList = (events + tasks + images).sortedBy { it.time }
+        val newList = (events + tasks + images + files).sortedBy { it.time }
 
         for (item in newList) {
-            if(images.isNotEmpty() && item == images.last() && !isFromMysql){
-                createNewImage(images.indexOf(item),isFromMysql)
+            if(files.isNotEmpty() && item == files.last() && !isFromMysql){
+                createNewFile(files.indexOf(item))
             }
             else {
                 when (item) {
                     is Event -> createNewEvent(events.indexOf(item))
                     is Task -> createNewTask(item)
-                    is Image -> createNewImage(images.indexOf(item), true)
+                    is Image -> createNewImage(images.indexOf(item), isFromMysql)
+                    is File -> createNewFile(files.indexOf(item))
                 }
             }
         }
@@ -1556,7 +1955,7 @@ open class ParentFragment : Fragment() {
 
     private fun checkToNothingToDo() {
         if (mainLayout.childCount == 2 && idRoomDef != -1L) {
-            val textView = createText("На этот день ничего не запланировано")
+            val textView = createTextView("На этот день ничего не запланировано")
             textView.setTextColor(Color.GRAY)
             textView.id = TEXT_VIEW_NOTHING_TO_DO_ID
             mainLayout.addView(textView)
@@ -1581,6 +1980,7 @@ open class ParentFragment : Fragment() {
             timeEvent.setText(time)
             timeTask.setText(time)
             timeImage.setText(time)
+            timeFile.setText(time)
         }
 
         val cal: Calendar = Calendar.getInstance()
@@ -1608,12 +2008,13 @@ open class ParentFragment : Fragment() {
             dateEvent.setText(date)
             dateTask.setText(date)
             dateImage.setText(date)
+            dateFile.setText(date)
         }
     }
 
 
     private fun showDialog() {
-        val langArray: Array<String> = arrayOf("Задача", "Мероприятие", "Изображение")
+        val langArray: Array<String> = arrayOf("Задача", "Мероприятие", "Изображение", "Файл")
         var selectedEvent = 0 // Инициализируем в 0, который является первым элементом
         val builder: androidx.appcompat.app.AlertDialog.Builder =
             androidx.appcompat.app.AlertDialog.Builder(requireContext())

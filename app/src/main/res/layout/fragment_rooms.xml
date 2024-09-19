@@ -461,23 +461,10 @@
         android:layout_height="match_parent"
         android:background="@color/plug"
         android:orientation="horizontal"
+        android:visibility="visible"
         android:translationZ="2dp" />
 
-    <CalendarView
-        android:id="@+id/mainCalendarView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/border_panel_background"
-        android:layout_centerInParent="true"
-        android:visibility="visible"/>
 
-    <CalendarView
-        android:id="@+id/calendarView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/border_panel_background"
-        android:layout_centerInParent="true"
-        android:visibility="visible"/>
 
     <RelativeLayout
         android:id="@+id/createEventPanel"
@@ -683,6 +670,107 @@
     </RelativeLayout>
 
     <RelativeLayout
+        android:id="@+id/createFilePanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/border_panel_background"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:layout_centerInParent="true">
+
+        <TextView
+            android:id="@+id/fileTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="2dp"
+            android:gravity="center"
+            android:autoSizeMaxTextSize="20dp"
+            android:text="Создание файла"
+            android:layout_marginBottom="5dp"
+            android:layout_alignParentStart="true"
+            android:padding="2dp"
+            android:textColor="@color/text_color"
+            android:textSize="18sp" />
+
+        <Button
+            android:id="@+id/backFileButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/fileTextView"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/button_color"
+            android:padding="10dp"
+            android:text="Назад"
+            android:textColor="@color/text_color"
+            android:textSize="15sp" />
+
+        <EditText
+            android:id="@+id/dateFile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/fileTextView"
+            android:layout_margin="10dp"
+            android:editable="false"
+            android:focusable="false"
+            android:layout_toEndOf="@id/backFileButton"
+            android:background="@color/edit_text"
+            android:hint="Дата"
+            android:padding="10dp"
+            android:textColor="@color/text_color" />
+
+        <EditText
+            android:id="@+id/timeFile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/dateFile"
+            android:editable="false"
+            android:focusable="false"
+            android:layout_margin="10dp"
+            android:background="@color/edit_text"
+            android:hint="Время"
+            android:padding="10dp"
+            android:textColor="@color/text_color" />
+
+
+        <TextView
+            android:id="@+id/fileIconName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/chooseFileButton"
+            android:layout_alignTop="@id/chooseFileButton"
+            android:text="Название файла"
+            android:textSize="20sp"
+            android:layout_margin="5dp"
+            android:textColor="@color/text_color" />
+
+        <Button
+            android:id="@+id/chooseFileButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/timeFile"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/button_color"
+            android:padding="10dp"
+            android:text="Выбрать"
+            android:textColor="@color/text_color"
+            android:textSize="20sp" />
+
+        <Button
+            android:id="@+id/saveFileButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/chooseFileButton"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/button_color"
+            android:padding="10dp"
+            android:text="Готово"
+            android:textColor="@color/text_color"
+            android:textSize="20sp" />
+
+
+    </RelativeLayout>
+
+    <RelativeLayout
         android:id="@+id/createUserPanel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -755,5 +843,21 @@
             android:textColor="@color/text_color"
             android:textSize="15sp" />
     </RelativeLayout>
+
+    <CalendarView
+        android:id="@+id/mainCalendarView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/border_panel_background"
+        android:layout_centerInParent="true"
+        android:visibility="visible"/>
+
+    <CalendarView
+        android:id="@+id/calendarView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/border_panel_background"
+        android:layout_centerInParent="true"
+        android:visibility="visible"/>
 
 </RelativeLayout>

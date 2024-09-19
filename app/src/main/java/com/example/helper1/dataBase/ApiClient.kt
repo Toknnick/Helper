@@ -128,4 +128,30 @@ class ApiClient(private val retrofit: Retrofit) {
         val call = apiInterface.deleteImage(image.idImage)
         call.enqueue(callback)
     }
+
+
+    fun createFile(file: File,
+                    callback: Callback<Void>) {
+        val call = apiInterface.createFile(file)
+        call.enqueue(callback)
+    }
+
+    fun getAllFiles(callback: Callback<List<File>>)  {
+        val call = apiInterface.getAllFile()
+        call.enqueue(callback)
+    }
+
+    fun getAllFileByIdRoom(idRoom: Long ,callback: Callback<List<File>>) {
+        val call = apiInterface.getAllFileByIdRoom(idRoom)
+        call.enqueue(callback)
+    }
+
+    fun getFile(file: File, callback: Callback<File>) {
+        val call = apiInterface.getFile(file.idRoom,file.date,file.time,file.url)
+        call.enqueue(callback)
+    }
+    fun deleteFile(file: File, callback: Callback<Void>) {
+        val call = apiInterface.deleteFile(file.idFile)
+        call.enqueue(callback)
+    }
 }

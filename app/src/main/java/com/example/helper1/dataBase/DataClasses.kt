@@ -46,6 +46,14 @@ data class Image(
     var url : String,
 ):Timable
 
+data class File(
+    var idFile: Long,
+    var idRoom: Long,
+    var date: String,
+    override var time: String,
+    var url : String,
+):Timable
+
 interface CreateMessageCallback {
     fun onSuccess(message: String)
     fun onFailure(message: String)
@@ -96,6 +104,11 @@ interface GetAllTaskCallback {
 
 interface GetAllImagesCallback {
     fun onSuccess(images: List<Image>)
+    fun onFailure(message: String)
+}
+
+interface GetAllFilesCallback {
+    fun onSuccess(files: List<File>)
     fun onFailure(message: String)
 }
 

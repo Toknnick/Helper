@@ -88,4 +88,29 @@ interface ApiInterface {
     @DELETE("images/delete/{idImage}")
     fun deleteImage(@Path("idImage") idImage:Long): Call<Void>
 
+
+
+
+
+
+
+
+
+
+    @POST("files/create")
+    fun createFile(@Body file: File): Call<Void>
+
+    @GET("files/get/one/{idRoom}/{date}/{time}/{url}")
+    fun getFile(@Path("idRoom") idRoom:Long, @Path("date") date:String, @Path("time") time:String, @Path("url") url:String): Call<File>
+
+    @GET("files/get/all")
+    fun getAllFile(): Call<List<File>>
+
+    @GET("files/get/all/{idRoom}")
+    fun getAllFileByIdRoom(@Path("idRoom") idRoom:Long): Call<List<File>>
+
+
+    @DELETE("files/delete/{idFile}")
+    fun deleteFile(@Path("idFile") idFile:Long): Call<Void>
+
 }
