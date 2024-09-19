@@ -303,6 +303,7 @@ open class ParentFragment : Fragment() {
             mainCalendarView.visibility = View.GONE
         }
         sortButton.setOnClickListener{
+            hideAll()
             if(isSortingNow){
                 isSortingNow = false
                 dataPickerButton.text = chosenDate
@@ -321,6 +322,7 @@ open class ParentFragment : Fragment() {
             deletePoint()
         }
         dataPickerButton.setOnClickListener {
+            hideAll()
             mainCalendarView.visibility = View.VISIBLE
         }
         backTaskButton.setOnClickListener {
@@ -381,6 +383,7 @@ open class ParentFragment : Fragment() {
                 addNewFileIntoScrollView()
         }
         mainCalendarView.setOnDateChangeListener { view, year, month, dayOfMonth ->
+            hideAll()
             if (month < 10)
                 chosenDate = "$dayOfMonth.0${month + 1}.$year"
             else
@@ -1714,6 +1717,18 @@ open class ParentFragment : Fragment() {
     protected fun hideEventPanel() {
         addButton.isEnabled = true
         createEventPanel.visibility = View.GONE
+    }
+
+    private fun hideAll(){
+        hideTaskPanel()
+        hideEventPanel()
+        hideFilePanel()
+        hideImagePanel()
+
+        clearEventPanel()
+        clearImagePanel()
+        clearTaskPanel()
+        clearFilePanel()
     }
 
     protected fun stringToDate(string: String): String {

@@ -112,8 +112,8 @@ class HomeFragment : ParentFragment(){
             RelativeLayout.LayoutParams.WRAP_CONTENT,
             RelativeLayout.LayoutParams.WRAP_CONTENT
         )
-        paramsSortButton.addRule(RelativeLayout.RIGHT_OF, showRoomPanelButton.id)
-        paramsSortButton.addRule(RelativeLayout.ABOVE, dataPickerButton.id)
+        paramsSortButton.addRule(RelativeLayout.ALIGN_END, addButton.id)
+        paramsSortButton.addRule(RelativeLayout.ABOVE, addButton.id)
         sortButton.layoutParams = paramsSortButton
 
     }

@@ -9,6 +9,13 @@
     tools:context=".fragments.HomeFragment">
 
 
+    <ImageButton
+        android:id="@+id/sortButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignEnd="@id/addButton"
+        android:layout_above="@id/addButton"
+        android:src="@android:drawable/ic_menu_sort_by_size" />
 
     <TextView
         android:id="@+id/roomNameTextView"
@@ -861,12 +868,5 @@
         android:layout_centerInParent="true"
         android:visibility="visible"/>
 
-    <ImageButton
-        android:id="@+id/sortButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_toRightOf="@id/showRoomPanelButton"
-        android:layout_above="@id/dataPickerButton"
-        android:src="@android:drawable/ic_menu_sort_by_size" />
 
 </RelativeLayout>
