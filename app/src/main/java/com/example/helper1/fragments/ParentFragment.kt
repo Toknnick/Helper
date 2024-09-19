@@ -29,6 +29,7 @@ import android.widget.Button
 import android.widget.CalendarView
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
@@ -187,9 +188,11 @@ open class ParentFragment : Fragment() {
     protected lateinit var calendarView: CalendarView
     protected lateinit var mainCalendarView: CalendarView
     protected lateinit var plug: LinearLayout
+    protected lateinit var sortButton: ImageButton
 
 
     protected var idRoomDef: Long = -1
+    private var isSortingNow = false
 
     //TODO: перенести метод с обновлением пароля пользователя в settingsFragment
 
@@ -261,21 +264,11 @@ open class ParentFragment : Fragment() {
         calendarView = requireView().findViewById<CalendarView>(R.id.calendarView)
         mainCalendarView = requireView().findViewById<CalendarView>(R.id.mainCalendarView)
         plug = requireView().findViewById<LinearLayout>(R.id.plug)
+        sortButton = requireView().findViewById<ImageButton>(R.id.sortButton)
 
         //Небольшая заглушка, т.к. календарь не мог появлятся, если изначально был в GONE
         calendarView.visibility = View.GONE
         mainCalendarView.visibility = View.GONE
-
-        /*val params = RelativeLayout.LayoutParams(
-            RelativeLayout.LayoutParams.WRAP_CONTENT,
-            RelativeLayout.LayoutParams.WRAP_CONTENT
-        )
-        params.removeRule(RelativeLayout.START_OF)
-        params.addRule(RelativeLayout.CENTER_IN_PARENT)
-
-        calendarView.layoutParams = params
-        mainCalendarView.layoutParams = params
-        mainCalendarView*/
     }
 
     protected open fun setUpButtons() {
@@ -307,6 +300,18 @@ open class ParentFragment : Fragment() {
 
         addButton.setOnClickListener {
             showDialog()
+            mainCalendarView.visibility = View.GONE
+        }
+        sortButton.setOnClickListener{
+            if(isSortingNow){
+                isSortingNow = false
+                dataPickerButton.text = chosenDate
+                rebuildPage()
+            }
+            else{
+                isSortingNow = true
+                showSortDialog()
+            }
             mainCalendarView.visibility = View.GONE
         }
         addNewPoint.setOnClickListener {
@@ -384,6 +389,7 @@ open class ParentFragment : Fragment() {
             mainCalendarView.visibility = View.GONE
 
             dataPickerButton.text = chosenDate
+            addButton.isEnabled = true
             dbHelper.updateChosenDate(chosenDate)
             rebuildPage()
         }
@@ -450,7 +456,12 @@ open class ParentFragment : Fragment() {
     protected fun updateEventForAPI(previousEvent: Event, updatingEvent: Event) {
         eventManager.updateEvent(previousEvent, updatingEvent, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
-                createAllEventsAndTasksAndImagesAndFiles()
+                if(isSortingNow){
+                    sortTasksAndEvents(true)
+                }
+                else{
+                    createAllEventsAndTasksAndImagesAndFiles()
+                }
             }
 
             override fun onFailure(message: String) {
@@ -464,7 +475,12 @@ open class ParentFragment : Fragment() {
         eventManager.deleteEvent(deletingEvent, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 events.remove(deletingEvent)
-                createAllEventsAndTasksAndImagesAndFiles()
+                if(isSortingNow) {
+                    sortTasksAndEvents(true)
+                }
+                else {
+                    createAllEventsAndTasksAndImagesAndFiles()
+                }
             }
 
             override fun onFailure(message: String) {
@@ -522,7 +538,11 @@ open class ParentFragment : Fragment() {
     protected fun updateTaskForAPI(previousTask: Task, updatingTask: Task) {
         taskManager.updateTask(previousTask, updatingTask, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
-                createAllEventsAndTasksAndImagesAndFiles()
+                if(isSortingNow)
+                    sortTasksAndEvents(false)
+                else{
+                    createAllEventsAndTasksAndImagesAndFiles()
+                }
             }
 
             override fun onFailure(message: String) {
@@ -535,7 +555,12 @@ open class ParentFragment : Fragment() {
         taskManager.deleteTask(deletingTask, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 tasks.remove(deletingTask)
-                createAllEventsAndTasksAndImagesAndFiles()
+
+                if(isSortingNow) {
+                    sortTasksAndEvents(false)
+                }else{
+                    createAllEventsAndTasksAndImagesAndFiles()
+                }
             }
 
             override fun onFailure(message: String) {
@@ -821,7 +846,6 @@ open class ParentFragment : Fragment() {
         if(selectedFileUri == null)
             return
 
-        createError("Создание файла...")
         // Запуск потока для загрузки файла в Timeweb Cloud
         uploadFileToBucket(selectedFileUri)
 
@@ -935,9 +959,15 @@ open class ParentFragment : Fragment() {
 
         createError("Созданно на " + event.date)
 
-        if (chosenDate == event.date) {
+        if(!isSortingNow) {
+            if (chosenDate == event.date) {
+                events += event
+                createAllEventsAndTasksAndImagesAndFiles()
+            }
+        }
+        else{
             events += event
-            createAllEventsAndTasksAndImagesAndFiles()
+            sortTasksAndEvents(true)
         }
 
         hideEventPanel()
@@ -984,9 +1014,14 @@ open class ParentFragment : Fragment() {
                 checkBoxes.map { it.toString() }.joinToString("|")
             )
 
-            if (chosenDate == newTask.date) {
+            if (!isSortingNow) {
+                if (chosenDate == newTask.date) {
+                    tasks += newTask
+                    createAllEventsAndTasksAndImagesAndFiles()
+                }
+            } else {
                 tasks += newTask
-                createAllEventsAndTasksAndImagesAndFiles()
+                sortTasksAndEvents(false)
             }
 
             createError("Созданно на " + newTask.date)
@@ -1434,6 +1469,39 @@ open class ParentFragment : Fragment() {
         return layout
     }
 
+    private fun createSortedTextView(text: String): TextView{
+        val textView = TextView(context)
+        textView.id = TEXT_VIEW_NOTHING_TO_DO_ID + mainLayout.childCount + 2
+        val params = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.MATCH_PARENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+        params.setMargins(5, 5, 5, 5)
+
+        if (mainLayout.childCount == 0 || (mainLayout.childCount == 1 && mainLayout.getChildAt(
+                0
+            ) == deleteButton)
+        ) {
+            params.addRule(RelativeLayout.ALIGN_PARENT_START)
+        } else if (mainLayout.getChildAt(mainLayout.childCount - 1) != deleteButton) {
+            params.addRule(
+                RelativeLayout.BELOW,
+                mainLayout.getChildAt(mainLayout.childCount - 1).id
+            )
+        } else {
+            params.addRule(
+                RelativeLayout.BELOW,
+                mainLayout.getChildAt(mainLayout.childCount - 2).id
+            )
+        }
+
+        textView.setLayoutParams(params)
+        textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_color))
+        textView.text = text
+        textView.textSize = textSize
+        return textView
+    }
+
     @SuppressLint("ResourceAsColor")
     protected fun addParamsToEditText(editText: EditText, text: String = "") {
         val params = RelativeLayout.LayoutParams(
@@ -1671,7 +1739,7 @@ open class ParentFragment : Fragment() {
         return newString
     }
     protected open fun setupLongClickListeners(view: View, id: Int,isFileLayut: Boolean) {
-        view.setOnLongClickListener {
+        view.setOnClickListener {
             val params = RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT,
                 RelativeLayout.LayoutParams.WRAP_CONTENT
@@ -1683,7 +1751,7 @@ open class ParentFragment : Fragment() {
             params.setMargins(5, 5, 5, 5)
             paramsToEdit.setMargins(5, 5, 5, 5)
 
-            if (mainLayout.indexOfChild(view) == 0) {
+            if (mainLayout.indexOfChild(view) < 2) {
                 params.addRule(RelativeLayout.BELOW, view.id)
                 params.addRule(RelativeLayout.ALIGN_LEFT, view.id)
             } else {
@@ -1715,7 +1783,7 @@ open class ParentFragment : Fragment() {
                     }
                 }
             }
-            if (mainLayout.indexOfChild(view) == 0) {
+            if (mainLayout.indexOfChild(view) < 2) {
                 paramsToEdit.addRule(RelativeLayout.BELOW, view.id)
                 paramsToEdit.addRule(RelativeLayout.ALIGN_RIGHT, view.id)
             } else {
@@ -1953,6 +2021,96 @@ open class ParentFragment : Fragment() {
         checkToNothingToDo()
     }
 
+    private fun buildSortPanel(item: Int){
+        getAllEventsForAPI(item)
+    }
+
+    private fun getAllEventsForAPI(item: Int){
+        events = mutableListOf()
+        eventManager.getAllEventsByIdRoom(idRoomDef, object : GetAllEventsCallback {
+            override fun onSuccess(tempEvents: List<Event>) {
+                events = tempEvents.toMutableList()
+                events.sortedBy { it.time }
+                getAllTasksForAPI(item)
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    private fun getAllTasksForAPI(item: Int){
+        tasks = mutableListOf<Task>()
+        taskManager.getAllTasksByIdRoom(idRoomDef, object : GetAllTaskCallback {
+            override fun onSuccess(tempTasks: List<Task>) {
+                tasks = tempTasks.toMutableList()
+                tasks.sortedBy { it.time }
+
+                when (item) {
+                    0 -> {
+                        sortTasksAndEvents(false)
+                    }
+
+                    1 -> {
+                        sortTasksAndEvents(true)
+                    }
+                }
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    private fun sortTasksAndEvents(isEvent : Boolean){
+        mainLayout.removeAllViews()
+        dataPickerButton.text = "Выбрать дату"
+
+        val newList = (events + tasks).sortedWith(compareBy({ it.date }, { it.time }))
+        var currentDate = ""
+
+        for (item in newList) {
+            when (item) {
+                is Event -> {
+                    if (isEvent && events.isNotEmpty()) {
+                        if (item.date != currentDate){
+                            currentDate = item.date
+                            val textView = createSortedTextView(currentDate)
+                            textView.textSize = 16F
+                            mainLayout.addView(textView)
+                        }
+
+                        createNewEvent(events.indexOf(item))
+                    }
+                }
+                is Task ->{
+                    if(!isEvent && tasks.isNotEmpty()){
+                        if (item.date != currentDate){
+                            currentDate = item.date
+                            val textView = createSortedTextView(currentDate)
+                            textView.textSize = 16F
+                            mainLayout.addView(textView)
+                        }
+
+                        createNewTask(item)
+                    }
+                }
+            }
+        }
+
+        mainLayout.addView(deleteButton)
+        mainLayout.addView(editButton)
+
+        if(mainLayout.childCount == 2 && idRoomDef != -1L){
+            val textView = createTextView("Еще ничего нет")
+            textView.setTextColor(Color.GRAY)
+            textView.id = TEXT_VIEW_NOTHING_TO_DO_ID
+            mainLayout.addView(textView)
+        }
+    }
+
     private fun checkToNothingToDo() {
         if (mainLayout.childCount == 2 && idRoomDef != -1L) {
             val textView = createTextView("На этот день ничего не запланировано")
@@ -2031,6 +2189,35 @@ open class ParentFragment : Fragment() {
             "OK"
         ) { _, _ ->
             createNewObject(selectedEvent)
+        }
+
+        builder.setNegativeButton(
+            "Отмена"
+        ) { dialogInterface, _ -> // закрыть диалог
+            dialogInterface.dismiss()
+        }
+
+        builder.show()
+    }
+
+    protected fun showSortDialog(){
+        val langArray: Array<String> = arrayOf("Задачи", "Мероприятия", )
+        var selectedEvent = 0 // Инициализируем в 0, который является первым элементом
+        val builder: androidx.appcompat.app.AlertDialog.Builder =
+            androidx.appcompat.app.AlertDialog.Builder(requireContext())
+        builder.setTitle("Выберите что сортировать")
+        builder.setCancelable(false)
+
+        builder.setSingleChoiceItems(
+            langArray, 0
+        ) { _, i ->
+            selectedEvent = i
+        }
+
+        builder.setPositiveButton(
+            "OK"
+        ) { _, _ ->
+            buildSortPanel(selectedEvent)
         }
 
         builder.setNegativeButton(

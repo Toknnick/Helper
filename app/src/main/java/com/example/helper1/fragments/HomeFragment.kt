@@ -80,13 +80,14 @@ class HomeFragment : ParentFragment(){
         roomNameTextView.visibility = View.GONE
         showRoomPanelButton.visibility = View.GONE
         requireView().findViewById<TextView>(R.id.showRoomPanelTextView).visibility = View.GONE
+
         val scrView = requireView().findViewById<ScrollView>(R.id.scrView)
         val params = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.MATCH_PARENT,
             RelativeLayout.LayoutParams.MATCH_PARENT
         )
         params.addRule(RelativeLayout.ALIGN_PARENT_START)
-        params.addRule(RelativeLayout.ABOVE, R.id.addButton)
+        params.addRule(RelativeLayout.ABOVE, R.id.sortButton)
         scrView.layoutParams = params
 
         val paramsDataPickerButton = RelativeLayout.LayoutParams(
@@ -106,6 +107,14 @@ class HomeFragment : ParentFragment(){
         paramsAddButton.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
         paramsAddButton.addRule(RelativeLayout.ALIGN_PARENT_RIGHT)
         addButton.layoutParams = paramsAddButton
+
+        val paramsSortButton = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.WRAP_CONTENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+        paramsSortButton.addRule(RelativeLayout.RIGHT_OF, showRoomPanelButton.id)
+        paramsSortButton.addRule(RelativeLayout.ABOVE, dataPickerButton.id)
+        sortButton.layoutParams = paramsSortButton
 
     }
 

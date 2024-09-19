@@ -2,12 +2,13 @@ package com.example.helper1.dataBase
 
 interface Timable {
     var time: String
+    var date: String
 }
 
 data class Event(
     var idEvent: Long,
     var idRoom: Long,
-    var date: String,
+    override var date: String,
     override var time: String,
     var place: String,
     var event: String
@@ -16,7 +17,7 @@ data class Event(
 data class Task(
     var idTask: Long,
     var idRoom: Long,
-    var date: String,
+    override var date: String,
     override var time: String,
     var name: String,
     var points: String,
@@ -41,7 +42,7 @@ data class User(
 data class Image(
     var idImage: Long,
     var idRoom: Long,
-    var date: String,
+    override var date: String,
     override var time: String,
     var url : String,
 ):Timable
@@ -49,7 +50,7 @@ data class Image(
 data class File(
     var idFile: Long,
     var idRoom: Long,
-    var date: String,
+    override var date: String,
     override var time: String,
     var url : String,
 ):Timable
