@@ -29,7 +29,9 @@ data class Room(
     var name: String,
     var password: String,
     var single: Boolean,
-    var owner: String
+    var owner: String,
+    var users: String,
+    var bannedUsers: String
 )
 
 data class User(

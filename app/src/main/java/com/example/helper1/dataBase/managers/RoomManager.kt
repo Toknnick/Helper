@@ -50,8 +50,6 @@ class RoomManager(private val apiClient: ApiClient) {
         })
     }
 
-
-
     fun updateRoom(newRoom: Room, callback: CreateMessageCallback){
         apiClient.getRoom(newRoom.idRoom, object : Callback<Room> {
             override fun onResponse(call: Call<Room>, response: Response<Room>) {

@@ -73,7 +73,7 @@ class RoomsFragment : ParentFragment() {
     private fun createRoomForAPI(newRoom: Room) {
         roomManger.getAllRooms(object : GetAllRoomsCallback {
             override fun onSuccess(rooms: List<Room>) {
-                val idRoom = (rooms.count() + 1).toLong()
+                val idRoom = (rooms.last().idRoom + 1)
                 newRoom.idRoom = idRoom
                 roomManger.createRoom(newRoom, object : CreateRoomCallback {
                     override fun onSuccess(message: String) {
@@ -119,6 +119,20 @@ class RoomsFragment : ParentFragment() {
                             } else {
                                 user!!.availableRooms += "${gettingRoom.idRoom}"
                             }
+                            if(!gotRoom.bannedUsers.contains(user!!.login) ){
+                                gettingRoom.owner = gotRoom.owner
+                                gettingRoom.bannedUsers = gotRoom.bannedUsers
+                                if (gotRoom.users != ""){
+                                    gettingRoom.users = gotRoom.users + "|" + user!!.login
+                                }
+                                else{
+                                    gettingRoom.users = user!!.login
+                                }
+                                updateRoomForAPI(gettingRoom)
+                            }
+                            else{
+                                createError("Вы заблокированны в данной комнате")
+                            }
                             idRoomDef = gettingRoom.idRoom
                             rebuildRoomPanel()
                             updateUserForAPI(user!!)
@@ -144,6 +158,17 @@ class RoomsFragment : ParentFragment() {
         })
     }
 
+    private fun updateRoomForAPI(newRoom : Room){
+        roomManger.updateRoom(newRoom, object : CreateMessageCallback {
+            override fun onSuccess(message: String) {
+            }
+
+            override fun onFailure(message: String) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
     private fun updateUserForAPI(newUser: User) {
         userManager.updateUser(newUser, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
@@ -163,7 +188,7 @@ class RoomsFragment : ParentFragment() {
         hideRoomPanel()
         idRoomDef = dbHelper.getRoomId()
         if(idRoomDef != (-1).toLong()) {
-            getRoomFromAPI(Room(idRoomDef, "", "",false,""), true)
+            getRoomFromAPI(Room(idRoomDef, "", "",false,"","",""), true)
         }else{
             addButton.visibility = View.INVISIBLE
             dataPickerButton.visibility = View.INVISIBLE
@@ -239,7 +264,9 @@ class RoomsFragment : ParentFragment() {
             createNameRoom.text.toString().trim(),
             createPasswordRoom.text.toString().trim(),
             false,
-            user!!.login
+            user!!.login,
+            "",
+            ""
         )
         if(newRoom.name.length > 25) {
             createError("Слишком большое название комнаты")
@@ -261,6 +288,8 @@ class RoomsFragment : ParentFragment() {
             "",
             addPasswordRoom.text.toString().trim(),
             false,
+            "",
+            "",
             ""
         )
         var availableRooms: List<Long> = ArrayList()

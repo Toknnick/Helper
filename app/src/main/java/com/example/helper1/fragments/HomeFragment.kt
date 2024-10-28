@@ -173,7 +173,9 @@ class HomeFragment : ParentFragment(){
             loginUser.text.toString().trim(),
             passwordUser.text.toString().trim(),
             true,
-            loginUser.text.toString().trim()
+            loginUser.text.toString().trim(),
+            "",
+            ""
         )
         userManager.getUser(loginUser.text.toString().trim(), object : GetUserCallback {
             override fun onSuccess(user: User) {
@@ -218,9 +220,8 @@ class HomeFragment : ParentFragment(){
     private fun createRoomForAPI(newRoom: Room) {
         roomManger.getAllRooms(object : GetAllRoomsCallback {
             override fun onSuccess(rooms: List<Room>) {
-                val idRoom = (rooms.count() + 1).toLong()
+                val idRoom = (rooms.last().idRoom + 1)
                 newRoom.idRoom = idRoom
-                newRoom.single = true
                 roomManger.createRoom(newRoom, object : CreateRoomCallback {
                     override fun onSuccess(message: String) {}
 
