@@ -3,7 +3,6 @@ package com.example.helper1.fragments
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
-import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.ContentValues
 import android.content.Intent
@@ -69,6 +68,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -90,8 +90,6 @@ open class ParentFragment : Fragment() {
     protected lateinit var fileManager: FileManager
 
     protected lateinit var mainActivity: MainActivity
-    protected lateinit var datePickerDialog: DatePickerDialog
-    protected lateinit var datePickerDialogForObject: DatePickerDialog
     protected lateinit var timePickerDialog: TimePickerDialog
     protected lateinit var deleteButton: Button
     protected lateinit var editButton: Button
@@ -278,6 +276,7 @@ open class ParentFragment : Fragment() {
     protected fun defSetup() {
         dbHelper = DBHelper(requireContext())
         initDefElements()
+        isSortingNow = false
         mainActivity = (activity as MainActivity)
         val apiClient = ApiClient(retrofit)
         userManager = UserManager(apiClient)
@@ -384,7 +383,8 @@ open class ParentFragment : Fragment() {
         }
         mainCalendarView.setOnDateChangeListener { view, year, month, dayOfMonth ->
             hideAll()
-            if (month < 10)
+            isSortingNow = false
+            if (month < 9)
                 chosenDate = "$dayOfMonth.0${month + 1}.$year"
             else
                 chosenDate = "$dayOfMonth.${month + 1}.$year"
@@ -572,11 +572,9 @@ open class ParentFragment : Fragment() {
         })
     }
 
-    private fun createImageForAPI(url: String) {
-        val image = this.images.last()
+    private fun createImageForAPI(image: Image) {
         imageManager.getAllImages(object : GetAllImagesCallback {
             override fun onSuccess(images: List<Image>) {
-                image.url = url
                 if (images.isNotEmpty()) {
                     image.idImage = (images.last().idImage + 1)
                 } else {
@@ -850,13 +848,13 @@ open class ParentFragment : Fragment() {
             return
 
         // Запуск потока для загрузки файла в Timeweb Cloud
-        uploadFileToBucket(selectedFileUri)
 
+        createError("загрузка... Ожидайте")
         if (chosenDate == file.date) {
             files += file
-            createError("Создано на ${file.date}")
         }
 
+        uploadFileToBucket(selectedFileUri)
         hideFilePanel()
         clearFilePanel()
     }
@@ -873,7 +871,7 @@ open class ParentFragment : Fragment() {
                 val inputStream = requireContext().contentResolver.openInputStream(fileUri!!)
 
                 // Получаем имя файла из Uri
-                val fileName = user!!.login + "/" + getFileNameFromUri(fileUri)
+                val fileName = "${user!!.login}/${getFileNameFromUri(fileUri)}"
 
                 // Получаем MIME-тип файла
                 val contentResolver = requireContext().contentResolver
@@ -884,9 +882,9 @@ open class ParentFragment : Fragment() {
                     minioClient.putObject(
                         PutObjectArgs.builder()
                             .bucket("9f168657-helper-files-server")
-                            .`object`(fileName) // Используем извлеченное имя файла
-                            .stream(inputStream, -1, 31457280 ) // Ограничение на размер (например, 10MB)
-                            .contentType(mimeType) // Используем динамически определенный MIME-тип
+                            .`object`(fileName)
+                            .stream(inputStream, -1, 31457280) // Ограничение на размер (30MB)
+                            .contentType(mimeType)
                             .build()
                     )
                 } finally {
@@ -895,15 +893,20 @@ open class ParentFragment : Fragment() {
 
                 // Формируем URL для загруженного файла
                 val fileUrl = "https://9f168657-helper-files-server.s3.timeweb.cloud/$fileName"
-                createFileForAPI(fileUrl) // Вызываем метод для обработки загруженного файла
+                createFileForAPI(fileUrl)
                 files.last().url = fileUrl
-                rebuildPage()
 
+                if (files.last().date == chosenDate) {
+                    requireActivity().runOnUiThread {
+                        createAllEventsAndTasksAndImagesAndFiles() // Обновляем UI в главном потоке
+                    }
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
         thread.start()
+
     }
 
     protected fun addNewImageIntoScrollView() {
@@ -930,16 +933,12 @@ open class ParentFragment : Fragment() {
         if(selectedImageUri == null)
             return
 
-
-        // Запуск потока для загрузки изображения в Timeweb Cloud
-        uploadImageToBucket(selectedImageUri)
-
-        createError("Создано на ${image.date}")
+        createError("Загрузка...Ожидайте")
         if (chosenDate == image.date) {
             images += image
-            createAllEventsAndTasksAndImagesAndFiles(false)
         }
-
+        // Запуск потока для загрузки изображения в Timeweb Cloud
+        uploadImageToBucket(selectedImageUri)
         hideImagePanel()
         clearImagePanel()
     }
@@ -1097,7 +1096,13 @@ open class ParentFragment : Fragment() {
 
         val file = files[i]
         val relativeLayout = createRelativeLayout(i+tasks.size)
-        val textView = createTextView(file.url.substringAfterLast("/"))
+        val fileName = file.url.substringAfterLast("/")
+        val displayName = if (fileName.length > 5) {
+            "${fileName.take(11)}... ${fileName.takeLast(4)}"
+        } else {
+            fileName
+        }
+        val textView = createTextView(displayName)
         textView.id = 444444+i
 
         val openButton = createButton("")
@@ -1112,11 +1117,9 @@ open class ParentFragment : Fragment() {
         params.addRule(RelativeLayout.BELOW, textView.id)
 
         openButton.layoutParams = params
-        relativeLayout.addView(textView)
-        relativeLayout.addView(openButton)
 
         val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val fileClass = java.io.File(downloadsDir, textView.text.toString().substringBeforeLast("."))
+        val fileClass = java.io.File(downloadsDir, fileName)
 
         if (fileClass.exists()) {
             openButton.text = "Открыть"
@@ -1135,6 +1138,8 @@ open class ParentFragment : Fragment() {
         }
 
         relativeLayout.setBackgroundResource(R.drawable.border_panel_background)
+        relativeLayout.addView(textView)
+        relativeLayout.addView(openButton)
         mainLayout.addView(relativeLayout)
         setupLongClickListeners(relativeLayout, i,true)
     }
@@ -1348,6 +1353,7 @@ open class ParentFragment : Fragment() {
 
 
     private fun uploadImageToBucket(imageUri: Uri?) {
+        val fileName = user!!.login + "/" + getFileNameFromUri(imageUri!!)
         val thread = Thread {
             try {
                 val minioClient = MinioClient.builder()
@@ -1359,7 +1365,6 @@ open class ParentFragment : Fragment() {
                 val inputStream = requireContext().contentResolver.openInputStream(imageUri!!)
 
                 // Получаем имя файла из Uri
-                val fileName = user!!.login + "/" + getFileNameFromUri(imageUri)
 
                 // Загружаем файл в бакет TimeWeb Cloud
                 try {
@@ -1373,17 +1378,19 @@ open class ParentFragment : Fragment() {
                 } finally {
                     inputStream?.close()
                 }
-
-                // Формируем URL для загруженного изображения
-                val imageUrl = "https://9f168657-helper-image-server.s3.timeweb.cloud/$fileName"
-                createImageForAPI(imageUrl)
-                images.last().url = imageUrl
-
+                createImageForAPI(images.last())
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
         thread.start()
+        // Формируем URL для загруженного изображения
+        val imageUrl = "https://9f168657-helper-image-server.s3.timeweb.cloud/$fileName"
+        images.last().url = imageUrl
+        createError("Создано на ${ images.last().date}")
+        if (chosenDate ==  images.last().date) {
+            createAllEventsAndTasksAndImagesAndFiles(false)
+        }
     }
 
 
@@ -2015,19 +2022,19 @@ open class ParentFragment : Fragment() {
     protected fun createAllEventsAndTasksAndImagesAndFiles(isFromMysql:Boolean = true) {
         mainLayout.removeAllViews()
 
+        val textView = createTextView("Соединение...")
+        textView.setTextColor(Color.GRAY)
+        textView.id = TEXT_VIEW_NOTHING_TO_DO_ID
+        mainLayout.addView(textView)
+
         val newList = (events + tasks + images + files).sortedBy { it.time }
 
         for (item in newList) {
-            if(files.isNotEmpty() && item == files.last() && !isFromMysql){
-                createNewFile(files.indexOf(item))
-            }
-            else {
-                when (item) {
-                    is Event -> createNewEvent(events.indexOf(item))
-                    is Task -> createNewTask(item)
-                    is Image -> createNewImage(images.indexOf(item), isFromMysql)
-                    is File -> createNewFile(files.indexOf(item))
-                }
+            when (item) {
+                is Event -> createNewEvent(events.indexOf(item))
+                is Task -> createNewTask(item)
+                is Image -> createNewImage(images.indexOf(item), isFromMysql)
+                is File -> createNewFile(files.indexOf(item))
             }
         }
 
@@ -2083,7 +2090,10 @@ open class ParentFragment : Fragment() {
         mainLayout.removeAllViews()
         dataPickerButton.text = "Выбрать дату"
 
-        val newList = (events + tasks).sortedWith(compareBy({ it.date }, { it.time }))
+        val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+
+        var newList = (events + tasks).sortedWith(compareBy({ LocalDate.parse(it.date, formatter)}, { it.time }))
+        newList = newList.reversed()
         var currentDate = ""
 
         for (item in newList) {
@@ -2133,9 +2143,16 @@ open class ParentFragment : Fragment() {
             textView.id = TEXT_VIEW_NOTHING_TO_DO_ID
             mainLayout.addView(textView)
         }
+        else if (mainLayout.findViewById<TextView>(TEXT_VIEW_NOTHING_TO_DO_ID) != null){
+            mainLayout.findViewById<TextView>(TEXT_VIEW_NOTHING_TO_DO_ID).text = "На этот день ничего не запланировано"
+        }
     }
 
     protected fun changeScrollView() {
+        val textView = createTextView("Соединение...")
+        textView.setTextColor(Color.GRAY)
+        textView.id = TEXT_VIEW_NOTHING_TO_DO_ID
+        mainLayout.addView(textView)
         getEventsByDateForAPI()
     }
     private fun initTimePicker() {
@@ -2171,8 +2188,8 @@ open class ParentFragment : Fragment() {
         calendarView.visibility = View.VISIBLE
         calendarView.setOnDateChangeListener { view, year, month, dayOfMonth ->
             // Преобразование выбранной даты в строку
-            var date =""
-            if (month < 10)
+            var date = ""
+            if (month < 9)
                 date = "$dayOfMonth.0${month + 1}.$year"
             else
                 date = "$dayOfMonth.${month + 1}.$year"
