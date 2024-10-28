@@ -247,11 +247,13 @@ class RoomsFragment : ParentFragment() {
     }
 
     private fun hideRoomPanel(){
+        if (idRoomDef != (-1).toLong()){
+            addButton.visibility = View.VISIBLE
+            dataPickerButton.visibility = View.VISIBLE
+        }
         showRoomPanel.visibility = View.GONE
         createRoomPanel.visibility = View.GONE
         addRoomPanel.visibility = View.GONE
-        addButton.visibility = View.VISIBLE
-        dataPickerButton.visibility = View.VISIBLE
         createNameRoom.setText("")
         createPasswordRoom.setText("")
         addIdRoom.setText("")

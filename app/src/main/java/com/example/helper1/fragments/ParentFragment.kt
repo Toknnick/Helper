@@ -74,7 +74,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
-@Suppress("DEPRECATION")
+@Suppress("DEPRECATION", "NAME_SHADOWING")
 open class ParentFragment : Fragment() {
     private val retrofit = Retrofit.Builder()
         .baseUrl("https://api-helper-toknnick.amvera.io/")
@@ -1976,11 +1976,11 @@ open class ParentFragment : Fragment() {
 
         saveTaskButton.setOnClickListener {
             if(previousPoints.isNotEmpty()) {
-                var points: List<String> = ArrayList()
-                var checkBoxes: List<Boolean> = ArrayList()
+                var newPoints: List<String> = ArrayList()
+                var newCheckBoxes: List<Boolean> = ArrayList()
                 if(point0.text.trim().toString().isNotEmpty()){
-                    points += point0.text.toString()
-                    checkBoxes += false
+                    newPoints += point0.text.toString()
+                    newCheckBoxes += false
                 }
 
                 var j = 1
@@ -1988,9 +1988,9 @@ open class ParentFragment : Fragment() {
                     if (pointsPlace.findViewById<EditText>(j + TASK_ID).text.trim().toString()
                             .isNotEmpty()
                     ) {
-                        points += pointsPlace.findViewById<EditText>(j + TASK_ID).text.toString()
+                        newPoints += pointsPlace.findViewById<EditText>(j + TASK_ID).text.toString()
                             .trim()
-                        checkBoxes += false
+                        newCheckBoxes += false
                     }
                     j += 1
                 }
@@ -1998,15 +1998,38 @@ open class ParentFragment : Fragment() {
                 if(timeTask.text.toString().isEmpty()){
                     timeTask.setText(task.time)}
 
+                val checkBoxesFromTask = task.checkBoxes.split("|") as List<String>
+                val pointsFromTask = task.points.split("|") as List<String>
+                var checkBoxes: List<String> = ArrayList()
+
+                if (pointsFromTask.count() == newPoints.count()){
+                    checkBoxes = checkBoxesFromTask
+                }
+                else{
+                    for (i in 0..<newPoints.count()) {
+                        if(pointsFromTask.count()<= i || i >= newPoints.count()){
+                            checkBoxes += "false"
+                        }
+                        else {
+                            if (pointsFromTask[i] == newPoints[i]) {
+                                checkBoxes += checkBoxesFromTask[i] as String
+                            } else {
+                                checkBoxes += "false"
+                            }
+                        }
+                    }
+                }
+
                 val newTask = Task(
                     0,
                     idRoomDef,
                     stringToDate(dateTask.text.toString()),
                     stringToTime(timeTask.text.toString()),
                     nameTask.text.toString(),
-                    points.joinToString("|"),
+                    newPoints.joinToString("|"),
                     checkBoxes.map { it.toString() }.joinToString("|")
                 )
+
                 if(newTask.date != task.date || newTask.time !=task.time || newTask.name != task.name || newTask.points != task.points){
                     tasks[tasks.indexOf(task)] = newTask
                     updateTaskForAPI(task,newTask)
