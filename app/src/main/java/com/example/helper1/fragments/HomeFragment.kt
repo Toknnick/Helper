@@ -1,6 +1,7 @@
 package com.example.helper1.fragments
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.util.Log
 import android.view.View
 import android.widget.RelativeLayout
@@ -77,6 +78,7 @@ class HomeFragment : ParentFragment(){
     }
 
     private fun setUpElements(){
+        showUsersButton.visibility = View.GONE
         roomNameTextView.visibility = View.GONE
         showRoomPanelButton.visibility = View.GONE
         requireView().findViewById<TextView>(R.id.showRoomPanelTextView).visibility = View.GONE
@@ -121,6 +123,67 @@ class HomeFragment : ParentFragment(){
     private fun updateLocalUser(){
         userManager.getUser(user!!.login, object : GetUserCallback {
             override fun onSuccess(gotUser: User) {
+                val nowRooms: List<Long> = user!!.availableRooms
+                    .split("|")
+                    .filter { it.isNotEmpty() }
+                    .map { it.toLong() }
+
+                val roomsInDB: List<Long> = gotUser.availableRooms
+                    .split("|")
+                    .filter { it.isNotEmpty() }
+                    .map { it.toLong() }
+
+                val kickedRoomsId: List<Long> = nowRooms.filter { it !in roomsInDB }
+
+
+                if(kickedRoomsId.isNotEmpty()){
+                    roomManger.getAllRooms(object : GetAllRoomsCallback {
+                        override fun onSuccess(rooms: List<Room>) {
+                            // Создаем диалоговое окно
+                            val dialogBuilder = AlertDialog.Builder(requireContext())
+
+                            dialogBuilder.setTitle("Уведомляем")
+                            var text = ""
+                            val kickedRoomList = rooms.filter { it.idRoom in kickedRoomsId }
+                            if(kickedRoomsId.count() == 1){
+                                text = "Вас выгнали из комнаты '${kickedRoomList[0].name}'"
+                            }
+                            else{
+                                var kickedName = ""
+                                for (room in kickedRoomList){
+                                    if(room == kickedRoomList.last()){
+                                        kickedName += "'${room.name}'"
+                                    }
+                                    else{
+                                        kickedName += "'${room.name}'" + ", "
+                                    }
+                                }
+                                text = "Вас выгнали из комнат: $kickedName"
+                            }
+                            dialogBuilder.setMessage(text)
+
+                            dialogBuilder.setNeutralButton("Ок") { dialog, _ ->
+                                dialog.dismiss()
+                            }
+
+                            val alertDialog = dialogBuilder.create()
+                            alertDialog.show()
+                        }
+
+                        override fun onFailure(message: String) {
+                            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                        }
+                    })
+
+
+
+
+
+
+
+                }
+
+
                 user!!.password = gotUser.password
                 user!!.ownRoom = gotUser.ownRoom
                 user!!.availableRooms = gotUser.availableRooms

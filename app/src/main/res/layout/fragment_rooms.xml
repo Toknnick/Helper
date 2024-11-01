@@ -9,6 +9,8 @@
     tools:context=".fragments.HomeFragment">
 
 
+
+
     <ImageButton
         android:id="@+id/sortButton"
         android:layout_width="wrap_content"
@@ -23,12 +25,20 @@
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
         android:layout_toEndOf="@id/showRoomPanelButton"
-        android:layout_marginEnd="0dp"
         android:layout_alignParentEnd="true"
-        android:gravity="center"
         android:padding="2dp"
+        android:gravity="center"
+        android:layout_toLeftOf="@id/showUsersButton"
         android:textColor="@color/text_color"
         android:textSize="18sp"/>
+
+    <ImageButton
+        android:id="@+id/showUsersButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:src="@android:drawable/ic_menu_sort_by_size"
+        android:translationZ="3dp"/>
 
 
     <LinearLayout
@@ -462,6 +472,22 @@
         </ScrollView>
     </RelativeLayout>
 
+    <ScrollView
+        android:id="@+id/userScrView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:translationZ="1dp"
+        android:visibility="gone"
+        android:layout_alignParentTop="true"
+        android:padding="1dp"
+        android:background="@drawable/border_panel_background">
+        <RelativeLayout
+            android:id="@+id/usersPanel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+        </RelativeLayout>
+    </ScrollView>
 
     <LinearLayout
         android:id="@+id/plug"
@@ -470,7 +496,7 @@
         android:background="@color/plug"
         android:orientation="horizontal"
         android:visibility="visible"
-        android:translationZ="2dp" />
+        android:translationZ="3dp" />
 
 
 
@@ -867,6 +893,7 @@
         android:background="@drawable/border_panel_background"
         android:layout_centerInParent="true"
         android:visibility="visible"/>
+
 
 
 </RelativeLayout>

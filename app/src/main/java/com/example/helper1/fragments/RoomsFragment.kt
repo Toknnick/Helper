@@ -1,9 +1,12 @@
 package com.example.helper1.fragments
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.view.MotionEvent
 import android.view.View
+import android.widget.ImageButton
 import android.widget.LinearLayout
+import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
 import com.example.helper1.R
@@ -11,15 +14,18 @@ import com.example.helper1.dataBase.CreateMessageCallback
 import com.example.helper1.dataBase.CreateRoomCallback
 import com.example.helper1.dataBase.GetAllRoomsCallback
 import com.example.helper1.dataBase.GetRoomCallback
+import com.example.helper1.dataBase.GetUserCallback
 import com.example.helper1.dataBase.Room
 import com.example.helper1.dataBase.User
 
 @Suppress("NAME_SHADOWING", "DEPRECATION")
 class RoomsFragment : ParentFragment() {
     //TODO: перенести метод с обновлением пароля пользователя в settingsFragment
-
+    private lateinit var nowRoom: Room
     override fun setUpButtons() {
-
+        showUsersButton.setOnClickListener{
+            showUsersPanel()
+        }
         showRoomPanelButton.setOnClickListener {
             showRoomPanel()
         }
@@ -109,6 +115,7 @@ class RoomsFragment : ParentFragment() {
             override fun onSuccess(gotRoom: Room) {
                 if(!gotRoom.single) {
                     if (isForText) {
+                        nowRoom = gotRoom
                         roomNameTextView.text = gotRoom.name
                         addButton.visibility = View.VISIBLE
                         dataPickerButton.visibility = View.VISIBLE
@@ -131,9 +138,10 @@ class RoomsFragment : ParentFragment() {
                                 updateRoomForAPI(gettingRoom)
                             }
                             else{
-                                createError("Вы заблокированны в данной комнате")
+                                createError("Дверь в эту комнату вам закрыта")
                             }
                             idRoomDef = gettingRoom.idRoom
+                            nowRoom = gotRoom
                             rebuildRoomPanel()
                             updateUserForAPI(user!!)
                         } else {
@@ -232,6 +240,173 @@ class RoomsFragment : ParentFragment() {
 
             }
         }
+    }
+
+    @SuppressLint("ResourceType")
+    private fun showUsersPanel(){
+        userScrView.visibility = View.VISIBLE
+        val usersInRoom: List<String> = nowRoom.users.splitToSequence("|").toMutableList()
+
+        showUsersButton.setOnClickListener{
+            hideUsersPanel()
+        }
+
+        if(usersInRoom.isEmpty() || usersInRoom[0] == ""){
+            val textView = createTextView("Здесь еще никого нет...")
+            usersPanel.addView(textView)
+            return
+        }
+
+        val textView = createTextView("Главный: " + nowRoom.owner)
+        textView.id = 9988
+
+        val params = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.WRAP_CONTENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+        params.addRule(RelativeLayout.ALIGN_PARENT_TOP)
+
+        textView.setPadding(15,15,15,15)
+        params.setMargins(15, 15, 15, 15)
+        textView.setLayoutParams(params)
+        usersPanel.addView(textView)
+
+
+
+        for (user in usersInRoom) {
+            val button = ImageButton(requireContext())
+            val textView = createTextView(user)
+            button.setImageResource(R.drawable.ic_settings)
+            button.id = 888888 + usersInRoom.indexOf(user)
+            textView.id = 998899 + usersInRoom.indexOf(user)
+            val btnParams = RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT
+            )
+
+            if(usersInRoom.indexOf(user) == 0){
+                btnParams.addRule(RelativeLayout.BELOW,9988)
+            }
+            else{
+                btnParams.addRule(RelativeLayout.BELOW,998899 + usersInRoom.indexOf(user)-1)
+            }
+
+            button.setPadding(5,5,5,5)
+            btnParams.setMargins(5, 5, 5, 5)
+            button.setLayoutParams(btnParams)
+            usersPanel.addView(button)
+            button.setOnClickListener{
+                showUserActionDialog(user)
+            }
+
+            val params = RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT
+            )
+
+            if(usersInRoom.indexOf(user) == 0){
+                params.addRule(RelativeLayout.BELOW,9988)
+            }
+            else{
+                params.addRule(RelativeLayout.BELOW,998899 + usersInRoom.indexOf(user)-1)
+            }
+
+            params.addRule(RelativeLayout.RIGHT_OF,888888 + usersInRoom.indexOf(user))
+            textView.setPadding(5,5,5,5)
+            params.setMargins(5, 5, 5, 5)
+            textView.setLayoutParams(params)
+            usersPanel.addView(textView)
+        }
+    }
+
+    private fun showUserActionDialog(userLogin: String) {
+        // Создаем диалоговое окно
+        val dialogBuilder = AlertDialog.Builder(requireContext())
+
+        dialogBuilder.setTitle("Выберите действие")
+        dialogBuilder.setMessage("Что вы хотите сделать с пользователем?")
+
+        dialogBuilder.setPositiveButton("Выгнать") { dialog, _ ->
+            kickUser(userLogin)
+            dialog.dismiss()
+        }
+
+        dialogBuilder.setNegativeButton("Заблокировать") { dialog, _ ->
+            blockUser(userLogin)
+            dialog.dismiss()
+            //TODO: реализовать мехнику уведомления юзера об изгнании/блокировке
+        }
+
+        dialogBuilder.setNeutralButton("Отмена") { dialog, _ ->
+            // Закрываем окно без выполнения действий
+            dialog.dismiss()
+        }
+
+        // Показываем диалоговое окно
+        val alertDialog = dialogBuilder.create()
+        alertDialog.show()
+    }
+
+    private fun kickUser(userLogin: String){
+        nowRoom.users = nowRoom.users
+            .replaceFirst("^$userLogin\\|".toRegex(), "") // Удаляет, если userLogin в начале
+            .replaceFirst("\\|$userLogin".toRegex(), "")  // Удаляет, если userLogin в начале
+            .replaceFirst(userLogin, "") // Удаляет, если userLogin где-то в середине
+        updateRoomForAPI(nowRoom)
+
+        userManager.getUser(userLogin, object : GetUserCallback {
+            override fun onSuccess(gotUser: User) {
+                gotUser.availableRooms = gotUser.availableRooms
+                    .replaceFirst("^$idRoomDef\\|".toRegex(), "")
+                    .replaceFirst("\\|$idRoomDef".toRegex(), "")
+                    .replaceFirst(idRoomDef.toString(), "")
+                updateUserForAPI(gotUser)
+            }
+
+            override fun onFailure(isExist: Boolean) {
+                Toast.makeText(
+                    requireContext(),
+                    "Ошибка! Пользователь не найден",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        })
+
+        rebuildUsersPanel()
+    }
+
+    private fun blockUser(userLogin: String){
+        val dialogBuilder = AlertDialog.Builder(requireContext())
+        dialogBuilder.setMessage("Вы уверены, что хотите заблокировать?")
+        dialogBuilder.setPositiveButton("Да") { dialog, _ ->
+
+            if(nowRoom.bannedUsers != "")
+                nowRoom.bannedUsers = nowRoom.bannedUsers + "|" + userLogin
+            else
+                nowRoom.bannedUsers = userLogin
+
+            kickUser(userLogin)
+            dialog.dismiss()
+        }
+        dialogBuilder.setNegativeButton("Нет") { dialog, _ ->
+            dialog.dismiss()
+        }
+        val alertDialog = dialogBuilder.create()
+        alertDialog.show()
+    }
+
+
+    private fun hideUsersPanel(){
+        usersPanel.removeAllViews()
+        userScrView.visibility = View.GONE
+        showUsersButton.setOnClickListener{
+            showUsersPanel()
+        }
+    }
+
+    private fun rebuildUsersPanel(){
+        usersPanel.removeAllViews()
+        showUsersPanel()
     }
 
     private fun showRoomPanel(){

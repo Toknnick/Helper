@@ -88,15 +88,6 @@ interface ApiInterface {
     @DELETE("images/delete/{idImage}")
     fun deleteImage(@Path("idImage") idImage:Long): Call<Void>
 
-
-
-
-
-
-
-
-
-
     @POST("files/create")
     fun createFile(@Body file: File): Call<Void>
 

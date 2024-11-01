@@ -32,6 +32,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
@@ -188,6 +189,10 @@ open class ParentFragment : Fragment() {
     protected lateinit var plug: LinearLayout
     protected lateinit var sortButton: ImageButton
 
+    protected lateinit var showUsersButton: ImageButton
+    protected lateinit var usersPanel: RelativeLayout
+    protected lateinit var userScrView: ScrollView
+
 
     protected var idRoomDef: Long = -1
     private var isSortingNow = false
@@ -263,6 +268,10 @@ open class ParentFragment : Fragment() {
         mainCalendarView = requireView().findViewById<CalendarView>(R.id.mainCalendarView)
         plug = requireView().findViewById<LinearLayout>(R.id.plug)
         sortButton = requireView().findViewById<ImageButton>(R.id.sortButton)
+
+        showUsersButton = requireView().findViewById<ImageButton>(R.id.showUsersButton)
+        usersPanel = requireView().findViewById<RelativeLayout>(R.id.usersPanel)
+        userScrView = requireView().findViewById<ScrollView>(R.id.userScrView)
 
         //Небольшая заглушка, т.к. календарь не мог появлятся, если изначально был в GONE
         calendarView.visibility = View.GONE
