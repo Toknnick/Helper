@@ -2,6 +2,7 @@ package com.example.helper1.fragments
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.graphics.Color
 import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageButton
@@ -257,65 +258,98 @@ class RoomsFragment : ParentFragment() {
             return
         }
 
-        val textView = createTextView("Главный: " + nowRoom.owner)
-        textView.id = 9988
+        val textView = createTextView("Всего участников: " + (usersInRoom.count() + 1).toString())
+        textView.id = 111111
+        textView.setTextColor(Color.GRAY)
+        textView.textSize = 15.0f
+        textView.setPadding(10,0,0,0)
 
         val params = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.WRAP_CONTENT,
             RelativeLayout.LayoutParams.WRAP_CONTENT
         )
         params.addRule(RelativeLayout.ALIGN_PARENT_TOP)
-
-        textView.setPadding(15,15,15,15)
-        params.setMargins(15, 15, 15, 15)
         textView.setLayoutParams(params)
+
+        val params2 = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.WRAP_CONTENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+        params2.addRule(RelativeLayout.BELOW,textView.id)
+
+
+        val textView2 = createTextView("Главный: " + nowRoom.owner)
+        textView2.id = 9988
+        textView2.setPadding(10,5,10,5)
+        textView2.setLayoutParams(params2)
         usersPanel.addView(textView)
+        usersPanel.addView(textView2)
 
+        if(user!!.login == nowRoom.owner) {
+            textView2.text = "Вы главный"
+            for (user in usersInRoom) {
+                val button = ImageButton(requireContext())
+                val textView = createTextView(user)
+                button.setImageResource(R.drawable.ic_settings)
+                button.id = 888888 + usersInRoom.indexOf(user)
+                textView.id = 998899 + usersInRoom.indexOf(user)
+                val btnParams = RelativeLayout.LayoutParams(
+                    RelativeLayout.LayoutParams.WRAP_CONTENT,
+                    RelativeLayout.LayoutParams.WRAP_CONTENT
+                )
 
+                if (usersInRoom.indexOf(user) == 0) {
+                    btnParams.addRule(RelativeLayout.BELOW, 9988)
+                } else {
+                    btnParams.addRule(RelativeLayout.BELOW, 998899 + usersInRoom.indexOf(user) - 1)
+                }
 
-        for (user in usersInRoom) {
-            val button = ImageButton(requireContext())
-            val textView = createTextView(user)
-            button.setImageResource(R.drawable.ic_settings)
-            button.id = 888888 + usersInRoom.indexOf(user)
-            textView.id = 998899 + usersInRoom.indexOf(user)
-            val btnParams = RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT,
-                RelativeLayout.LayoutParams.WRAP_CONTENT
-            )
+                button.setPadding(5, 5, 5, 5)
+                btnParams.setMargins(5, 5, 5, 5)
+                button.setLayoutParams(btnParams)
+                usersPanel.addView(button)
+                button.setOnClickListener {
+                    showUserActionDialog(user)
+                }
 
-            if(usersInRoom.indexOf(user) == 0){
-                btnParams.addRule(RelativeLayout.BELOW,9988)
+                val params = RelativeLayout.LayoutParams(
+                    RelativeLayout.LayoutParams.WRAP_CONTENT,
+                    RelativeLayout.LayoutParams.WRAP_CONTENT
+                )
+
+                if (usersInRoom.indexOf(user) == 0) {
+                    params.addRule(RelativeLayout.BELOW, 9988)
+                } else {
+                    params.addRule(RelativeLayout.BELOW, 998899 + usersInRoom.indexOf(user) - 1)
+                }
+
+                params.addRule(RelativeLayout.RIGHT_OF, 888888 + usersInRoom.indexOf(user))
+                textView.setPadding(5, 5, 5, 5)
+                params.setMargins(5, 5, 5, 5)
+                textView.setLayoutParams(params)
+                usersPanel.addView(textView)
             }
-            else{
-                btnParams.addRule(RelativeLayout.BELOW,998899 + usersInRoom.indexOf(user)-1)
-            }
+        }
+        else{
+            for (user in usersInRoom) {
+                val textView = createTextView(user)
+                textView.id = 998899 + usersInRoom.indexOf(user)
+                val params = RelativeLayout.LayoutParams(
+                    RelativeLayout.LayoutParams.WRAP_CONTENT,
+                    RelativeLayout.LayoutParams.WRAP_CONTENT
+                )
 
-            button.setPadding(5,5,5,5)
-            btnParams.setMargins(5, 5, 5, 5)
-            button.setLayoutParams(btnParams)
-            usersPanel.addView(button)
-            button.setOnClickListener{
-                showUserActionDialog(user)
-            }
+                if (usersInRoom.indexOf(user) == 0) {
+                    params.addRule(RelativeLayout.BELOW, 9988)
+                } else {
+                    params.addRule(RelativeLayout.BELOW, 998899 + usersInRoom.indexOf(user) - 1)
+                }
 
-            val params = RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT,
-                RelativeLayout.LayoutParams.WRAP_CONTENT
-            )
-
-            if(usersInRoom.indexOf(user) == 0){
-                params.addRule(RelativeLayout.BELOW,9988)
+                textView.setPadding(5, 5, 5, 5)
+                params.setMargins(5, 5, 5, 5)
+                textView.setLayoutParams(params)
+                usersPanel.addView(textView)
             }
-            else{
-                params.addRule(RelativeLayout.BELOW,998899 + usersInRoom.indexOf(user)-1)
-            }
-
-            params.addRule(RelativeLayout.RIGHT_OF,888888 + usersInRoom.indexOf(user))
-            textView.setPadding(5,5,5,5)
-            params.setMargins(5, 5, 5, 5)
-            textView.setLayoutParams(params)
-            usersPanel.addView(textView)
         }
     }
 

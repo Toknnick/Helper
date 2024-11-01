@@ -1419,7 +1419,7 @@ open class ParentFragment : Fragment() {
     }
 
     protected fun addNewPoint(text: String = "") {
-        val editText = EditText(context)
+        val editText = EditText(requireContext())
         //Подвинуть пункт
         addParamsToEditText(editText,text)
         //Подвинуть кнопки
@@ -1432,7 +1432,7 @@ open class ParentFragment : Fragment() {
     protected fun createTextView(
         text: String
     ): TextView {
-        val textView = TextView(context)
+        val textView = TextView(requireContext())
         textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_color))
         textView.text = text
         textView.textSize = textSize
@@ -1458,7 +1458,7 @@ open class ParentFragment : Fragment() {
     }
 
     private fun createRelativeLayout(id: Int): RelativeLayout {
-        val layout = RelativeLayout(context)
+        val layout = RelativeLayout(requireContext())
         layout.id = REL_LAYOUT_ID + id
         val params = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.MATCH_PARENT,
@@ -1489,7 +1489,7 @@ open class ParentFragment : Fragment() {
     }
 
     private fun createSortedTextView(text: String): TextView{
-        val textView = TextView(context)
+        val textView = TextView(requireContext())
         textView.id = TEXT_VIEW_NOTHING_TO_DO_ID + mainLayout.childCount + 2
         val params = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.MATCH_PARENT,
@@ -1557,7 +1557,7 @@ open class ParentFragment : Fragment() {
         j: Int,
         isChecked: Boolean
     ) {
-        val checkBox = CheckBox(context)
+        val checkBox = CheckBox(requireContext())
         val params = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.WRAP_CONTENT,
             RelativeLayout.LayoutParams.WRAP_CONTENT

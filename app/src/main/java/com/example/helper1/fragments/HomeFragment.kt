@@ -135,7 +135,6 @@ class HomeFragment : ParentFragment(){
 
                 val kickedRoomsId: List<Long> = nowRooms.filter { it !in roomsInDB }
 
-
                 if(kickedRoomsId.isNotEmpty()){
                     roomManger.getAllRooms(object : GetAllRoomsCallback {
                         override fun onSuccess(rooms: List<Room>) {
