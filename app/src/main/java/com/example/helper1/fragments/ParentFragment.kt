@@ -143,6 +143,8 @@ open class ParentFragment : Fragment() {
     protected lateinit var taskTextView: TextView
     protected lateinit var eventTextView: TextView
 
+    protected lateinit var settingsRoomButton: ImageButton
+    protected lateinit var roomTextView:TextView
     protected lateinit var roomNameTextView: TextView
     protected lateinit var showRoomPanelButton: LinearLayout
     protected lateinit var createRoomPanel: RelativeLayout
@@ -276,6 +278,10 @@ open class ParentFragment : Fragment() {
         //Небольшая заглушка, т.к. календарь не мог появлятся, если изначально был в GONE
         calendarView.visibility = View.GONE
         mainCalendarView.visibility = View.GONE
+
+        settingsRoomButton = requireView().findViewById<ImageButton>(R.id.settingsRoomButton)
+        roomTextView = requireView().findViewById<TextView>(R.id.roomTextView)
+        settingsRoomButton.setImageResource(R.drawable.ic_settings)
     }
 
     protected open fun setUpButtons() {

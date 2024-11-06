@@ -54,7 +54,6 @@ class RoomManager(private val apiClient: ApiClient) {
         apiClient.getRoom(newRoom.idRoom, object : Callback<Room> {
             override fun onResponse(call: Call<Room>, response: Response<Room>) {
                 val foundedRoom = response.body()
-                newRoom.name = foundedRoom?.name.toString()
                 apiClient.updateRoom(newRoom, object : Callback<Void> {
                     override fun onResponse(call: Call<Void>, response: Response<Void>) {
                         callback.onSuccess("Комната обновлена успешно")

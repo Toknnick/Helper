@@ -24,6 +24,10 @@ class RoomsFragment : ParentFragment() {
     //TODO: перенести метод с обновлением пароля пользователя в settingsFragment
     private lateinit var nowRoom: Room
     override fun setUpButtons() {
+        settingsRoomButton.setOnClickListener{
+            createRoomPanel.visibility = View.VISIBLE
+            editRoom()
+        }
         showUsersButton.setOnClickListener{
             showUsersPanel()
         }
@@ -46,11 +50,7 @@ class RoomsFragment : ParentFragment() {
             addRoomButton.isEnabled = true
         }
         backCreateRoomButton.setOnClickListener {
-            createRoomPanel.visibility = View.GONE
-            createRoomButton.isEnabled = true
-            addRoomButton.isEnabled = true
-            createNameRoom.setText("")
-            createPasswordRoom.setText("")
+            hideRoom()
         }
         getRoomButton.setOnClickListener{
             addRoom()
@@ -65,6 +65,8 @@ class RoomsFragment : ParentFragment() {
             addPasswordRoom.setText("")
         }
     }
+
+
     override fun onResume() {
         super.onResume()
         defSetup()
@@ -117,6 +119,10 @@ class RoomsFragment : ParentFragment() {
                 if(!gotRoom.single) {
                     if (isForText) {
                         nowRoom = gotRoom
+
+                        if(nowRoom.owner == user!!.login)
+                            settingsRoomButton.visibility = View.VISIBLE
+
                         roomNameTextView.text = gotRoom.name
                         addButton.visibility = View.VISIBLE
                         dataPickerButton.visibility = View.VISIBLE
@@ -203,6 +209,7 @@ class RoomsFragment : ParentFragment() {
             dataPickerButton.visibility = View.INVISIBLE
             roomNameTextView.text = "У вас еще нет ни одной комнаты. Попробуйте ее создать или найти"
         }
+
         changeScrollView()
     }
 
@@ -518,6 +525,27 @@ class RoomsFragment : ParentFragment() {
         }
     }
 
+    private fun editRoom(){
+        roomTextView.text = "Редактирование комнаты"
+        createNameRoom.setText(nowRoom.name)
+        createPasswordRoom.setText(nowRoom.password)
+        saveRoomButton.setOnClickListener{
+            if(createNameRoom.text.toString().isEmpty()){
+                createError("Название забыли")
+            }
+            else if(createPasswordRoom.text.toString().length <= 8){
+                createError("Малая длина пароля")
+            }
+            else{
+                nowRoom.name = createNameRoom.text.toString()
+                nowRoom.password = createPasswordRoom.text.toString()
+                updateRoomForAPI(nowRoom)
+                roomNameTextView.text = nowRoom.name
+                hideRoom()
+            }
+        }
+    }
+
     override fun setListeners(view: View){
         setTouchListenerForButtons(view)
         setTouchListenerForButtons(mainLayout)
@@ -539,5 +567,19 @@ class RoomsFragment : ParentFragment() {
             }
             false
         }
+    }
+
+    private  fun hideRoom(){
+        createRoomPanel.visibility = View.GONE
+        roomTextView.text = "Создание комнаты"
+        saveRoomButton.setOnClickListener {
+            createRoom()
+            createRoomButton.isEnabled = true
+            addRoomButton.isEnabled = true
+        }
+        createRoomButton.isEnabled = true
+        addRoomButton.isEnabled = true
+        createNameRoom.setText("")
+        createPasswordRoom.setText("")
     }
 }
