@@ -537,8 +537,8 @@ class RoomsFragment : ParentFragment() {
                 createError("Малая длина пароля")
             }
             else{
-                nowRoom.name = createNameRoom.text.toString()
-                nowRoom.password = createPasswordRoom.text.toString()
+                nowRoom.name = createNameRoom.text.toString().trim()
+                nowRoom.password = createPasswordRoom.text.toString().trim()
                 updateRoomForAPI(nowRoom)
                 roomNameTextView.text = nowRoom.name
                 hideRoom()

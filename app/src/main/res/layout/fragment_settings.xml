@@ -1,14 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".fragments.SettingsFragment">
 
     <TextView
-        android:gravity="center"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="Настройки" />
+        android:id="@+id/userLoginTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="23sp"
+        android:text="Имя Юзера"
+        android:layout_alignParentStart="true"
+        android:padding="10dp"/>
 
-</FrameLayout>
+    <ImageButton
+        android:id="@+id/editUserButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@android:drawable/ic_menu_edit"
+        android:layout_below="@+id/userLoginTextView"/>
+
+    <RelativeLayout
+        android:id="@+id/createUserPanel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/border_panel_background"
+        android:visibility="gone"
+        android:layout_centerInParent="true">
+
+        <ImageButton
+            android:id="@+id/backUserButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:layout_alignParentTop="true"
+            android:layout_margin="10dp"
+            android:src="@android:drawable/ic_menu_revert"/>
+
+        <TextView
+            android:id="@+id/userTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="2dp"
+            android:gravity="center"
+            android:layout_toRightOf="@id/backUserButton"
+            android:layout_alignTop="@id/backUserButton"
+            android:layout_alignBottom="@id/backUserButton"
+            android:autoSizeMaxTextSize="20dp"
+            android:text="Редактирование пользователя"
+            android:layout_marginBottom="5dp"
+            android:padding="2dp"
+            android:textColor="@color/text_color"
+            android:textSize="18sp" />
+
+
+        <EditText
+            android:id="@+id/loginUser"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:background="@color/edit_text"
+            android:maxLines="1"
+            android:ems="10"
+            android:hint="Логин"
+            android:inputType="text"
+            android:padding="10dp"
+            android:layout_below="@+id/userTextView"
+            android:textColor="@color/text_color" />
+
+        <EditText
+            android:id="@+id/passwordUser"
+            android:layout_width="match_parent"
+            android:maxLines="1"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/loginUser"
+            android:layout_margin="10dp"
+            android:background="@color/edit_text"
+            android:ems="10"
+            android:hint="Пароль"
+            android:padding="10dp"
+            android:textColor="@color/text_color" />
+
+        <ImageButton
+            android:id="@+id/loginUserButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/passwordUser"
+            android:padding="10dp"
+            android:layout_margin="10dp"
+            android:src="@android:drawable/ic_menu_save"/>
+    </RelativeLayout>
+
+</RelativeLayout>
