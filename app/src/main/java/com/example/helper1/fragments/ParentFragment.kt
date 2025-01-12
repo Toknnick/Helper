@@ -5,6 +5,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.app.TimePickerDialog
 import android.content.ContentValues
+import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Bitmap
@@ -18,6 +19,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.provider.OpenableColumns
+import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -74,6 +76,10 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.SecretKeySpec
 
 @Suppress("DEPRECATION", "NAME_SHADOWING")
 open class ParentFragment : Fragment() {
@@ -115,8 +121,8 @@ open class ParentFragment : Fragment() {
 
     protected lateinit var dbHelper: DBHelper
 
-
     protected lateinit var mainLayout: RelativeLayout
+    protected var secretKey: SecretKey? = null
     protected lateinit var createRoomButton: Button
     protected lateinit var addRoomButton: Button
     protected lateinit var addButton: Button
@@ -291,6 +297,13 @@ open class ParentFragment : Fragment() {
     protected fun defSetup() {
         dbHelper = DBHelper(requireContext())
         initDefElements()
+        secretKey = loadKey()
+
+        if (secretKey==null){
+            secretKey = generateKey()
+            saveKey(secretKey!!)
+        }
+
         isSortingNow = false
         mainActivity = (activity as MainActivity)
         val apiClient = ApiClient(retrofit)
@@ -2083,9 +2096,7 @@ open class ParentFragment : Fragment() {
         }
     }
 
-    private fun buildSortPanel(item: Int){
-        getAllEventsForAPI(item)
-    }
+
 
     private fun getAllEventsForAPI(item: Int){
         events = mutableListOf()
@@ -2299,5 +2310,43 @@ open class ParentFragment : Fragment() {
         }
 
         builder.show()
+    }
+
+    private fun saveKey(secretKey: SecretKey) {
+        val encodedKey = Base64.encodeToString(secretKey.encoded, Base64.DEFAULT)
+        val prefs = requireContext().getSharedPreferences("secure_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("aes_key", encodedKey).apply()
+    }
+
+    private fun loadKey(): SecretKey? {
+        val prefs = requireContext().getSharedPreferences("secure_prefs", Context.MODE_PRIVATE)
+        val encodedKey = prefs.getString("aes_key", null) ?: return null
+        val decodedKey = Base64.decode(encodedKey, Base64.DEFAULT)
+        return SecretKeySpec(decodedKey, 0, decodedKey.size, "AES")
+    }
+    private fun generateKey(): SecretKey {
+        val keyGen = KeyGenerator.getInstance("AES")
+        keyGen.init(256)
+        return keyGen.generateKey()
+    }
+
+    protected fun hashPassword(password: String): String {
+        val cipher = Cipher.getInstance("AES/ECB/PKCS5Padding") // Используем PKCS5Padding для предотвращения проблем с блоками
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+        val encryptedBytes = cipher.doFinal(password.toByteArray(Charsets.UTF_8))
+        return Base64.encodeToString(encryptedBytes, Base64.DEFAULT)
+    }
+
+
+    protected fun unHashPassword(encryptedPassword: String): String {
+        val cipher = Cipher.getInstance("AES/ECB/PKCS5Padding") // Совпадение с шифрованием
+        cipher.init(Cipher.DECRYPT_MODE, secretKey)
+        val decodedBytes = Base64.decode(encryptedPassword, Base64.DEFAULT)
+        val decryptedBytes = cipher.doFinal(decodedBytes)
+        return String(decryptedBytes, Charsets.UTF_8)
+    }
+
+    private fun buildSortPanel(item: Int){
+        getAllEventsForAPI(item)
     }
 }

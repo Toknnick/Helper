@@ -1,6 +1,8 @@
 package com.example.helper1.fragments
 
+import android.content.Context
 import android.os.Bundle
+import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -22,6 +24,10 @@ import com.example.helper1.dataBase.User
 import com.example.helper1.dataBase.managers.UserManager
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.SecretKeySpec
 
 /**
  * A simple [Fragment] subclass.
@@ -40,6 +46,7 @@ class SettingsFragment : Fragment() {
     private lateinit var mainActivity: MainActivity
     private lateinit var editeloginUserButton: ImageButton
     private lateinit var editeUserPanel: RelativeLayout
+    protected var secretKey: SecretKey? = null
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -50,6 +57,13 @@ class SettingsFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        secretKey = loadKey()
+
+        if (secretKey==null){
+            secretKey = generateKey()
+            saveKey(secretKey!!)
+        }
+
         val apiClient = ApiClient(retrofit)
         userManager = UserManager(apiClient)
         val editUserButton = requireView().findViewById<ImageButton>(R.id.editUserButton)
@@ -113,12 +127,16 @@ class SettingsFragment : Fragment() {
             val user = User(loginUser.text.toString().trim(),passwordUser.text.toString().trim(),0,"")
             loginUserForAPI(user)
         }
+
+        Toast.makeText(requireContext(), user!!.password, Toast.LENGTH_LONG).show()
+
     }
 
     private fun loginUserForAPI(loggingUser: User) {
         userManager.getUser(loggingUser.login, object : GetUserCallback {
             override fun onSuccess(gotUser: User) {
-                if (loggingUser.password == gotUser.password) {
+                if (loggingUser.password == unHashPassword(gotUser.password)) {
+                    gotUser.password = loggingUser.password
                     user = gotUser
                     var db = DBHelper(requireContext())
                     db.createUser(user)
@@ -144,6 +162,7 @@ class SettingsFragment : Fragment() {
 
 
     private fun updateUserForAPI(newUser: User) {
+        newUser.password = hashPassword(newUser.password)
         val retrofit = Retrofit.Builder()
             .baseUrl("https://api-helper-toknnick.amvera.io/")
             .addConverterFactory(GsonConverterFactory.create())
@@ -159,4 +178,39 @@ class SettingsFragment : Fragment() {
             }
         }, true)
     }
+
+    private fun saveKey(secretKey: SecretKey) {
+        val encodedKey = Base64.encodeToString(secretKey.encoded, Base64.DEFAULT)
+        val prefs = requireContext().getSharedPreferences("secure_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("aes_key", encodedKey).apply()
+    }
+
+    private fun loadKey(): SecretKey? {
+        val prefs = requireContext().getSharedPreferences("secure_prefs", Context.MODE_PRIVATE)
+        val encodedKey = prefs.getString("aes_key", null) ?: return null
+        val decodedKey = Base64.decode(encodedKey, Base64.DEFAULT)
+        return SecretKeySpec(decodedKey, 0, decodedKey.size, "AES")
+    }
+    private fun generateKey(): SecretKey {
+        val keyGen = KeyGenerator.getInstance("AES")
+        keyGen.init(256)
+        return keyGen.generateKey()
+    }
+
+    private fun hashPassword(password: String): String {
+        val cipher = Cipher.getInstance("AES/ECB/PKCS5Padding") // Используем PKCS5Padding для предотвращения проблем с блоками
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+        val encryptedBytes = cipher.doFinal(password.toByteArray(Charsets.UTF_8))
+        return Base64.encodeToString(encryptedBytes, Base64.DEFAULT)
+    }
+
+
+    private fun unHashPassword(encryptedPassword: String): String {
+        val cipher = Cipher.getInstance("AES/ECB/PKCS5Padding") // Совпадение с шифрованием
+        cipher.init(Cipher.DECRYPT_MODE, secretKey)
+        val decodedBytes = Base64.decode(encryptedPassword, Base64.DEFAULT)
+        val decryptedBytes = cipher.doFinal(decodedBytes)
+        return String(decryptedBytes, Charsets.UTF_8)
+    }
+
 }

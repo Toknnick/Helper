@@ -24,6 +24,7 @@ class HomeFragment : ParentFragment(){
     override fun setUpButtons(){
         //requireContext().deleteDatabase(dbHelper.databaseName)
         user = dbHelper.getUser()
+
         if(user == null){
             addButton.visibility = View.GONE
             dataPickerButton.visibility = View.GONE
@@ -41,9 +42,11 @@ class HomeFragment : ParentFragment(){
                 }
             }
         }else{
+            Toast.makeText(requireContext(), user!!.password, Toast.LENGTH_LONG).show()
             updateLocalUser()
             mainActivity.startActivity()
         }
+
 
         loginUserButton.setOnClickListener{
             val loggingUser = User(
@@ -126,6 +129,7 @@ class HomeFragment : ParentFragment(){
     private fun updateLocalUser(){
         userManager.getUser(user!!.login, object : GetUserCallback {
             override fun onSuccess(gotUser: User) {
+                gotUser.password = unHashPassword(gotUser.password)
                 val nowRooms: List<Long> = user!!.availableRooms
                     .split("|")
                     .filter { it.isNotEmpty() }
@@ -197,7 +201,7 @@ class HomeFragment : ParentFragment(){
     private fun loginUserForAPI(loggingUser : User){
         userManager.getUser(loginUser.text.toString().trim(),object : GetUserCallback {
             override fun onSuccess(gotUser: User) {
-                if (loggingUser.password == gotUser.password) {
+                if (loggingUser.password == unHashPassword(gotUser.password)) {
                     loggingUser.availableRooms = gotUser.availableRooms
                     loggingUser.ownRoom = gotUser.ownRoom
                     idRoomDef = gotUser.ownRoom
@@ -227,7 +231,7 @@ class HomeFragment : ParentFragment(){
         val newRoom = Room(
             0,
             loginUser.text.toString().trim(),
-            passwordUser.text.toString().trim(),
+            hashPassword(passwordUser.text.toString().trim()),
             true,
             loginUser.text.toString().trim(),
             "",
@@ -249,7 +253,7 @@ class HomeFragment : ParentFragment(){
     private fun createUser(idRoom: Long) {
         val newUser = User(
             loginUser.text.toString().trim(),
-            passwordUser.text.toString().trim(),
+            hashPassword(passwordUser.text.toString().trim()),
             idRoom,
             ""
         )
@@ -259,6 +263,7 @@ class HomeFragment : ParentFragment(){
             }
 
             override fun onUserCreated(user: User) {
+                user.password = unHashPassword(user.password)
                 dbHelper.createUser(user)
                 mainActivity.startActivity()
                 setUpElements()

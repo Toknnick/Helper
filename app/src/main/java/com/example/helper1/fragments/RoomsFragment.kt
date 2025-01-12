@@ -45,9 +45,13 @@ class RoomsFragment : ParentFragment() {
             addRoomButton.isEnabled = false
         }
         saveRoomButton.setOnClickListener {
-            createRoom()
-            createRoomButton.isEnabled = true
-            addRoomButton.isEnabled = true
+            if(createPasswordRoom.length() > 0) {
+                createRoom()
+                createRoomButton.isEnabled = true
+                addRoomButton.isEnabled = true
+            }else{
+                createError("Длина пароля больше 8!")
+            }
         }
         backCreateRoomButton.setOnClickListener {
             hideRoom()
@@ -77,6 +81,8 @@ class RoomsFragment : ParentFragment() {
         rebuildPage()
         setTouchListenerForButtons(requireView().findViewById(R.id.conLayout))
         setTouchListenerForButtons(requireView().findViewById(R.id.scrView))
+
+        Toast.makeText(requireContext(), user!!.password, Toast.LENGTH_LONG).show()
     }
 
     private fun createRoomForAPI(newRoom: Room) {
@@ -116,6 +122,7 @@ class RoomsFragment : ParentFragment() {
         roomManger.getRoom(gettingRoom.idRoom, object : GetRoomCallback {
             @SuppressLint("SetTextI18n")
             override fun onSuccess(gotRoom: Room) {
+                gotRoom.password = unHashPassword(gotRoom.password)
                 if(!gotRoom.single) {
                     if (isForText) {
                         nowRoom = gotRoom
@@ -176,6 +183,7 @@ class RoomsFragment : ParentFragment() {
     }
 
     private fun updateRoomForAPI(newRoom : Room){
+        newRoom.password = hashPassword(newRoom.password)
         roomManger.updateRoom(newRoom, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
             }
@@ -187,6 +195,7 @@ class RoomsFragment : ParentFragment() {
     }
 
     private fun updateUserForAPI(newUser: User) {
+        newUser.password = hashPassword(newUser.password)
         userManager.updateUser(newUser, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 //Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
@@ -236,7 +245,7 @@ class RoomsFragment : ParentFragment() {
                 roomTextView.setBackgroundResource(R.drawable.border_room)
                 roomManger.getRoom(room.toLong(),object :GetRoomCallback{
                     override fun onSuccess(gotRoom: Room) {
-                        val text = "${gotRoom.name}\nНомер: ${gotRoom.idRoom}\nПароль: ${gotRoom.password}"
+                        val text = "Название: ${gotRoom.name}\nНомер: ${gotRoom.idRoom}\nПароль: ${unHashPassword(gotRoom.password)}"
                         roomTextView.text = text
                         roomTextView.textSize = textSize
                         roomLayout.addView(roomTextView)
@@ -485,7 +494,7 @@ class RoomsFragment : ParentFragment() {
         val newRoom = Room(
             0,
             createNameRoom.text.toString().trim(),
-            createPasswordRoom.text.toString().trim(),
+            hashPassword(createPasswordRoom.text.toString().trim()),
             false,
             user!!.login,
             "",
