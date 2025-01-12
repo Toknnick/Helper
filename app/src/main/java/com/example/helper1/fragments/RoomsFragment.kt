@@ -24,6 +24,7 @@ class RoomsFragment : ParentFragment() {
     //TODO: перенести метод с обновлением пароля пользователя в settingsFragment
     private lateinit var nowRoom: Room
     override fun setUpButtons() {
+        setKey()
         settingsRoomButton.setOnClickListener{
             createRoomPanel.visibility = View.VISIBLE
             editRoom()
@@ -180,9 +181,9 @@ class RoomsFragment : ParentFragment() {
 
     private fun updateRoomForAPI(newRoom : Room){
         newRoom.password = hashPassword(newRoom.password)
-        nowRoom.password = unHashPassword(newRoom.password)
         roomManger.updateRoom(newRoom, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
+                nowRoom.password = unHashPassword(newRoom.password)
             }
 
             override fun onFailure(message: String) {

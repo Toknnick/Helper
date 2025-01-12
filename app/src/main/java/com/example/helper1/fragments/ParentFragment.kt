@@ -78,7 +78,6 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import javax.crypto.Cipher
-import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
 
@@ -295,19 +294,7 @@ open class ParentFragment : Fragment() {
         Log.d("MyTag", "стартуем")
     }
 
-
-
-    protected fun defSetup() {
-        dbHelper = DBHelper(requireContext())
-        initDefElements()
-        secretKey = loadKey()
-
-        if (secretKey==null){
-            getSecretKey()
-        }
-
-        isSortingNow = false
-        mainActivity = (activity as MainActivity)
+    protected fun setKey(){
         val apiClient = ApiClient(retrofit)
         userManager = UserManager(apiClient)
         roomManger = RoomManager(apiClient)
@@ -315,6 +302,19 @@ open class ParentFragment : Fragment() {
         taskManager = TaskManager(apiClient)
         imageManager = ImageManager(apiClient)
         fileManager = FileManager(apiClient)
+        if (secretKey==null){
+            getSecretKey()
+        }
+    }
+
+
+    protected fun defSetup() {
+        dbHelper = DBHelper(requireContext())
+        initDefElements()
+        secretKey = loadKey()
+        isSortingNow = false
+        mainActivity = (activity as MainActivity)
+
         setUpButtons()
         setUpDefButtons()
         addParamsToButtons(point0)

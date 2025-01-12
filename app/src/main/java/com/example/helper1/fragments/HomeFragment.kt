@@ -64,6 +64,7 @@ class HomeFragment : ParentFragment(){
 
     override fun onResume() {
         super.onResume()
+        setKey()
         defSetup()
         chosenDate = dbHelper.getChosenDate()
         user = dbHelper.getUser()
@@ -151,6 +152,7 @@ class HomeFragment : ParentFragment(){
                             var text = ""
                             val kickedRoomList = rooms.filter { it.idRoom in kickedRoomsId }
                             if(kickedRoomsId.count() == 1){
+                                dbHelper.updateRoomId(-1)
                                 text = "Вас выгнали из комнаты '${kickedRoomList[0].name}'"
                             }
                             else{
