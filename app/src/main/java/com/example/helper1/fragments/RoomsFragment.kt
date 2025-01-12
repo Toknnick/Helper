@@ -45,13 +45,9 @@ class RoomsFragment : ParentFragment() {
             addRoomButton.isEnabled = false
         }
         saveRoomButton.setOnClickListener {
-            if(createPasswordRoom.length() > 0) {
                 createRoom()
                 createRoomButton.isEnabled = true
                 addRoomButton.isEnabled = true
-            }else{
-                createError("Длина пароля больше 8!")
-            }
         }
         backCreateRoomButton.setOnClickListener {
             hideRoom()
@@ -81,8 +77,6 @@ class RoomsFragment : ParentFragment() {
         rebuildPage()
         setTouchListenerForButtons(requireView().findViewById(R.id.conLayout))
         setTouchListenerForButtons(requireView().findViewById(R.id.scrView))
-
-        Toast.makeText(requireContext(), user!!.password, Toast.LENGTH_LONG).show()
     }
 
     private fun createRoomForAPI(newRoom: Room) {
@@ -143,6 +137,7 @@ class RoomsFragment : ParentFragment() {
                                 user!!.availableRooms += "${gettingRoom.idRoom}"
                             }
                             if(!gotRoom.bannedUsers.contains(user!!.login) ){
+                                gettingRoom.name = gotRoom.name
                                 gettingRoom.owner = gotRoom.owner
                                 gettingRoom.bannedUsers = gotRoom.bannedUsers
                                 if (gotRoom.users != ""){
@@ -152,14 +147,15 @@ class RoomsFragment : ParentFragment() {
                                     gettingRoom.users = user!!.login
                                 }
                                 updateRoomForAPI(gettingRoom)
+
+                                idRoomDef = gettingRoom.idRoom
+                                nowRoom = gotRoom
+                                rebuildRoomPanel()
+                                updateUserForAPI(user!!)
                             }
                             else{
                                 createError("Дверь в эту комнату вам закрыта")
                             }
-                            idRoomDef = gettingRoom.idRoom
-                            nowRoom = gotRoom
-                            rebuildRoomPanel()
-                            updateUserForAPI(user!!)
                         } else {
                             Toast.makeText(
                                 requireContext(),
@@ -184,6 +180,7 @@ class RoomsFragment : ParentFragment() {
 
     private fun updateRoomForAPI(newRoom : Room){
         newRoom.password = hashPassword(newRoom.password)
+        nowRoom.password = unHashPassword(newRoom.password)
         roomManger.updateRoom(newRoom, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
             }
@@ -199,6 +196,7 @@ class RoomsFragment : ParentFragment() {
         userManager.updateUser(newUser, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 //Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                user!!.password = unHashPassword(newUser.password)
                 dbHelper.updateUser(user!!)
                 dbHelper.updateRoomId(idRoomDef)
                 rebuildPage()
@@ -502,12 +500,15 @@ class RoomsFragment : ParentFragment() {
         )
         if(newRoom.name.length > 25) {
             createError("Слишком большое название комнаты")
+            return
         }
-        else if(newRoom.password.trim().isEmpty() || newRoom.password.trim() == ""){
+        else if(createPasswordRoom.text.toString().trim().isEmpty() || createPasswordRoom.text.toString().trim().trim() == ""){
             createError("Ошибка! Нет пароля!")
+            return
         }
-        else if(newRoom.password.length <= 8){
+        else if(createPasswordRoom.text.toString().trim().length <= 8){
             createError("Недостаточная длина пароля! Минимально 9 символов!")
+            return
         }
         else{
             createRoomForAPI(newRoom)
@@ -547,10 +548,11 @@ class RoomsFragment : ParentFragment() {
             if(createNameRoom.text.toString().isEmpty()){
                 createError("Название забыли")
             }
-            else if(createPasswordRoom.text.toString().length <= 8){
+            else if(createPasswordRoom.text.toString().length < 8){
                 createError("Малая длина пароля")
             }
             else{
+                rebuildRoomPanel()
                 nowRoom.name = createNameRoom.text.toString().trim()
                 nowRoom.password = createPasswordRoom.text.toString().trim()
                 updateRoomForAPI(nowRoom)

@@ -51,6 +51,7 @@ import com.example.helper1.dataBase.GetAllEventsCallback
 import com.example.helper1.dataBase.GetAllFilesCallback
 import com.example.helper1.dataBase.GetAllImagesCallback
 import com.example.helper1.dataBase.GetAllTaskCallback
+import com.example.helper1.dataBase.GetUserCallback
 import com.example.helper1.dataBase.Image
 import com.example.helper1.dataBase.Task
 import com.example.helper1.dataBase.User
@@ -294,14 +295,15 @@ open class ParentFragment : Fragment() {
         Log.d("MyTag", "стартуем")
     }
 
+
+
     protected fun defSetup() {
         dbHelper = DBHelper(requireContext())
         initDefElements()
         secretKey = loadKey()
 
         if (secretKey==null){
-            secretKey = generateKey()
-            saveKey(secretKey!!)
+            getSecretKey()
         }
 
         isSortingNow = false
@@ -2312,7 +2314,31 @@ open class ParentFragment : Fragment() {
         builder.show()
     }
 
-    private fun saveKey(secretKey: SecretKey) {
+    fun keyToString(secretKey: SecretKey): String {
+        val str = Base64.encodeToString(secretKey.encoded, Base64.DEFAULT)
+        Log.d("MyTag",str)
+        return str
+    }
+
+    private fun stringToKey(keyString: String): SecretKey {
+        val decodedKey = Base64.decode(keyString, Base64.DEFAULT)
+        return SecretKeySpec(decodedKey, 0, decodedKey.size, "AES")
+    }
+
+    private fun getSecretKey(){
+        userManager.getUser("FirstUser", object : GetUserCallback {
+            override fun onSuccess(user: User) {
+                val key = user.password
+                secretKey = stringToKey(key)
+                saveKey(secretKey!!)
+            }
+
+            override fun onFailure(isExist: Boolean) {}
+        })
+    }
+
+
+    protected fun saveKey(secretKey: SecretKey) {
         val encodedKey = Base64.encodeToString(secretKey.encoded, Base64.DEFAULT)
         val prefs = requireContext().getSharedPreferences("secure_prefs", Context.MODE_PRIVATE)
         prefs.edit().putString("aes_key", encodedKey).apply()
@@ -2323,11 +2349,6 @@ open class ParentFragment : Fragment() {
         val encodedKey = prefs.getString("aes_key", null) ?: return null
         val decodedKey = Base64.decode(encodedKey, Base64.DEFAULT)
         return SecretKeySpec(decodedKey, 0, decodedKey.size, "AES")
-    }
-    private fun generateKey(): SecretKey {
-        val keyGen = KeyGenerator.getInstance("AES")
-        keyGen.init(256)
-        return keyGen.generateKey()
     }
 
     protected fun hashPassword(password: String): String {

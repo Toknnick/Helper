@@ -42,7 +42,6 @@ class HomeFragment : ParentFragment(){
                 }
             }
         }else{
-            Toast.makeText(requireContext(), user!!.password, Toast.LENGTH_LONG).show()
             updateLocalUser()
             mainActivity.startActivity()
         }
@@ -198,6 +197,8 @@ class HomeFragment : ParentFragment(){
         })
     }
 
+
+
     private fun loginUserForAPI(loggingUser : User){
         userManager.getUser(loginUser.text.toString().trim(),object : GetUserCallback {
             override fun onSuccess(gotUser: User) {
@@ -281,7 +282,12 @@ class HomeFragment : ParentFragment(){
     private fun createRoomForAPI(newRoom: Room) {
         roomManger.getAllRooms(object : GetAllRoomsCallback {
             override fun onSuccess(rooms: List<Room>) {
-                val idRoom = (rooms.last().idRoom + 1)
+                var idRoom: Long = 0L
+
+                if (rooms.isNotEmpty()){
+                    idRoom = (rooms.last().idRoom + 1)
+                }
+
                 newRoom.idRoom = idRoom
                 roomManger.createRoom(newRoom, object : CreateRoomCallback {
                     override fun onSuccess(message: String) {}

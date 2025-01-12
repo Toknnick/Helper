@@ -59,11 +59,6 @@ class SettingsFragment : Fragment() {
         super.onResume()
         secretKey = loadKey()
 
-        if (secretKey==null){
-            secretKey = generateKey()
-            saveKey(secretKey!!)
-        }
-
         val apiClient = ApiClient(retrofit)
         userManager = UserManager(apiClient)
         val editUserButton = requireView().findViewById<ImageButton>(R.id.editUserButton)
@@ -122,13 +117,13 @@ class SettingsFragment : Fragment() {
             editeUserPanel.visibility = View.GONE
             editeloginUser.setText("")
             editepasswordUser.setText("")
+            loginUser.setText("")
+            passwordUser.setText("")
         }
         loginUserButton.setOnClickListener{
             val user = User(loginUser.text.toString().trim(),passwordUser.text.toString().trim(),0,"")
             loginUserForAPI(user)
         }
-
-        Toast.makeText(requireContext(), user!!.password, Toast.LENGTH_LONG).show()
 
     }
 
