@@ -1,19 +1,23 @@
 package com.example.helper1.fragments
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import com.example.helper1.MainActivity
 import com.example.helper1.R
 import com.example.helper1.dataBase.ApiClient
 import com.example.helper1.dataBase.CreateMessageCallback
 import com.example.helper1.dataBase.DBHelper
+import com.example.helper1.dataBase.GetUserCallback
 import com.example.helper1.dataBase.User
 import com.example.helper1.dataBase.managers.UserManager
 import retrofit2.Retrofit
@@ -25,7 +29,17 @@ import retrofit2.converter.gson.GsonConverterFactory
  * create an instance of this fragment.
  */
 class SettingsFragment : Fragment() {
+    private val retrofit = Retrofit.Builder()
+        .baseUrl("https://api-helper-toknnick.amvera.io/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
 
+    private lateinit var userManager: UserManager
+    private lateinit var user: User
+    private lateinit var dbHelper: DBHelper
+    private lateinit var mainActivity: MainActivity
+    private lateinit var editeloginUserButton: ImageButton
+    private lateinit var editeUserPanel: RelativeLayout
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -36,45 +50,98 @@ class SettingsFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        val apiClient = ApiClient(retrofit)
+        userManager = UserManager(apiClient)
         val editUserButton = requireView().findViewById<ImageButton>(R.id.editUserButton)
         val userLoginTextView = requireView().findViewById<TextView>(R.id.userLoginTextView)
-        val createUserPanel = requireView().findViewById<RelativeLayout>(R.id.createUserPanel)
-        val loginUser = requireView().findViewById<EditText>(R.id.loginUser)
-        val passwordUser = requireView().findViewById<EditText>(R.id.passwordUser)
-        val loginUserButton = requireView().findViewById<ImageButton>(R.id.loginUserButton)
-        val backUserButton = requireView().findViewById<ImageButton>(R.id.backUserButton)
+        editeUserPanel = requireView().findViewById<RelativeLayout>(R.id.editeUserPanel)
+        val editeloginUser = requireView().findViewById<EditText>(R.id.editeloginUser)
+        val editepasswordUser = requireView().findViewById<EditText>(R.id.editepasswordUser)
+        editeloginUserButton = requireView().findViewById<ImageButton>(R.id.editeloginUserButton)
+        val editebackUserButton = requireView().findViewById<ImageButton>(R.id.editebackUserButton)
 
-        val dbHelper = DBHelper(requireContext())
-        val user = dbHelper.getUser()
-        userLoginTextView.text = user!!.login
+        val logOutButton = requireView().findViewById<Button>(R.id.logOutButton)
+
+        val createUserPanel = requireView().findViewById<RelativeLayout>(R.id.createUserPanel)
+        val passwordUser = requireView().findViewById<EditText>(R.id.passwordUser)
+        val loginUser = requireView().findViewById<EditText>(R.id.loginUser)
+        val loginUserButton = requireView().findViewById<Button>(R.id.loginUserButton)
+
+        dbHelper = DBHelper(requireContext())
+        user = dbHelper.getUser()!!
+        userLoginTextView.text = user.login
+        mainActivity = (activity as MainActivity)
 
         editUserButton.setOnClickListener{
-            createUserPanel.visibility = View.VISIBLE
-            loginUser.setText(user.login)
-            passwordUser.setText(user.password)
-            loginUser.isEnabled = false
+            editeUserPanel.visibility = View.VISIBLE
+            editeloginUser.setText(user.login)
+            editepasswordUser.setText(user.password)
+            editeloginUser.isEnabled = false
         }
-        backUserButton.setOnClickListener{
-            createUserPanel.visibility = View.GONE
-            loginUser.setText("")
-            passwordUser.setText("")
+        editebackUserButton.setOnClickListener{
+            editeUserPanel.visibility = View.GONE
+            editeloginUser.setText("")
+            editepasswordUser.setText("")
         }
-        loginUserButton.setOnClickListener{
-            if(passwordUser.text.toString().trim().length > 8){
-                user.login = loginUser.text.toString().trim()
-                user.password = passwordUser.text.toString().trim()
+        editeloginUserButton.setOnClickListener{
+            if(editepasswordUser.text.toString().trim().length > 8){
+                user.login = editeloginUser.text.toString().trim()
+                user.password = editepasswordUser.text.toString().trim()
                 dbHelper.updateUser(user)
                 updateUserForAPI(user)
-                createUserPanel.visibility = View.GONE
-                loginUser.setText("")
-                passwordUser.setText("")
+                editeUserPanel.visibility = View.GONE
+                editeloginUser.setText("")
+                editepasswordUser.setText("")
             }
             else{
                 Toast.makeText(requireContext(), "Малая длина пароля", Toast.LENGTH_SHORT).show()
             }
 
         }
+        logOutButton.setOnClickListener{
+            requireContext().deleteDatabase(dbHelper.databaseName)
+            user = User("","",-1,"")
+            userLoginTextView.setText("Вы не вошли в аккаунт")
+            createUserPanel.visibility = View.VISIBLE
+            mainActivity.checkIsHaveLog()
+            editeloginUserButton.isEnabled = false
+            editeUserPanel.visibility = View.GONE
+            editeloginUser.setText("")
+            editepasswordUser.setText("")
+        }
+        loginUserButton.setOnClickListener{
+            val user = User(loginUser.text.toString().trim(),passwordUser.text.toString().trim(),0,"")
+            loginUserForAPI(user)
+        }
     }
+
+    private fun loginUserForAPI(loggingUser: User) {
+        userManager.getUser(loggingUser.login, object : GetUserCallback {
+            override fun onSuccess(gotUser: User) {
+                if (loggingUser.password == gotUser.password) {
+                    user = gotUser
+                    var db = DBHelper(requireContext())
+                    db.createUser(user)
+                    val userLoginTextView = requireView().findViewById<TextView>(R.id.userLoginTextView)
+                    userLoginTextView.text = user.login
+                    val createUserPanel = requireView().findViewById<View>(R.id.createUserPanel)
+                    createUserPanel.visibility = View.GONE
+                    mainActivity.startActivity()
+                    editeloginUserButton.isEnabled = true
+
+                } else {
+                    Toast.makeText(requireContext(), "Неверный пароль!", Toast.LENGTH_LONG).show()
+                }
+            }
+
+            override fun onFailure(isExist: Boolean) {
+                Toast.makeText(requireContext(), "Ошибка! Пользователь не найден", Toast.LENGTH_LONG).show()
+            }
+        })
+
+        Log.d("MyTag", loggingUser.toString())
+    }
+
 
     private fun updateUserForAPI(newUser: User) {
         val retrofit = Retrofit.Builder()
@@ -84,7 +151,8 @@ class SettingsFragment : Fragment() {
 
         val userManager = UserManager(ApiClient(retrofit))
         userManager.updateUser(newUser, object : CreateMessageCallback {
-            override fun onSuccess(message: String) {}
+            override fun onSuccess(message: String) {
+            }
 
             override fun onFailure(message: String) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()

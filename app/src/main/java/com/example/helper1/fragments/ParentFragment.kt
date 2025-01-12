@@ -2060,25 +2060,27 @@ open class ParentFragment : Fragment() {
     protected fun createAllEventsAndTasksAndImagesAndFiles(isFromMysql:Boolean = true) {
         mainLayout.removeAllViews()
 
-        val textView = createTextView("Соединение...")
-        textView.setTextColor(Color.GRAY)
-        textView.id = TEXT_VIEW_NOTHING_TO_DO_ID
-        mainLayout.addView(textView)
+        if (idRoomDef != -1L) {
+            val textView = createTextView("Соединение...")
+            textView.setTextColor(Color.GRAY)
+            textView.id = TEXT_VIEW_NOTHING_TO_DO_ID
+            mainLayout.addView(textView)
 
-        val newList = (events + tasks + images + files).sortedBy { it.time }
+            val newList = (events + tasks + images + files).sortedBy { it.time }
 
-        for (item in newList) {
-            when (item) {
-                is Event -> createNewEvent(events.indexOf(item))
-                is Task -> createNewTask(item)
-                is Image -> createNewImage(images.indexOf(item), isFromMysql)
-                is File -> createNewFile(files.indexOf(item))
+            for (item in newList) {
+                when (item) {
+                    is Event -> createNewEvent(events.indexOf(item))
+                    is Task -> createNewTask(item)
+                    is Image -> createNewImage(images.indexOf(item), isFromMysql)
+                    is File -> createNewFile(files.indexOf(item))
+                }
             }
-        }
 
-        mainLayout.addView(deleteButton)
-        mainLayout.addView(editButton)
-        checkToNothingToDo()
+            mainLayout.addView(deleteButton)
+            mainLayout.addView(editButton)
+            checkToNothingToDo()
+        }
     }
 
     private fun buildSortPanel(item: Int){

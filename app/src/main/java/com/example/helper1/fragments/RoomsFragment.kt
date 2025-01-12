@@ -124,6 +124,8 @@ class RoomsFragment : ParentFragment() {
                             settingsRoomButton.visibility = View.VISIBLE
 
                         roomNameTextView.text = gotRoom.name
+                        sortButton.visibility = View.VISIBLE
+                        showUsersButton.visibility = View.VISIBLE
                         addButton.visibility = View.VISIBLE
                         dataPickerButton.visibility = View.VISIBLE
                     } else {
@@ -202,12 +204,15 @@ class RoomsFragment : ParentFragment() {
     override fun rebuildPage(){
         hideRoomPanel()
         idRoomDef = dbHelper.getRoomId()
-        if(idRoomDef != (-1).toLong()) {
+        if(idRoomDef != -1L) {
             getRoomFromAPI(Room(idRoomDef, "", "",false,"","",""), true)
         }else{
+            mainLayout.removeView(mainLayout.findViewById(TEXT_VIEW_NOTHING_TO_DO_ID))
+            showUsersButton.visibility = View.INVISIBLE
+            sortButton.visibility = View.INVISIBLE
             addButton.visibility = View.INVISIBLE
             dataPickerButton.visibility = View.INVISIBLE
-            roomNameTextView.text = "У вас еще нет ни одной комнаты. Попробуйте ее создать или найти"
+            roomNameTextView.text = "Вы не в комнате. Попробуйте ее создать, найти или выберите нужную комнату"
         }
 
         changeScrollView()

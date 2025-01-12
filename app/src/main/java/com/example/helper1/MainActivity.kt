@@ -2,6 +2,7 @@ package com.example.helper1
 
 import android.content.pm.ActivityInfo
 import android.os.Bundle
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentManager
 import androidx.navigation.findNavController
@@ -14,10 +15,11 @@ import java.time.format.DateTimeFormatter
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var fm: FragmentManager
+    private lateinit var dbHelper: DBHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val dbHelper = DBHelper(this)
+        dbHelper = DBHelper(this)
         dbHelper.updateChosenDate(LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
         binding = ActivityMainBinding.inflate(layoutInflater)
         this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
@@ -29,6 +31,16 @@ class MainActivity : AppCompatActivity() {
             bottomNavigationView.setupWithNavController(navController)
             fm = supportFragmentManager
         }
+        else{
+            val bottomNavigationView = this.findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottomNavigationView)
+            bottomNavigationView.visibility = View.GONE
+        }
+    }
+
+    fun checkIsHaveLog(){
+        val bottomNavigationView =
+            this.findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottomNavigationView)
+        bottomNavigationView.visibility = View.GONE
     }
 
     fun startActivity(){
@@ -37,6 +49,7 @@ class MainActivity : AppCompatActivity() {
         bottomNavigationView.setupWithNavController(navController)
         fm = supportFragmentManager
         bottomNavigationView.selectedItemId = R.id.homeFragment
+        bottomNavigationView.visibility = View.VISIBLE
     }
 
     override fun onStop() {

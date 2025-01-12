@@ -75,6 +75,9 @@ class HomeFragment : ParentFragment(){
             idRoomDef = user!!.ownRoom
             rebuildPage()
         }
+        else{
+            mainActivity.checkIsHaveLog()
+        }
     }
 
     private fun setUpElements(){
@@ -173,16 +176,7 @@ class HomeFragment : ParentFragment(){
                             Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
                         }
                     })
-
-
-
-
-
-
-
                 }
-
-
                 user!!.password = gotUser.password
                 user!!.ownRoom = gotUser.ownRoom
                 user!!.availableRooms = gotUser.availableRooms

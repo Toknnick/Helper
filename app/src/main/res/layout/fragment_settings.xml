@@ -21,8 +21,25 @@
         android:src="@android:drawable/ic_menu_edit"
         android:layout_below="@+id/userLoginTextView"/>
 
+    <Button
+        android:id="@+id/logOutButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/button_color"
+        android:gravity="center"
+        android:scaleType="fitStart"
+        android:src="@drawable/ic_add_button"
+        android:text="Выйти из аккаунта"
+        android:textColor="@color/text_color"
+        android:textSize="18sp"
+        android:tooltipText="text"
+        android:visibility="visible"
+        android:layout_marginEnd="10dp"
+        android:layout_below="@id/editUserButton"
+        />
+
     <RelativeLayout
-        android:id="@+id/createUserPanel"
+        android:id="@+id/editeUserPanel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/border_panel_background"
@@ -30,7 +47,7 @@
         android:layout_centerInParent="true">
 
         <ImageButton
-            android:id="@+id/backUserButton"
+            android:id="@+id/editebackUserButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="10dp"
@@ -39,14 +56,14 @@
             android:src="@android:drawable/ic_menu_revert"/>
 
         <TextView
-            android:id="@+id/userTextView"
+            android:id="@+id/editeuserTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="2dp"
             android:gravity="center"
-            android:layout_toRightOf="@id/backUserButton"
-            android:layout_alignTop="@id/backUserButton"
-            android:layout_alignBottom="@id/backUserButton"
+            android:layout_toRightOf="@id/editebackUserButton"
+            android:layout_alignTop="@id/editebackUserButton"
+            android:layout_alignBottom="@id/editebackUserButton"
             android:autoSizeMaxTextSize="20dp"
             android:text="Редактирование пользователя"
             android:layout_marginBottom="5dp"
@@ -54,6 +71,65 @@
             android:textColor="@color/text_color"
             android:textSize="18sp" />
 
+
+        <EditText
+            android:id="@+id/editeloginUser"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:background="@color/edit_text"
+            android:maxLines="1"
+            android:ems="10"
+            android:hint="Логин"
+            android:inputType="text"
+            android:padding="10dp"
+            android:layout_below="@+id/editeuserTextView"
+            android:textColor="@color/text_color" />
+
+        <EditText
+            android:id="@+id/editepasswordUser"
+            android:layout_width="match_parent"
+            android:maxLines="1"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/editeloginUser"
+            android:layout_margin="10dp"
+            android:background="@color/edit_text"
+            android:ems="10"
+            android:hint="Пароль"
+            android:padding="10dp"
+            android:textColor="@color/text_color" />
+
+        <ImageButton
+            android:id="@+id/editeloginUserButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/editepasswordUser"
+            android:padding="10dp"
+            android:layout_margin="10dp"
+            android:src="@android:drawable/ic_menu_save"/>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/createUserPanel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/border_panel_background"
+        android:visibility="gone"
+        android:layout_centerInParent="true"
+        >
+
+        <TextView
+            android:id="@+id/userTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="2dp"
+            android:gravity="center"
+            android:autoSizeMaxTextSize="20dp"
+            android:text="Авторизация пользователя"
+            android:layout_marginBottom="5dp"
+            android:padding="2dp"
+            android:textColor="@color/text_color"
+            android:textSize="18sp" />
 
         <EditText
             android:id="@+id/loginUser"
@@ -82,14 +158,17 @@
             android:padding="10dp"
             android:textColor="@color/text_color" />
 
-        <ImageButton
+        <Button
             android:id="@+id/loginUserButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@id/passwordUser"
-            android:padding="10dp"
             android:layout_margin="10dp"
-            android:src="@android:drawable/ic_menu_save"/>
+            android:backgroundTint="@color/button_color"
+            android:padding="10dp"
+            android:text="Авторизоваться"
+            android:textColor="@color/text_color"
+            android:textSize="15sp" />
     </RelativeLayout>
 
 </RelativeLayout>
