@@ -39,18 +39,36 @@ class NotificationWorker(context: Context, workerParams: WorkerParameters) : Wor
         // Убедитесь, что каналы уведомлений созданы
         createNotificationChannels(notificationManager)
 
-        // Создайте уведомление с иконкой
+        // Название группы уведомлений
+        val groupKey = "event_group"
+
+        // Создаем уведомление с иконкой
         val notification = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(R.mipmap.ic_notification) // Иконка уведомления
-            .setContentTitle("Напоминание")
+            .setContentTitle("Напоминаем")
             .setContentText(eventName)
             .setContentIntent(pendingIntent)  // Устанавливаем PendingIntent
             .setAutoCancel(true)  // Удаление уведомления после нажатия
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setGroup(groupKey) // Группировка уведомлений
+            .build()
+
+        // Создаем итоговое уведомление для группы
+        val summaryNotification = NotificationCompat.Builder(applicationContext, channelId)
+            .setSmallIcon(R.mipmap.ic_notification) // Иконка уведомления
+            .setContentTitle("Напоминаем")
+            .setContentText("У вас несколько напоминаний")
+            .setStyle(NotificationCompat.InboxStyle()
+                .setSummaryText("Нажмите для просмотра всех напоминаний"))
+            .setGroup(groupKey) // Группировка уведомлений
+            .setGroupSummary(true) // Уведомление сводки
             .build()
 
         // Отправьте уведомление
         notificationManager.notify(notificationId, notification)
+
+        // Отправьте сводное уведомление (оно будет группировать все уведомления)
+        notificationManager.notify(0, summaryNotification)
 
         return Result.success()
     }
