@@ -6,8 +6,8 @@ interface Timable {
 }
 
 data class Event(
-    var idEvent: Long,
-    var idRoom: Long,
+    var idEvent: Int,
+    var idRoom: Int,
     override var date: String,
     override var time: String,
     var place: String,
@@ -15,8 +15,8 @@ data class Event(
 ) : Timable
 
 data class Task(
-    var idTask: Long,
-    var idRoom: Long,
+    var idTask: Int,
+    var idRoom: Int,
     override var date: String,
     override var time: String,
     var name: String,
@@ -25,7 +25,7 @@ data class Task(
 ) : Timable
 
 data class Room(
-    var idRoom: Long,
+    var idRoom: Int,
     var name: String,
     var password: String,
     var single: Boolean,
@@ -37,21 +37,21 @@ data class Room(
 data class User(
     var login: String,
     var password: String,
-    var ownRoom: Long,
+    var ownRoom: Int,
     var availableRooms: String
 )
 
 data class Image(
-    var idImage: Long,
-    var idRoom: Long,
+    var idImage: Int,
+    var idRoom: Int,
     override var date: String,
     override var time: String,
     var url : String,
 ):Timable
 
 data class File(
-    var idFile: Long,
-    var idRoom: Long,
+    var idFile: Int,
+    var idRoom: Int,
     override var date: String,
     override var time: String,
     var url : String,
@@ -83,7 +83,7 @@ interface CreateUserCallback {
 interface CreateRoomCallback {
     fun onSuccess(message: String)
     fun onFailure(message: String)
-    fun onRoomCreated(idRoom: Long)
+    fun onRoomCreated(idRoom: Int)
 }
 
 interface GetAllRoomsCallback {

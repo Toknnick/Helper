@@ -32,7 +32,7 @@ class ApiClient(private val retrofit: Retrofit) {
         call.enqueue(callback)
     }
 
-    fun getRoom(idRoom: Long, callback: Callback<Room>) {
+    fun getRoom(idRoom: Int, callback: Callback<Room>) {
         val call = apiInterface.getRoom(idRoom)
         call.enqueue(callback)
     }
@@ -53,7 +53,7 @@ class ApiClient(private val retrofit: Retrofit) {
         call.enqueue(callback)
     }
 
-    fun getAllEventsByIdRoom(idRoom: Long ,callback: Callback<List<Event>>) {
+    fun getAllEventsByIdRoom(idRoom: Int ,callback: Callback<List<Event>>) {
         val call = apiInterface.getAllEventsByIdRoom(idRoom)
         call.enqueue(callback)
     }
@@ -84,7 +84,7 @@ class ApiClient(private val retrofit: Retrofit) {
         call.enqueue(callback)
     }
 
-    fun getAllTasksByIdRoom(idRoom: Long ,callback: Callback<List<Task>>) {
+    fun getAllTasksByIdRoom(idRoom: Int ,callback: Callback<List<Task>>) {
         val call = apiInterface.getAllTasksByIdRoom(idRoom)
         call.enqueue(callback)
     }
@@ -115,7 +115,7 @@ class ApiClient(private val retrofit: Retrofit) {
         call.enqueue(callback)
     }
 
-    fun getAllImageByIdRoom(idRoom: Long ,callback: Callback<List<Image>>) {
+    fun getAllImageByIdRoom(idRoom: Int ,callback: Callback<List<Image>>) {
         val call = apiInterface.getAllImageByIdRoom(idRoom)
         call.enqueue(callback)
     }
@@ -141,7 +141,7 @@ class ApiClient(private val retrofit: Retrofit) {
         call.enqueue(callback)
     }
 
-    fun getAllFileByIdRoom(idRoom: Long ,callback: Callback<List<File>>) {
+    fun getAllFileByIdRoom(idRoom: Int ,callback: Callback<List<File>>) {
         val call = apiInterface.getAllFileByIdRoom(idRoom)
         call.enqueue(callback)
     }

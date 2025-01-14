@@ -36,7 +36,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null,
         if (cursor.moveToFirst()) {
             val login = cursor.getString(0)
             val password = cursor.getString(1)
-            val ownRoom = cursor.getLong(2)
+            val ownRoom = cursor.getInt(2)
             val availableRooms = cursor.getString(3)
             return User(login, password, ownRoom, availableRooms)
         }
@@ -58,7 +58,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null,
         db.close()
     }
 
-    fun updateRoomId(roomId :Long) {
+    fun updateRoomId(roomId :Int) {
         val db = writableDatabase
         val contentValues = ContentValues()
         contentValues.put("room_id", roomId.toString())
@@ -66,7 +66,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null,
         db.close()
     }
 
-    fun getRoomId():Long{
+    fun getRoomId():Int{
         val db = readableDatabase
         val cursor = db.query("roomId", null, null, null, null, null, null)
         var roomId = -1
@@ -78,7 +78,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, "mydatabase", null,
         }
         cursor.close()
         db.close()
-        return roomId.toLong()
+        return roomId.toInt()
     }
 
     fun getChosenDate(): String {

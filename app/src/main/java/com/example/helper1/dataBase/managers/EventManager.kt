@@ -47,7 +47,7 @@ class EventManager(private val apiClient: ApiClient) {
         })
     }
 
-    fun getAllEventsByIdRoom(idRoom: Long, callback: GetAllEventsCallback) {
+    fun getAllEventsByIdRoom(idRoom: Int, callback: GetAllEventsCallback) {
         apiClient.getAllEventsByIdRoom(idRoom, object : Callback<List<Event>> {
             override fun onResponse(call: Call<List<Event>>, response: Response<List<Event>>) {
                 if (response.isSuccessful) {

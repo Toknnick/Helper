@@ -50,7 +50,7 @@ class TaskManager(private val apiClient: ApiClient) {
         })
     }
 
-    fun getAllTasksByIdRoom(idRoom: Long,callback: GetAllTaskCallback) {
+    fun getAllTasksByIdRoom(idRoom: Int,callback: GetAllTaskCallback) {
         apiClient.getAllTasksByIdRoom(idRoom,object : Callback<List<Task>> {
             override fun onResponse(call: Call<List<Task>>, response: Response<List<Task>>) {
                 if (response.isSuccessful) {

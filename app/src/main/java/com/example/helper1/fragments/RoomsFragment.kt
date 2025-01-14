@@ -101,7 +101,7 @@ class RoomsFragment : ParentFragment() {
                         Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
                     }
 
-                    override fun onRoomCreated(idRoom: Long) {
+                    override fun onRoomCreated(idRoom: Int) {
                         idRoomDef = idRoom
                     }
                 })
@@ -212,7 +212,7 @@ class RoomsFragment : ParentFragment() {
     override fun rebuildPage(){
         hideRoomPanel()
         idRoomDef = dbHelper.getRoomId()
-        if(idRoomDef != -1L) {
+        if(idRoomDef != -1) {
             getRoomFromAPI(Room(idRoomDef, "", "",false,"","",""), true)
         }else{
             mainLayout.removeView(mainLayout.findViewById(TEXT_VIEW_NOTHING_TO_DO_ID))
@@ -242,7 +242,7 @@ class RoomsFragment : ParentFragment() {
                 }
                 roomTextView.id = room
                 roomTextView.setBackgroundResource(R.drawable.border_room)
-                roomManger.getRoom(room.toLong(),object :GetRoomCallback{
+                roomManger.getRoom(room,object :GetRoomCallback{
                     override fun onSuccess(gotRoom: Room) {
                         val text = "Название: ${gotRoom.name}\nНомер: ${gotRoom.idRoom}\nПароль: ${unHashPassword(gotRoom.password)}"
                         roomTextView.text = text
@@ -250,7 +250,7 @@ class RoomsFragment : ParentFragment() {
                         roomLayout.addView(roomTextView)
 
                         roomTextView.setOnClickListener{
-                            idRoomDef = roomTextView.id.toLong()
+                            idRoomDef = roomTextView.id
                             dbHelper.updateRoomId(idRoomDef)
                             rebuildPage()
                         }
@@ -476,7 +476,7 @@ class RoomsFragment : ParentFragment() {
     }
 
     private fun hideRoomPanel(){
-        if (idRoomDef != (-1).toLong()){
+        if (idRoomDef != (-1)){
             addButton.visibility = View.VISIBLE
             dataPickerButton.visibility = View.VISIBLE
         }
@@ -518,7 +518,7 @@ class RoomsFragment : ParentFragment() {
 
     private fun addRoom(){
         val newRoom = Room(
-            addIdRoom.text.toString().trim().toLong(),
+            addIdRoom.text.toString().trim().toInt(),
             "",
             addPasswordRoom.text.toString().trim(),
             false,
@@ -526,10 +526,10 @@ class RoomsFragment : ParentFragment() {
             "",
             ""
         )
-        var availableRooms: List<Long> = ArrayList()
+        var availableRooms: List<Int> = ArrayList()
         if(user!!.availableRooms != "") {
             availableRooms =
-                user!!.availableRooms.split("|").map { it.toLong() }.toMutableList()
+                user!!.availableRooms.split("|").map { it.toInt() }.toMutableList()
         }
         if(!availableRooms.contains(newRoom.idRoom)){
             getRoomFromAPI(newRoom,false)

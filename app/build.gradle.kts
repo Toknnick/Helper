@@ -47,7 +47,8 @@ dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
     testImplementation(libs.junit)
-    implementation ("org.mindrot:jbcrypt:0.4")
+    implementation (libs.jbcrypt)
+    implementation ("androidx.work:work-runtime-ktx:2.8.0")
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

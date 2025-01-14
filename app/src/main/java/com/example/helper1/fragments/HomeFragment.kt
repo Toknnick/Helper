@@ -130,17 +130,17 @@ class HomeFragment : ParentFragment(){
         userManager.getUser(user!!.login, object : GetUserCallback {
             override fun onSuccess(gotUser: User) {
                 gotUser.password = unHashPassword(gotUser.password)
-                val nowRooms: List<Long> = user!!.availableRooms
+                val nowRooms: List<Int> = user!!.availableRooms
                     .split("|")
                     .filter { it.isNotEmpty() }
-                    .map { it.toLong() }
+                    .map { it.toInt() }
 
-                val roomsInDB: List<Long> = gotUser.availableRooms
+                val roomsInDB: List<Int> = gotUser.availableRooms
                     .split("|")
                     .filter { it.isNotEmpty() }
-                    .map { it.toLong() }
+                    .map { it.toInt() }
 
-                val kickedRoomsId: List<Long> = nowRooms.filter { it !in roomsInDB }
+                val kickedRoomsId: List<Int> = nowRooms.filter { it !in roomsInDB }
 
                 if(kickedRoomsId.isNotEmpty()){
                     roomManger.getAllRooms(object : GetAllRoomsCallback {
@@ -253,7 +253,7 @@ class HomeFragment : ParentFragment(){
         })
     }
 
-    private fun createUser(idRoom: Long) {
+    private fun createUser(idRoom: Int) {
         val newUser = User(
             loginUser.text.toString().trim(),
             hashPassword(passwordUser.text.toString().trim()),
@@ -284,7 +284,7 @@ class HomeFragment : ParentFragment(){
     private fun createRoomForAPI(newRoom: Room) {
         roomManger.getAllRooms(object : GetAllRoomsCallback {
             override fun onSuccess(rooms: List<Room>) {
-                var idRoom: Long = 0L
+                var idRoom: Int = 0
 
                 if (rooms.isNotEmpty()){
                     idRoom = (rooms.last().idRoom + 1)
@@ -296,7 +296,7 @@ class HomeFragment : ParentFragment(){
 
                     override fun onFailure(message: String) {}
 
-                    override fun onRoomCreated(idRoom: Long) {
+                    override fun onRoomCreated(idRoom: Int) {
                         idRoomDef = idRoom
                         createUser(idRoomDef)
                     }

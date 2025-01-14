@@ -46,7 +46,7 @@ class FileManager (private val apiClient: ApiClient) {
         })
     }
 
-    fun getAllFilesByIdRoom(idRoom: Long, callback: GetAllFilesCallback) {
+    fun getAllFilesByIdRoom(idRoom: Int, callback: GetAllFilesCallback) {
         apiClient.getAllFileByIdRoom(idRoom, object : Callback<List<File>> {
             override fun onResponse(call: Call<List<File>>, response: Response<List<File>>) {
                 if (response.isSuccessful) {

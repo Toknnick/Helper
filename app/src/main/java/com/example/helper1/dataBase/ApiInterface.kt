@@ -23,7 +23,7 @@ interface ApiInterface {
     fun createRoom(@Body room: Room): Call<Room>
 
     @GET("rooms/get/{idRoom}")
-    fun getRoom(@Path("idRoom") idRoom: Long): Call<Room>
+    fun getRoom(@Path("idRoom") idRoom: Int): Call<Room>
 
     @GET("rooms/get/all")
     fun getAllRooms(): Call<List<Room>>
@@ -36,72 +36,72 @@ interface ApiInterface {
     fun createEvent(@Body event: Event): Call<Event>
 
     @GET("events/get/one/{idRoom}/{date}/{time}/{place}/{event}")
-    fun getEvent(@Path("idRoom") idRoom:Long, @Path("date") date:String, @Path("time") time:String,
+    fun getEvent(@Path("idRoom") idRoom:Int, @Path("date") date:String, @Path("time") time:String,
                  @Path("place") place:String, @Path("event") event:String): Call<Event>
 
     @GET("events/get/all")
     fun getAllEvent(): Call<List<Event>>
 
     @GET("events/get/all/{idRoom}")
-    fun getAllEventsByIdRoom(@Path("idRoom") idRoom:Long): Call<List<Event>>
+    fun getAllEventsByIdRoom(@Path("idRoom") idRoom:Int): Call<List<Event>>
 
     @PUT("events/update")
     fun updateEvent(@Body event: Event): Call<Void>
 
     @DELETE("events/delete/{idEvent}")
-    fun deleteEvent(@Path("idEvent") idEvent:Long): Call<Void>
+    fun deleteEvent(@Path("idEvent") idEvent:Int): Call<Void>
 
 
     @POST("tasks/create")
     fun createTask(@Body task: Task): Call<Task>
 
     @GET("tasks/get/one/{idRoom}/{date}/{time}/{name}/{points}/{checkBoxes}")
-    fun getTask(@Path("idRoom") idRoom:Long, @Path("date") date:String, @Path("time") time:String,
+    fun getTask(@Path("idRoom") idRoom:Int, @Path("date") date:String, @Path("time") time:String,
                  @Path("name") name:String, @Path("points") points:String, @Path("checkBoxes") checkBoxes:String): Call<Task>
 
     @GET("tasks/get/all")
     fun getAllTasks(): Call<List<Task>>
 
     @GET("tasks/get/all/{idRoom}")
-    fun getAllTasksByIdRoom(@Path("idRoom") idRoom:Long): Call<List<Task>>
+    fun getAllTasksByIdRoom(@Path("idRoom") idRoom:Int): Call<List<Task>>
 
     @PUT("tasks/update")
     fun updateTask(@Body task: Task): Call<Void>
 
     @DELETE("tasks/delete/{idTask}")
-    fun deleteTask(@Path("idTask") idTask:Long): Call<Void>
+    fun deleteTask(@Path("idTask") idTask:Int): Call<Void>
 
 
     @POST("images/create")
     fun createImage(@Body image: Image): Call<Void>
 
     @GET("images/get/one/{idRoom}/{date}/{time}/{url}")
-    fun getImage(@Path("idRoom") idRoom:Long, @Path("date") date:String, @Path("time") time:String, @Path("url") url:String): Call<Image>
+    fun getImage(@Path("idRoom") idRoom:Int, @Path("date") date:String, @Path("time") time:String, @Path("url") url:String): Call<Image>
 
     @GET("images/get/all")
     fun getAllImage(): Call<List<Image>>
 
     @GET("images/get/all/{idRoom}")
-    fun getAllImageByIdRoom(@Path("idRoom") idRoom:Long): Call<List<Image>>
+    fun getAllImageByIdRoom(@Path("idRoom") idRoom:Int): Call<List<Image>>
 
 
     @DELETE("images/delete/{idImage}")
-    fun deleteImage(@Path("idImage") idImage:Long): Call<Void>
+    fun deleteImage(@Path("idImage") idImage:Int): Call<Void>
 
     @POST("files/create")
     fun createFile(@Body file: File): Call<Void>
 
     @GET("files/get/one/{idRoom}/{date}/{time}/{url}")
-    fun getFile(@Path("idRoom") idRoom:Long, @Path("date") date:String, @Path("time") time:String, @Path("url") url:String): Call<File>
+    fun getFile(@Path("idRoom") idRoom:Int, @Path("date") date:String, @Path("time") time:String, @Path("url") url:String): Call<File>
 
     @GET("files/get/all")
     fun getAllFile(): Call<List<File>>
 
     @GET("files/get/all/{idRoom}")
-    fun getAllFileByIdRoom(@Path("idRoom") idRoom:Long): Call<List<File>>
+    fun getAllFileByIdRoom(@Path("idRoom") idRoom:Int): Call<List<File>>
 
 
     @DELETE("files/delete/{idFile}")
-    fun deleteFile(@Path("idFile") idFile:Long): Call<Void>
+    fun deleteFile(@Path("idFile") idFile:Int): Call<Void>
 
 }

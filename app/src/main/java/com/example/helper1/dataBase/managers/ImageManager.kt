@@ -46,7 +46,7 @@ class ImageManager(private val apiClient: ApiClient) {
         })
     }
 
-    fun getAllImagesByIdRoom(idRoom: Long, callback: GetAllImagesCallback) {
+    fun getAllImagesByIdRoom(idRoom: Int, callback: GetAllImagesCallback) {
         apiClient.getAllImageByIdRoom(idRoom, object : Callback<List<Image>> {
             override fun onResponse(call: Call<List<Image>>, response: Response<List<Image>>) {
                 if (response.isSuccessful) {

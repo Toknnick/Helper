@@ -17,6 +17,8 @@ import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Base64
@@ -40,7 +42,13 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import androidx.work.Data
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.work.WorkQuery
 import com.example.helper1.MainActivity
+import com.example.helper1.NotificationWorker
 import com.example.helper1.R
 import com.example.helper1.dataBase.ApiClient
 import com.example.helper1.dataBase.CreateMessageCallback
@@ -72,11 +80,14 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
@@ -111,6 +122,15 @@ open class ParentFragment : Fragment() {
     protected var tasks: MutableList<Task> = ArrayList<Task>().toMutableList()
     protected var images: MutableList<Image> = ArrayList<Image>().toMutableList()
     protected var files: MutableList<File> = ArrayList<File>().toMutableList()
+
+    protected var prevevents: MutableList<Event> = ArrayList<Event>().toMutableList()
+    protected var prevtasks: MutableList<Task> = ArrayList<Task>().toMutableList()
+    protected var previmages: MutableList<Image> = ArrayList<Image>().toMutableList()
+    protected var prevfiles: MutableList<File> = ArrayList<File>().toMutableList()
+
+
+    protected var tempvents: MutableList<Event> = ArrayList<Event>().toMutableList()
+
     private var countOfPoint = 1
     protected var textSize = 21F
 
@@ -150,7 +170,7 @@ open class ParentFragment : Fragment() {
     protected lateinit var eventTextView: TextView
 
     protected lateinit var settingsRoomButton: ImageButton
-    protected lateinit var roomTextView:TextView
+    protected lateinit var roomTextView: TextView
     protected lateinit var roomNameTextView: TextView
     protected lateinit var showRoomPanelButton: LinearLayout
     protected lateinit var createRoomPanel: RelativeLayout
@@ -202,8 +222,11 @@ open class ParentFragment : Fragment() {
     protected lateinit var userScrView: ScrollView
 
 
-    protected var idRoomDef: Long = -1
+    protected var idRoomDef: Int = -1
     private var isSortingNow = false
+
+    private val handler = Handler(Looper.getMainLooper()) // Handler для работы с UI-потоком
+    private var runnable: Runnable? = null // Runnable для повторяющейся задачи
 
     //TODO: перенести метод с обновлением пароля пользователя в settingsFragment
 
@@ -294,7 +317,7 @@ open class ParentFragment : Fragment() {
         Log.d("MyTag", "стартуем")
     }
 
-    protected fun setKey(){
+    protected fun setKey() {
         val apiClient = ApiClient(retrofit)
         userManager = UserManager(apiClient)
         roomManger = RoomManager(apiClient)
@@ -302,7 +325,7 @@ open class ParentFragment : Fragment() {
         taskManager = TaskManager(apiClient)
         imageManager = ImageManager(apiClient)
         fileManager = FileManager(apiClient)
-        if (secretKey==null){
+        if (secretKey == null) {
             getSecretKey()
         }
     }
@@ -323,7 +346,7 @@ open class ParentFragment : Fragment() {
         plug.visibility = View.GONE
     }
 
-    private fun setUpDefButtons(){
+    private fun setUpDefButtons() {
         deleteButton = createButton("Удалить")
         editButton = createButton("Редактировать")
 
@@ -331,14 +354,13 @@ open class ParentFragment : Fragment() {
             showDialog()
             mainCalendarView.visibility = View.GONE
         }
-        sortButton.setOnClickListener{
+        sortButton.setOnClickListener {
             hideAll()
-            if(isSortingNow){
+            if (isSortingNow) {
                 isSortingNow = false
                 dataPickerButton.text = chosenDate
                 rebuildPage()
-            }
-            else{
+            } else {
                 isSortingNow = true
                 showSortDialog()
             }
@@ -380,16 +402,16 @@ open class ParentFragment : Fragment() {
         timeImage.setOnClickListener {
             timePickerDialog.show()
         }
-        backImageButton.setOnClickListener{
+        backImageButton.setOnClickListener {
             clearImagePanel()
             hideImagePanel()
         }
-        chooseImageButton.setOnClickListener{
+        chooseImageButton.setOnClickListener {
             selectedImageUri = null
             chooseImage()
         }
-        saveImageButton.setOnClickListener{
-            if(selectedImageUri != null)
+        saveImageButton.setOnClickListener {
+            if (selectedImageUri != null)
                 addNewImageIntoScrollView()
         }
 
@@ -399,16 +421,16 @@ open class ParentFragment : Fragment() {
         timeFile.setOnClickListener {
             timePickerDialog.show()
         }
-        backFileButton.setOnClickListener{
+        backFileButton.setOnClickListener {
             clearFilePanel()
             hideFilePanel()
         }
-        chooseFileButton.setOnClickListener{
+        chooseFileButton.setOnClickListener {
             selectedFileUri = null
             chooseFile()
         }
-        saveFileButton.setOnClickListener{
-            if(selectedFileUri != null)
+        saveFileButton.setOnClickListener {
+            if (selectedFileUri != null)
                 addNewFileIntoScrollView()
         }
         mainCalendarView.setOnDateChangeListener { view, year, month, dayOfMonth ->
@@ -426,7 +448,6 @@ open class ParentFragment : Fragment() {
             dbHelper.updateChosenDate(chosenDate)
             rebuildPage()
         }
-
     }
 
     override fun onCreateView(
@@ -441,6 +462,41 @@ open class ParentFragment : Fragment() {
         super.onResume()
     }
 
+
+    private fun startRepeatingTask() {
+        runnable = object : Runnable {
+            override fun run() {
+                handler.postDelayed(this, 30_000)
+                checkIsHaveNewData()
+            }
+        }
+
+        // Первый запуск
+        handler.post(runnable!!)
+    }
+
+    private fun stopRepeatingTask() {
+        runnable?.let {
+            handler.removeCallbacks(it) // Удаляем запланированные вызовы
+            runnable = null // Очищаем ссылку на Runnable
+        }
+    }
+
+    private fun checkIsHaveNewData() {
+        prevevents = events
+        prevtasks = tasks
+        prevfiles = files
+        previmages = images
+        getEventsByDateForAPI(true)
+    }
+
+    private fun checkListForNewData() {
+        if (events != prevevents || tasks != prevtasks || files != prevfiles || images != previmages) {
+            createAllEventsAndTasksAndImagesAndFiles()
+        }
+    }
+
+
     protected fun createEventForAPI(newEvent: Event) {
         eventManager.getAllEvents(object : GetAllEventsCallback {
             override fun onSuccess(events: List<Event>) {
@@ -449,6 +505,13 @@ open class ParentFragment : Fragment() {
                 } else {
                     newEvent.idEvent = 1
                 }
+
+
+                val temEv = ArrayList<Event>().toMutableList()
+                val temEt = ArrayList<Task>().toMutableList()
+                temEv.add(0, newEvent)
+                manageNotifications(temEv, temEt)
+
                 eventManager.createEvent(newEvent, object : CreateMessageCallback {
                     override fun onSuccess(message: String) {
                         //createAllEventsAndTasksAndImages()
@@ -467,17 +530,22 @@ open class ParentFragment : Fragment() {
     }
 
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
-    private fun getEventsByDateForAPI() {
+    private fun getEventsByDateForAPI(isForCheck: Boolean = false) {
         events = mutableListOf()
         eventManager.getAllEventsByIdRoom(idRoomDef, object : GetAllEventsCallback {
             override fun onSuccess(tempEvents: List<Event>) {
+                tempvents = tempEvents.toMutableList()
                 for (event in tempEvents) {
                     if (event.date == chosenDate) {
                         events += event
                     }
                 }
                 events.sortedBy { it.time }
-                getTasksByDateForAPI()
+
+                if (!isForCheck)
+                    getTasksByDateForAPI()
+                else
+                    getTasksByDateForAPI(true)
             }
 
             override fun onFailure(message: String) {
@@ -489,10 +557,9 @@ open class ParentFragment : Fragment() {
     protected fun updateEventForAPI(previousEvent: Event, updatingEvent: Event) {
         eventManager.updateEvent(previousEvent, updatingEvent, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
-                if(isSortingNow){
+                if (isSortingNow) {
                     sortTasksAndEvents(true)
-                }
-                else{
+                } else {
                     createAllEventsAndTasksAndImagesAndFiles()
                 }
             }
@@ -508,10 +575,9 @@ open class ParentFragment : Fragment() {
         eventManager.deleteEvent(deletingEvent, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
                 events.remove(deletingEvent)
-                if(isSortingNow) {
+                if (isSortingNow) {
                     sortTasksAndEvents(true)
-                }
-                else {
+                } else {
                     createAllEventsAndTasksAndImagesAndFiles()
                 }
             }
@@ -531,6 +597,12 @@ open class ParentFragment : Fragment() {
                 } else {
                     newTask.idTask = 1
                 }
+
+                val temEv = ArrayList<Event>().toMutableList()
+                val temEt = ArrayList<Task>().toMutableList()
+                temEt.add(0, newTask)
+                manageNotifications(temEv, temEt)
+
                 taskManager.createTask(newTask, object : CreateMessageCallback {
                     override fun onSuccess(message: String) {
                         //createAllEventsAndTasksAndImages()
@@ -549,17 +621,22 @@ open class ParentFragment : Fragment() {
     }
 
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
-    protected fun getTasksByDateForAPI() {
+    protected fun getTasksByDateForAPI(isForCheck: Boolean = false) {
         tasks = mutableListOf<Task>()
         taskManager.getAllTasksByIdRoom(idRoomDef, object : GetAllTaskCallback {
             override fun onSuccess(tempTasks: List<Task>) {
+                manageNotifications(tempvents, tempTasks)
                 for (task in tempTasks) {
                     if (task.date == chosenDate) {
                         tasks += task
                     }
                 }
                 tasks.sortedBy { it.time }
-                getImagesByDateForAPI()
+
+                if (!isForCheck)
+                    getImagesByDateForAPI()
+                else
+                    getImagesByDateForAPI(true)
             }
 
             override fun onFailure(message: String) {
@@ -571,9 +648,9 @@ open class ParentFragment : Fragment() {
     protected fun updateTaskForAPI(previousTask: Task, updatingTask: Task) {
         taskManager.updateTask(previousTask, updatingTask, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
-                if(isSortingNow)
+                if (isSortingNow)
                     sortTasksAndEvents(false)
-                else{
+                else {
                     createAllEventsAndTasksAndImagesAndFiles()
                 }
             }
@@ -589,9 +666,9 @@ open class ParentFragment : Fragment() {
             override fun onSuccess(message: String) {
                 tasks.remove(deletingTask)
 
-                if(isSortingNow) {
+                if (isSortingNow) {
                     sortTasksAndEvents(false)
-                }else{
+                } else {
                     createAllEventsAndTasksAndImagesAndFiles()
                 }
             }
@@ -627,7 +704,7 @@ open class ParentFragment : Fragment() {
     }
 
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
-    private fun getImagesByDateForAPI() {
+    private fun getImagesByDateForAPI(isForCheck: Boolean = false) {
         images = mutableListOf()
         imageManager.getAllImagesByIdRoom(idRoomDef, object : GetAllImagesCallback {
             override fun onSuccess(tempImages: List<Image>) {
@@ -637,7 +714,11 @@ open class ParentFragment : Fragment() {
                     }
                 }
                 images.sortedBy { it.time }
-                getFilesByDateForAPI()
+
+                if (!isForCheck)
+                    getFilesByDateForAPI()
+                else
+                    getFilesByDateForAPI(true)
             }
 
             override fun onFailure(message: String) {
@@ -656,11 +737,15 @@ open class ParentFragment : Fragment() {
                     try {
                         val minioClient = MinioClient.builder()
                             .endpoint("https://s3.timeweb.cloud")
-                            .credentials("CG4IMNYH6V42KN9PNC68", "hTGbzvCw3xmaJZgcW0dPgiDf52BOdFB6b7YsZ7yf")
+                            .credentials(
+                                "CG4IMNYH6V42KN9PNC68",
+                                "hTGbzvCw3xmaJZgcW0dPgiDf52BOdFB6b7YsZ7yf"
+                            )
                             .build()
 
                         // Извлекаем имя файла из URL изображения
-                        val fileName = user!!.login + "/" + deletingImage.url.substringAfterLast("/")
+                        val fileName =
+                            user!!.login + "/" + deletingImage.url.substringAfterLast("/")
 
                         // Удаление файла из бакета
                         minioClient.removeObject(
@@ -711,7 +796,7 @@ open class ParentFragment : Fragment() {
     }
 
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
-    private fun getFilesByDateForAPI() {
+    private fun getFilesByDateForAPI(isForCheck: Boolean = false) {
         files = mutableListOf()
         fileManager.getAllFilesByIdRoom(idRoomDef, object : GetAllFilesCallback {
             override fun onSuccess(tempFiles: List<File>) {
@@ -721,7 +806,11 @@ open class ParentFragment : Fragment() {
                     }
                 }
                 files.sortedBy { it.time }
-                createAllEventsAndTasksAndImagesAndFiles()
+
+                if (!isForCheck)
+                    createAllEventsAndTasksAndImagesAndFiles()
+                else
+                    checkListForNewData()
             }
 
             override fun onFailure(message: String) {
@@ -740,7 +829,10 @@ open class ParentFragment : Fragment() {
                     try {
                         val minioClient = MinioClient.builder()
                             .endpoint("https://s3.timeweb.cloud")
-                            .credentials("CG4IMNYH6V42KN9PNC68", "hTGbzvCw3xmaJZgcW0dPgiDf52BOdFB6b7YsZ7yf")
+                            .credentials(
+                                "CG4IMNYH6V42KN9PNC68",
+                                "hTGbzvCw3xmaJZgcW0dPgiDf52BOdFB6b7YsZ7yf"
+                            )
                             .build()
 
                         // Извлекаем имя файла из URL изображения
@@ -806,7 +898,8 @@ open class ParentFragment : Fragment() {
                 createImagePanel.visibility = View.VISIBLE
                 addButton.isEnabled = false
             }
-            3 ->{
+
+            3 -> {
                 fileIconName.text = "Файл не выбран"
                 clearFilePanel()
                 createFilePanel.visibility = View.VISIBLE
@@ -816,7 +909,7 @@ open class ParentFragment : Fragment() {
     }
 
     private val PICK_FILE_REQUEST = 1
-    private fun chooseFile(){
+    private fun chooseFile() {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         intent.type = "*/*" // Выбираем любой файл
         val mimeTypes = arrayOf(
@@ -853,9 +946,9 @@ open class ParentFragment : Fragment() {
         }
     }
 
-    protected fun addNewFileIntoScrollView(){
+    protected fun addNewFileIntoScrollView() {
         val file = File(
-            (files.lastIndex + 1).toLong(),
+            (files.lastIndex + 1),
             idRoomDef,
             stringToDate(dateFile.text.toString().trim()),
             stringToTime(timeFile.text.toString().trim()),
@@ -874,7 +967,7 @@ open class ParentFragment : Fragment() {
             return
         }
 
-        if(selectedFileUri == null)
+        if (selectedFileUri == null)
             return
 
         // Запуск потока для загрузки файла в Timeweb Cloud
@@ -941,7 +1034,7 @@ open class ParentFragment : Fragment() {
 
     protected fun addNewImageIntoScrollView() {
         val image = Image(
-            (images.lastIndex + 1).toLong(),
+            (images.lastIndex + 1),
             idRoomDef,
             stringToDate(dateImage.text.toString().trim()),
             stringToTime(timeImage.text.toString().trim()),
@@ -960,7 +1053,7 @@ open class ParentFragment : Fragment() {
             return
         }
 
-        if(selectedImageUri == null)
+        if (selectedImageUri == null)
             return
 
         createError("Загрузка...Ожидайте")
@@ -984,20 +1077,19 @@ open class ParentFragment : Fragment() {
             eventEvent.text.toString()
         )
 
-        if(event.event.trim().isEmpty() && event.place.trim().isEmpty()){
+        if (event.event.trim().isEmpty() && event.place.trim().isEmpty()) {
             createError("Нельзя создать пустое мероприятие!")
             return
         }
 
         createError("Созданно на " + event.date)
 
-        if(!isSortingNow) {
+        if (!isSortingNow) {
             if (chosenDate == event.date) {
                 events += event
                 createAllEventsAndTasksAndImagesAndFiles()
             }
-        }
-        else{
+        } else {
             events += event
             sortTasksAndEvents(true)
         }
@@ -1011,7 +1103,7 @@ open class ParentFragment : Fragment() {
         //Добавляем пункты
         var points: List<String> = ArrayList()
         var checkBoxes: List<Boolean> = ArrayList()
-        if(point0.text.toString().trim().isNotEmpty() && point0.text.toString().trim()!=""){
+        if (point0.text.toString().trim().isNotEmpty() && point0.text.toString().trim() != "") {
             points += point0.text.toString().trim()
             checkBoxes += false
         }
@@ -1034,7 +1126,7 @@ open class ParentFragment : Fragment() {
             )
         }
 
-        if(points.isNotEmpty()) {
+        if (points.isNotEmpty()) {
             //Сохраняем в БД
             val newTask = Task(
                 0,
@@ -1058,8 +1150,7 @@ open class ParentFragment : Fragment() {
 
             createError("Созданно на " + newTask.date)
             createTaskForAPI(newTask)
-        }
-        else{
+        } else {
             createError("Задача не создана. Она была пуста")
         }
 
@@ -1068,8 +1159,7 @@ open class ParentFragment : Fragment() {
     }
 
 
-
-    private fun createNewImage(i : Int,isFromMySQL : Boolean){
+    private fun createNewImage(i: Int, isFromMySQL: Boolean) {
         if (mainLayout.findViewById<TextView>(TEXT_VIEW_NOTHING_TO_DO_ID) != null) {
             mainLayout.removeView(mainLayout.findViewById(TEXT_VIEW_NOTHING_TO_DO_ID))
         }
@@ -1081,12 +1171,11 @@ open class ParentFragment : Fragment() {
         imageView.maxHeight = 850
         imageView.adjustViewBounds = true
 
-        if(isFromMySQL) {
+        if (isFromMySQL) {
             Picasso.get()
                 .load(image.url)
                 .into(imageView)
-        }
-        else {
+        } else {
             imageView.setImageURI(selectedImageUri)
         }
 
@@ -1116,16 +1205,16 @@ open class ParentFragment : Fragment() {
 
         imageView.setLayoutParams(params)
         mainLayout.addView(imageView)
-        setupLongClickListeners(imageView, i,false)
+        setupLongClickListeners(imageView, i, false)
     }
 
-    private fun createNewFile(i : Int){
+    private fun createNewFile(i: Int) {
         if (mainLayout.findViewById<TextView>(TEXT_VIEW_NOTHING_TO_DO_ID) != null) {
             mainLayout.removeView(mainLayout.findViewById(TEXT_VIEW_NOTHING_TO_DO_ID))
         }
 
         val file = files[i]
-        val relativeLayout = createRelativeLayout(i+tasks.size)
+        val relativeLayout = createRelativeLayout(i + tasks.size)
         val fileName = file.url.substringAfterLast("/")
         val displayName = if (fileName.length > 5) {
             "${fileName.take(11)}... ${fileName.takeLast(4)}"
@@ -1133,11 +1222,11 @@ open class ParentFragment : Fragment() {
             fileName
         }
         val textView = createTextView(displayName)
-        textView.id = 444444+i
+        textView.id = 444444 + i
 
         val openButton = createButton("")
         openButton.visibility = View.VISIBLE
-        openButton.id = 555555+i
+        openButton.id = 555555 + i
 
         val params = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.MATCH_PARENT,
@@ -1148,14 +1237,15 @@ open class ParentFragment : Fragment() {
 
         openButton.layoutParams = params
 
-        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val downloadsDir =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val fileClass = java.io.File(downloadsDir, fileName)
 
         if (fileClass.exists()) {
             openButton.text = "Открыть"
             // Если файл существует, открываем его
-            openButton.setOnClickListener{
-                openFile(fileClass,file.url)
+            openButton.setOnClickListener {
+                openFile(fileClass, file.url)
             }
         } else {
             openButton.text = "скачать"
@@ -1171,11 +1261,11 @@ open class ParentFragment : Fragment() {
         relativeLayout.addView(textView)
         relativeLayout.addView(openButton)
         mainLayout.addView(relativeLayout)
-        setupLongClickListeners(relativeLayout, i,true)
+        setupLongClickListeners(relativeLayout, i, true)
     }
 
     // Метод для скачивания файла
-    private fun downloadFile(fileUrl: String,file: java.io.File,openButton: Button) {
+    private fun downloadFile(fileUrl: String, file: java.io.File, openButton: Button) {
         val thread = Thread {
             try {
                 // Открываем соединение по URL файла
@@ -1191,7 +1281,7 @@ open class ParentFragment : Fragment() {
                 saveFileToDownloads(inputStream, file)
 
                 // После скачивания открываем файл
-                openFile(file,fileUrl)
+                openFile(file, fileUrl)
                 openButton.isEnabled = true
 
             } catch (e: Exception) {
@@ -1202,7 +1292,7 @@ open class ParentFragment : Fragment() {
     }
 
     // Метод для сохранения файла в папку "Downloads"
-    private fun saveFileToDownloads(inputStream: InputStream, file:java.io.File) {
+    private fun saveFileToDownloads(inputStream: InputStream, file: java.io.File) {
         try {
 
             val outputStream = FileOutputStream(file)
@@ -1227,14 +1317,20 @@ open class ParentFragment : Fragment() {
     private fun openFile(file: java.io.File, url: String) {
         try {
             // Получаем Uri для файла через FileProvider
-            val uri = FileProvider.getUriForFile(requireContext(), "${requireContext().packageName}.provider", file)
+            val uri = FileProvider.getUriForFile(
+                requireContext(),
+                "${requireContext().packageName}.provider",
+                file
+            )
             val intent = Intent(Intent.ACTION_VIEW)
 
             // Определяем расширение файла
             val fileExtension = url.substringAfterLast(".")
 
             // Получаем MIME-тип через MimeTypeMap
-            val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension.lowercase()) ?: "*/*"
+            val mimeType =
+                MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension.lowercase())
+                    ?: "*/*"
 
             intent.setDataAndType(uri, mimeType)
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -1249,8 +1345,6 @@ open class ParentFragment : Fragment() {
             }
         }
     }
-
-
 
 
     @SuppressLint("ResourceType")
@@ -1285,12 +1379,30 @@ open class ParentFragment : Fragment() {
             j += 1
         }
 
+        val paramsForTextView = RelativeLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+
+        if (task.time.isNotEmpty()) {
+            val textView = createTextView(task.time)
+            textView.textSize = 9f
+            paramsForTextView.setMargins(5, 5, 3, 0)
+            paramsForTextView.addRule(
+                RelativeLayout.BELOW,
+                layout.getChildAt(layout.childCount - 1).id
+            )
+            textView.setLayoutParams(paramsForTextView)
+            textView.setTypeface(null, Typeface.ITALIC)
+            layout.addView(textView)
+        }
+
         layout.setBackgroundResource(R.drawable.border_task)
         mainLayout.addView(layout)
-        setupLongClickListeners(layout, tasks.indexOf(task),false)
+        setupLongClickListeners(layout, tasks.indexOf(task), false)
     }
 
-    private fun repairTask(task: Task, points:List<String>) {
+    private fun repairTask(task: Task, points: List<String>) {
         val tempPoints: MutableList<String> = ArrayList<String>().toMutableList()
         var i = 0
         while (i < points.count() - 2) {
@@ -1300,7 +1412,7 @@ open class ParentFragment : Fragment() {
         tempPoints += (points[points.count() - 2] + points[points.count() - 1])
         val newTask = task
         newTask.points = tempPoints.joinToString("|")
-        updateTaskForAPI(task,newTask)
+        updateTaskForAPI(task, newTask)
     }
 
     protected fun createNewEvent(i: Int) {
@@ -1314,30 +1426,31 @@ open class ParentFragment : Fragment() {
 
         val paramsForTextView = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT)
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
 
 
-        if(event.place.isNotEmpty()){
+        if (event.place.isNotEmpty()) {
             val textView = createTextView(event.place)
             textView.textSize = 23f
-            paramsForTextView.setMargins(5,0,2,7)
+            paramsForTextView.setMargins(5, 0, 2, 7)
             textView.layoutParams = paramsForTextView
             textView.setTypeface(null, Typeface.BOLD)
             eventLayout.addView(textView)
         }
 
-        if(event.event.isNotEmpty()){
+        if (event.event.isNotEmpty()) {
             val textView = createTextView(event.event)
             textView.textSize = 18f
-            paramsForTextView.setMargins(5,5,2,5)
+            paramsForTextView.setMargins(5, 5, 2, 5)
             textView.layoutParams = paramsForTextView
             eventLayout.addView(textView)
         }
 
-        if(event.time.isNotEmpty()){
+        if (event.time.isNotEmpty()) {
             val textView = createTextView(event.time)
             textView.textSize = 9f
-            paramsForTextView.setMargins(5,10,3,0)
+            paramsForTextView.setMargins(5, 10, 3, 0)
             textView.layoutParams = paramsForTextView
             textView.setTypeface(null, Typeface.ITALIC)
             eventLayout.addView(textView)
@@ -1370,7 +1483,7 @@ open class ParentFragment : Fragment() {
 
         eventLayout.id = i + ENENT_ID
         mainLayout.addView(eventLayout)
-        setupLongClickListeners(eventLayout, i,false)
+        setupLongClickListeners(eventLayout, i, false)
     }
 
     private val PICK_IMAGE_REQUEST = 1
@@ -1417,8 +1530,8 @@ open class ParentFragment : Fragment() {
         // Формируем URL для загруженного изображения
         val imageUrl = "https://9f168657-helper-image-server.s3.timeweb.cloud/$fileName"
         images.last().url = imageUrl
-        createError("Создано на ${ images.last().date}")
-        if (chosenDate ==  images.last().date) {
+        createError("Создано на ${images.last().date}")
+        if (chosenDate == images.last().date) {
             createAllEventsAndTasksAndImagesAndFiles(false)
         }
     }
@@ -1442,7 +1555,7 @@ open class ParentFragment : Fragment() {
     protected fun addNewPoint(text: String = "") {
         val editText = EditText(requireContext())
         //Подвинуть пункт
-        addParamsToEditText(editText,text)
+        addParamsToEditText(editText, text)
         //Подвинуть кнопки
         addParamsToButtons(editText)
         countOfPoint += 1
@@ -1509,7 +1622,7 @@ open class ParentFragment : Fragment() {
         return layout
     }
 
-    private fun createSortedTextView(text: String): TextView{
+    private fun createSortedTextView(text: String): TextView {
         val textView = TextView(requireContext())
         textView.id = TEXT_VIEW_NOTHING_TO_DO_ID + mainLayout.childCount + 2
         val params = RelativeLayout.LayoutParams(
@@ -1677,18 +1790,18 @@ open class ParentFragment : Fragment() {
         if (checkboxStateChanged) {
             val newTask = tasks[i]
             newTask.checkBoxes = newCheckBoxes.map { it.toString() }.joinToString("|")
-            updateTaskForAPI(tasks[i],newTask)
+            updateTaskForAPI(tasks[i], newTask)
             tasks[i] = newTask
         }
     }
 
-    protected fun clearImagePanel(){
+    protected fun clearImagePanel() {
         dateImage.setText("")
         timeImage.setText("")
         imageIcon.setImageURI(null)
     }
 
-    protected fun clearFilePanel(){
+    protected fun clearFilePanel() {
         dateFile.setText("")
         timeFile.setText("")
         fileTextView.text = "Создание файла"
@@ -1741,12 +1854,12 @@ open class ParentFragment : Fragment() {
         createTaskPanel.visibility = View.GONE
     }
 
-    protected fun hideImagePanel(){
+    protected fun hideImagePanel() {
         addButton.isEnabled = true
         createImagePanel.visibility = View.GONE
     }
 
-    protected fun hideFilePanel(){
+    protected fun hideFilePanel() {
         addButton.isEnabled = true
         createFilePanel.visibility = View.GONE
     }
@@ -1756,7 +1869,7 @@ open class ParentFragment : Fragment() {
         createEventPanel.visibility = View.GONE
     }
 
-    private fun hideAll(){
+    private fun hideAll() {
         hideTaskPanel()
         hideEventPanel()
         hideFilePanel()
@@ -1790,7 +1903,8 @@ open class ParentFragment : Fragment() {
 
         return newString
     }
-    protected open fun setupLongClickListeners(view: View, id: Int,isFileLayut: Boolean) {
+
+    protected open fun setupLongClickListeners(view: View, id: Int, isFileLayut: Boolean) {
         view.setOnClickListener {
             val params = RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT,
@@ -1823,9 +1937,9 @@ open class ParentFragment : Fragment() {
                     }
 
                     is RelativeLayout -> {
-                        if(!isFileLayut)
+                        if (!isFileLayut)
                             deleteTaskForAPI(tasks[id])
-                        else{
+                        else {
                             deleteFileForAPI(files[id])
                         }
                     }
@@ -1843,7 +1957,7 @@ open class ParentFragment : Fragment() {
                 paramsToEdit.addRule(RelativeLayout.ALIGN_RIGHT, view.id)
             }
 
-            if(!isFileLayut)
+            if (!isFileLayut)
                 if (view !is ImageView) {
                     editButton.text = "Редактировать"
                     editButton.layoutParams = paramsToEdit
@@ -1897,7 +2011,7 @@ open class ParentFragment : Fragment() {
                 val bitmap = BitmapFactory.decodeStream(inputStream)
 
                 // Сохраняем изображение в галерею
-                saveImageToGallery(bitmap,image)
+                saveImageToGallery(bitmap, image)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -1905,7 +2019,7 @@ open class ParentFragment : Fragment() {
         thread.start()
     }
 
-    private fun saveImageToGallery(bitmap: Bitmap,image:Image) {
+    private fun saveImageToGallery(bitmap: Bitmap, image: Image) {
         val tempName = image.url.substringAfterLast("/")
 
         val filename = "${tempName.substringBeforeLast(".")}.jpg"
@@ -1917,7 +2031,8 @@ open class ParentFragment : Fragment() {
             put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
             put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
         }
-        val imageUri: Uri? = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+        val imageUri: Uri? =
+            resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
         fos = resolver.openOutputStream(imageUri!!)!!
 
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
@@ -1927,16 +2042,20 @@ open class ParentFragment : Fragment() {
         // Уведомляем медиа-сканер о новом изображении
         MediaScannerConnection.scanFile(
             requireContext(),
-            arrayOf(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString() + "/" + filename),
+            arrayOf(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                    .toString() + "/" + filename
+            ),
             null,
             null
         )
 
     }
 
-    protected open fun setListeners(view: View){}
+    protected open fun setListeners(view: View) {}
+
     @SuppressLint("ClickableViewAccessibility")
-    protected open fun setTouchListenerForButtons(view: View,) {
+    protected open fun setTouchListenerForButtons(view: View) {
         view.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_DOWN) {
                 deleteButton.visibility = View.GONE
@@ -1947,14 +2066,14 @@ open class ParentFragment : Fragment() {
             false
         }
     }
+
     protected fun editEvent(event: Event) {
         eventTextView.text = "Редактирование мероприятия"
         createEventPanel.visibility = View.VISIBLE
         dateEvent.setText(event.date)
-        if(event.time.length < 7){
+        if (event.time.length < 7) {
             timeEvent.setText(event.time)
-        }
-        else{
+        } else {
             timeEvent.setText(event.time.substring(0, event.time.length - 3))
         }
         placeEvent.setText(event.place)
@@ -1973,8 +2092,8 @@ open class ParentFragment : Fragment() {
                 placeEvent.text.toString(),
                 eventEvent.text.toString()
             )
-            if(newEvent.date != event.date || newEvent.time !=event.time || newEvent.place != event.place || newEvent.event != event.event){
-                updateEventForAPI(event,newEvent)
+            if (newEvent.date != event.date || newEvent.time != event.time || newEvent.place != event.place || newEvent.event != event.event) {
+                updateEventForAPI(event, newEvent)
                 events[events.indexOf(event)] = newEvent
             }
 
@@ -1987,10 +2106,9 @@ open class ParentFragment : Fragment() {
         taskTextView.text = "Редактирование задачи"
         createTaskPanel.visibility = View.VISIBLE
         dateTask.setText(task.date)
-        if(task.time.length < 7){
+        if (task.time.length < 7) {
             timeEvent.setText(task.time)
-        }
-        else{
+        } else {
             timeEvent.setText(task.time.substring(0, task.time.length - 3))
         }
         nameTask.setText(task.name)
@@ -2001,14 +2119,14 @@ open class ParentFragment : Fragment() {
         var i = 1
         while (previousPoints.count() > i) {
             addNewPoint(previousPoints[i])
-            i+=1
+            i += 1
         }
 
         saveTaskButton.setOnClickListener {
-            if(previousPoints.isNotEmpty()) {
+            if (previousPoints.isNotEmpty()) {
                 var newPoints: List<String> = ArrayList()
                 var newCheckBoxes: List<Boolean> = ArrayList()
-                if(point0.text.trim().toString().isNotEmpty()){
+                if (point0.text.trim().toString().isNotEmpty()) {
                     newPoints += point0.text.toString()
                     newCheckBoxes += false
                 }
@@ -2025,22 +2143,21 @@ open class ParentFragment : Fragment() {
                     j += 1
                 }
 
-                if(timeTask.text.toString().isEmpty()){
-                    timeTask.setText(task.time)}
+                if (timeTask.text.toString().isEmpty()) {
+                    timeTask.setText(task.time)
+                }
 
                 val checkBoxesFromTask = task.checkBoxes.split("|") as List<String>
                 val pointsFromTask = task.points.split("|") as List<String>
                 var checkBoxes: List<String> = ArrayList()
 
-                if (pointsFromTask.count() == newPoints.count()){
+                if (pointsFromTask.count() == newPoints.count()) {
                     checkBoxes = checkBoxesFromTask
-                }
-                else{
+                } else {
                     for (i in 0..<newPoints.count()) {
-                        if(pointsFromTask.count()<= i || i >= newPoints.count()){
+                        if (pointsFromTask.count() <= i || i >= newPoints.count()) {
                             checkBoxes += "false"
-                        }
-                        else {
+                        } else {
                             if (pointsFromTask[i] == newPoints[i]) {
                                 checkBoxes += checkBoxesFromTask[i] as String
                             } else {
@@ -2060,11 +2177,11 @@ open class ParentFragment : Fragment() {
                     checkBoxes.map { it.toString() }.joinToString("|")
                 )
 
-                if(newTask.date != task.date || newTask.time !=task.time || newTask.name != task.name || newTask.points != task.points){
+                if (newTask.date != task.date || newTask.time != task.time || newTask.name != task.name || newTask.points != task.points) {
                     tasks[tasks.indexOf(task)] = newTask
-                    updateTaskForAPI(task,newTask)
+                    updateTaskForAPI(task, newTask)
                 }
-            }else{
+            } else {
                 createError("Ошибка! Задача была пуста")
             }
             clearTaskPanel()
@@ -2072,10 +2189,10 @@ open class ParentFragment : Fragment() {
         }
     }
 
-    protected fun createAllEventsAndTasksAndImagesAndFiles(isFromMysql:Boolean = true) {
+    protected fun createAllEventsAndTasksAndImagesAndFiles(isFromMysql: Boolean = true) {
         mainLayout.removeAllViews()
 
-        if (idRoomDef != -1L) {
+        if (idRoomDef != -1) {
             val textView = createTextView("Соединение...")
             textView.setTextColor(Color.GRAY)
             textView.id = TEXT_VIEW_NOTHING_TO_DO_ID
@@ -2096,11 +2213,11 @@ open class ParentFragment : Fragment() {
             mainLayout.addView(editButton)
             checkToNothingToDo()
         }
+        stopRepeatingTask()
+        startRepeatingTask()
     }
 
-
-
-    private fun getAllEventsForAPI(item: Int){
+    private fun getAllEventsForAPI(item: Int) {
         events = mutableListOf()
         eventManager.getAllEventsByIdRoom(idRoomDef, object : GetAllEventsCallback {
             override fun onSuccess(tempEvents: List<Event>) {
@@ -2115,7 +2232,7 @@ open class ParentFragment : Fragment() {
         })
     }
 
-    private fun getAllTasksForAPI(item: Int){
+    private fun getAllTasksForAPI(item: Int) {
         tasks = mutableListOf<Task>()
         taskManager.getAllTasksByIdRoom(idRoomDef, object : GetAllTaskCallback {
             override fun onSuccess(tempTasks: List<Task>) {
@@ -2139,13 +2256,16 @@ open class ParentFragment : Fragment() {
         })
     }
 
-    private fun sortTasksAndEvents(isEvent : Boolean){
+    private fun sortTasksAndEvents(isEvent: Boolean) {
         mainLayout.removeAllViews()
         dataPickerButton.text = "Выбрать дату"
 
         val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
-        var newList = (events + tasks).sortedWith(compareBy({ LocalDate.parse(it.date, formatter)}, { it.time }))
+        var newList = (events + tasks).sortedWith(
+            compareBy({ LocalDate.parse(it.date, formatter) },
+                { it.time })
+        )
         newList = newList.reversed()
         var currentDate = ""
 
@@ -2153,7 +2273,7 @@ open class ParentFragment : Fragment() {
             when (item) {
                 is Event -> {
                     if (isEvent && events.isNotEmpty()) {
-                        if (item.date != currentDate){
+                        if (item.date != currentDate) {
                             currentDate = item.date
                             val textView = createSortedTextView(currentDate)
                             textView.textSize = 16F
@@ -2163,9 +2283,10 @@ open class ParentFragment : Fragment() {
                         createNewEvent(events.indexOf(item))
                     }
                 }
-                is Task ->{
-                    if(!isEvent && tasks.isNotEmpty()){
-                        if (item.date != currentDate){
+
+                is Task -> {
+                    if (!isEvent && tasks.isNotEmpty()) {
+                        if (item.date != currentDate) {
                             currentDate = item.date
                             val textView = createSortedTextView(currentDate)
                             textView.textSize = 16F
@@ -2181,7 +2302,7 @@ open class ParentFragment : Fragment() {
         mainLayout.addView(deleteButton)
         mainLayout.addView(editButton)
 
-        if(mainLayout.childCount == 2 && idRoomDef != -1L){
+        if (mainLayout.childCount == 2 && idRoomDef != -1) {
             val textView = createTextView("Еще ничего нет")
             textView.setTextColor(Color.GRAY)
             textView.id = TEXT_VIEW_NOTHING_TO_DO_ID
@@ -2190,14 +2311,14 @@ open class ParentFragment : Fragment() {
     }
 
     private fun checkToNothingToDo() {
-        if (mainLayout.childCount == 2 && idRoomDef != -1L) {
+        if (mainLayout.childCount == 2 && idRoomDef != -1) {
             val textView = createTextView("На этот день ничего не запланировано")
             textView.setTextColor(Color.GRAY)
             textView.id = TEXT_VIEW_NOTHING_TO_DO_ID
             mainLayout.addView(textView)
-        }
-        else if (mainLayout.findViewById<TextView>(TEXT_VIEW_NOTHING_TO_DO_ID) != null){
-            mainLayout.findViewById<TextView>(TEXT_VIEW_NOTHING_TO_DO_ID).text = "На этот день ничего не запланировано"
+        } else if (mainLayout.findViewById<TextView>(TEXT_VIEW_NOTHING_TO_DO_ID) != null) {
+            mainLayout.findViewById<TextView>(TEXT_VIEW_NOTHING_TO_DO_ID).text =
+                "На этот день ничего не запланировано"
         }
     }
 
@@ -2208,6 +2329,7 @@ open class ParentFragment : Fragment() {
         mainLayout.addView(textView)
         getEventsByDateForAPI()
     }
+
     private fun initTimePicker() {
         val timeSetListener = TimePickerDialog.OnTimeSetListener { _, hour, minute ->
             val time: String
@@ -2237,7 +2359,7 @@ open class ParentFragment : Fragment() {
     }
 
 
-    private fun openCalendar(){
+    private fun openCalendar() {
         calendarView.visibility = View.VISIBLE
         calendarView.setOnDateChangeListener { view, year, month, dayOfMonth ->
             // Преобразование выбранной даты в строку
@@ -2285,8 +2407,8 @@ open class ParentFragment : Fragment() {
         builder.show()
     }
 
-    protected fun showSortDialog(){
-        val langArray: Array<String> = arrayOf("Задачи", "Мероприятия", )
+    protected fun showSortDialog() {
+        val langArray: Array<String> = arrayOf("Задачи", "Мероприятия")
         var selectedEvent = 0 // Инициализируем в 0, который является первым элементом
         val builder: androidx.appcompat.app.AlertDialog.Builder =
             androidx.appcompat.app.AlertDialog.Builder(requireContext())
@@ -2316,7 +2438,7 @@ open class ParentFragment : Fragment() {
 
     fun keyToString(secretKey: SecretKey): String {
         val str = Base64.encodeToString(secretKey.encoded, Base64.DEFAULT)
-        Log.d("MyTag",str)
+        Log.d("MyTag", str)
         return str
     }
 
@@ -2325,7 +2447,7 @@ open class ParentFragment : Fragment() {
         return SecretKeySpec(decodedKey, 0, decodedKey.size, "AES")
     }
 
-    private fun getSecretKey(){
+    private fun getSecretKey() {
         userManager.getUser("FirstUser", object : GetUserCallback {
             override fun onSuccess(user: User) {
                 val key = user.password
@@ -2352,7 +2474,8 @@ open class ParentFragment : Fragment() {
     }
 
     protected fun hashPassword(password: String): String {
-        val cipher = Cipher.getInstance("AES/ECB/PKCS5Padding") // Используем PKCS5Padding для предотвращения проблем с блоками
+        val cipher =
+            Cipher.getInstance("AES/ECB/PKCS5Padding") // Используем PKCS5Padding для предотвращения проблем с блоками
         cipher.init(Cipher.ENCRYPT_MODE, secretKey)
         val encryptedBytes = cipher.doFinal(password.toByteArray(Charsets.UTF_8))
         return Base64.encodeToString(encryptedBytes, Base64.DEFAULT)
@@ -2367,7 +2490,161 @@ open class ParentFragment : Fragment() {
         return String(decryptedBytes, Charsets.UTF_8)
     }
 
-    private fun buildSortPanel(item: Int){
+    private fun buildSortPanel(item: Int) {
         getAllEventsForAPI(item)
+    }
+
+    private fun parseTimeStringToMillis(timeString: String): Long {
+        val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+        return dateFormat.parse(timeString)?.time ?: 0L
+    }
+
+    fun scheduleNotification(
+        eventTimeMillis: Long,
+        eventType: String, // "event" или "task"
+        eventName: String,
+        notificationId: Int
+    ) {
+        val workManager = WorkManager.getInstance(requireContext())
+        var notificationTimeMillis: Long = 0L
+
+        // Сдвиг времени уведомления на 20 минут раньше события/задачи
+        if (eventTimeMillis - System.currentTimeMillis() > TimeUnit.MINUTES.toMillis(20)) {
+            notificationTimeMillis = eventTimeMillis - TimeUnit.MINUTES.toMillis(20)
+        } else {
+            notificationTimeMillis = eventTimeMillis // Уведомление в момент события/задачи
+        }
+
+        val currentTimeMillis = System.currentTimeMillis()
+        val delay = notificationTimeMillis - currentTimeMillis
+
+        if (delay > 0) {
+            // Сначала проверяем, запланировано ли уже уведомление с этим ID
+            val workQuery = WorkQuery.Builder
+                .fromTags(listOf(notificationId.toString()))
+                .build()
+
+            val existingWorks = workManager.getWorkInfos(workQuery).get()
+            if (existingWorks.isNotEmpty()) {
+                // Если есть запланированное задание с этим ID, удаляем его
+                existingWorks.forEach { workInfo ->
+                    workManager.cancelWorkById(workInfo.id)
+                }
+            }
+
+            // Подготавливаем данные для нового уведомления
+            val data = Data.Builder()
+                .putString("event_type", eventType)
+                .putString("event_name", eventName)
+                .putInt("notification_id", notificationId)
+                .build()
+
+            // Создаём новый WorkRequest
+            val workRequest = OneTimeWorkRequestBuilder<NotificationWorker>()
+                .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+                .setInputData(data)
+                .addTag(notificationId.toString()) // Сохраняем ID как тег для поиска
+                .build()
+
+            // Запуск уведомления через WorkManager
+            workManager.enqueue(workRequest)
+        } else {
+            // Логируем, если уведомление невозможно запланировать
+            android.util.Log.w(
+                "NotificationScheduler",
+                "Слишком поздно для уведомления о $eventType: $eventName"
+            )
+        }
+    }
+
+
+    fun removeStaleNotifications(
+        context: Context,
+        validEventIds: Set<Int>,
+        validTaskIds: Set<Int>
+    ) {
+        val workManager = WorkManager.getInstance(context)
+
+        // Получаем список всех задач WorkManager
+        val workQuery = WorkQuery.Builder.fromStates(
+            listOf(WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING)
+        ).build()
+
+        val workInfos = workManager.getWorkInfos(workQuery).get()
+
+        workInfos.forEach { workInfo ->
+            val tags = workInfo.tags
+            tags.forEach { tag ->
+                val notificationId = tag.toIntOrNull()
+                if (notificationId != null) {
+                    // Если ID не принадлежит ни событиям, ни задачам, удаляем уведомление
+                    if (!validEventIds.contains(notificationId) && !validTaskIds.contains(
+                            notificationId
+                        )
+                    ) {
+                        workManager.cancelWorkById(workInfo.id)
+                    }
+                }
+            }
+        }
+    }
+
+
+    fun manageNotifications(
+        events: List<Event>,
+        tasks: List<Task>
+    ) {
+        val currentTimeMillis = System.currentTimeMillis()
+        // Сохраняем валидные IDs для событий и задач
+        val validEventIds = events.map { it.idEvent }.toSet()
+        val validTaskIds = tasks.map { it.idTask }.toSet()
+
+        // Удаляем устаревшие уведомления
+        removeStaleNotifications(requireContext(), validEventIds, validTaskIds)
+
+        // Планируем уведомления для событий
+        events.forEach { event ->
+            var text = ""
+            if (event.event.isNotEmpty()) {
+                text = event.event
+            } else {
+                text = "${event.place.take(15)}..."
+            }
+            val dateTimeString = "${event.date} ${event.time}"
+            val eventTimeMillis = parseTimeStringToMillis(dateTimeString)
+            if (eventTimeMillis > currentTimeMillis) {
+                scheduleNotification(
+                    eventTimeMillis = eventTimeMillis,
+                    eventType = "event",
+                    eventName = text,
+                    notificationId = (eventTimeMillis.toInt() + text.hashCode())
+                )
+            }
+        }
+
+        // Планируем уведомления для задач
+        tasks.forEach { task ->
+            val checkBoxes: List<Boolean> = task.checkBoxes.split("|").map { it.toBoolean() }
+            var count = 0
+            checkBoxes.forEach { checkBox ->
+                if (!checkBox) {
+                    count++
+                }
+            }
+
+            if (count > 0) {
+                val text = "У вас на ${count} невыполненных задач "
+                val dateTimeString = "${task.date} ${task.time}"
+                val taskTimeMillis = parseTimeStringToMillis(dateTimeString)
+                if (taskTimeMillis > currentTimeMillis) {
+                    scheduleNotification(
+                        eventTimeMillis = taskTimeMillis,
+                        eventType = "task",
+                        eventName = text,
+                        notificationId = (taskTimeMillis.toInt() + text.hashCode())
+                    )
+                }
+            }
+        }
     }
 }

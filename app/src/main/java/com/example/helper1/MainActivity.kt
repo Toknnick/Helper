@@ -25,6 +25,8 @@ class MainActivity : AppCompatActivity() {
         this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
         setContentView(binding.root)
 
+
+
         if(dbHelper.getUser() != null) {
             val navController = findNavController(R.id.mainContainer)
             val bottomNavigationView = binding.bottomNavigationView
