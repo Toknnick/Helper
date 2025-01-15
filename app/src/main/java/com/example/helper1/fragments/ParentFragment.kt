@@ -99,6 +99,8 @@ open class ParentFragment : Fragment() {
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
+    protected var isNotFragmentDestroyed = true
+
 
     protected lateinit var userManager: UserManager
     protected lateinit var roomManger: RoomManager
@@ -140,6 +142,7 @@ open class ParentFragment : Fragment() {
     protected val TEXT_VIEW_NOTHING_TO_DO_ID = 11111111
 
     protected lateinit var dbHelper: DBHelper
+
 
     protected lateinit var mainLayout: RelativeLayout
     protected var secretKey: SecretKey? = null
@@ -221,6 +224,11 @@ open class ParentFragment : Fragment() {
     protected lateinit var usersPanel: RelativeLayout
     protected lateinit var userScrView: ScrollView
 
+    protected lateinit var showQrButton: ImageButton
+    protected lateinit var qrCodePanel: LinearLayout
+    protected lateinit var closeQrPaneButton: Button
+    protected lateinit var qrCodeImageView: ImageView
+
 
     protected var idRoomDef: Int = -1
     private var isSortingNow = false
@@ -231,86 +239,93 @@ open class ParentFragment : Fragment() {
     //TODO: перенести метод с обновлением пароля пользователя в settingsFragment
 
     private fun initDefElements() {
-        mainLayout = requireView().findViewById<RelativeLayout>(R.id.mainLayout)
-        createRoomButton = requireView().findViewById<Button>(R.id.createRoomButton)
-        addRoomButton = requireView().findViewById<Button>(R.id.addRoomButton)
-        addButton = requireView().findViewById<Button>(R.id.addButton)
-        dataPickerButton = requireView().findViewById<Button>(R.id.dataPickerButton)
-        createTaskPanel = requireView().findViewById<RelativeLayout>(R.id.createTaskPanel)
-        backTaskButton = requireView().findViewById<Button>(R.id.backTaskButton)
-        dateTask = requireView().findViewById<EditText>(R.id.dateTask)
-        timeTask = requireView().findViewById<EditText>(R.id.timeTask)
-        nameTask = requireView().findViewById<EditText>(R.id.nameTask)
-        point0 = requireView().findViewById<EditText>(R.id.point0)
-        pointsPlace = requireView().findViewById<RelativeLayout>(R.id.pointsPlace)
-        addNewPoint = requireView().findViewById<Button>(R.id.addNewPoint)
-        deletePoint = requireView().findViewById<Button>(R.id.deletePoint)
-        saveTaskButton = requireView().findViewById<Button>(R.id.saveTaskButton)
-        createEventPanel = requireView().findViewById<RelativeLayout>(R.id.createEventPanel)
-        backEventButton = requireView().findViewById<Button>(R.id.backEventButton)
-        dateEvent = requireView().findViewById<EditText>(R.id.dateEvent)
-        timeEvent = requireView().findViewById<EditText>(R.id.timeEvent)
-        placeEvent = requireView().findViewById<EditText>(R.id.placeEvent)
-        eventEvent = requireView().findViewById<EditText>(R.id.eventEvent)
-        saveEventButton = requireView().findViewById<Button>(R.id.saveEventButton)
-        taskTextView = requireView().findViewById<TextView>(R.id.taskTextView)
-        eventTextView = requireView().findViewById<TextView>(R.id.eventTextView)
+        if(isNotFragmentDestroyed) {
+            mainLayout = requireView().findViewById<RelativeLayout>(R.id.mainLayout)
+            createRoomButton = requireView().findViewById<Button>(R.id.createRoomButton)
+            addRoomButton = requireView().findViewById<Button>(R.id.addRoomButton)
+            addButton = requireView().findViewById<Button>(R.id.addButton)
+            dataPickerButton = requireView().findViewById<Button>(R.id.dataPickerButton)
+            createTaskPanel = requireView().findViewById<RelativeLayout>(R.id.createTaskPanel)
+            backTaskButton = requireView().findViewById<Button>(R.id.backTaskButton)
+            dateTask = requireView().findViewById<EditText>(R.id.dateTask)
+            timeTask = requireView().findViewById<EditText>(R.id.timeTask)
+            nameTask = requireView().findViewById<EditText>(R.id.nameTask)
+            point0 = requireView().findViewById<EditText>(R.id.point0)
+            pointsPlace = requireView().findViewById<RelativeLayout>(R.id.pointsPlace)
+            addNewPoint = requireView().findViewById<Button>(R.id.addNewPoint)
+            deletePoint = requireView().findViewById<Button>(R.id.deletePoint)
+            saveTaskButton = requireView().findViewById<Button>(R.id.saveTaskButton)
+            createEventPanel = requireView().findViewById<RelativeLayout>(R.id.createEventPanel)
+            backEventButton = requireView().findViewById<Button>(R.id.backEventButton)
+            dateEvent = requireView().findViewById<EditText>(R.id.dateEvent)
+            timeEvent = requireView().findViewById<EditText>(R.id.timeEvent)
+            placeEvent = requireView().findViewById<EditText>(R.id.placeEvent)
+            eventEvent = requireView().findViewById<EditText>(R.id.eventEvent)
+            saveEventButton = requireView().findViewById<Button>(R.id.saveEventButton)
+            taskTextView = requireView().findViewById<TextView>(R.id.taskTextView)
+            eventTextView = requireView().findViewById<TextView>(R.id.eventTextView)
 
-        roomNameTextView = requireView().findViewById<TextView>(R.id.roomNameTextView)
-        showRoomPanelButton = requireView().findViewById<LinearLayout>(R.id.showRoomPanelButton)
-        createRoomPanel = requireView().findViewById<RelativeLayout>(R.id.createRoomPanel)
-        addRoomPanel = requireView().findViewById<RelativeLayout>(R.id.addRoomPanel)
-        saveRoomButton = requireView().findViewById<Button>(R.id.saveRoomButton)
-        backCreateRoomButton = requireView().findViewById<Button>(R.id.backCreateRoomButton)
-        createNameRoom = requireView().findViewById<EditText>(R.id.createNameRoom)
-        createPasswordRoom = requireView().findViewById<EditText>(R.id.createPasswordRoom)
-        getRoomButton = requireView().findViewById<Button>(R.id.getRoomButton)
-        backAddRoomButton = requireView().findViewById<Button>(R.id.backAddRoomButton)
-        addIdRoom = requireView().findViewById<EditText>(R.id.addIdRoom)
-        addPasswordRoom = requireView().findViewById<EditText>(R.id.addPasswordRoom)
-        roomLayout = requireView().findViewById<LinearLayout>(R.id.roomLayout)
-        showRoomPanel = requireView().findViewById<RelativeLayout>(R.id.showRoomPanel)
+            roomNameTextView = requireView().findViewById<TextView>(R.id.roomNameTextView)
+            showRoomPanelButton = requireView().findViewById<LinearLayout>(R.id.showRoomPanelButton)
+            createRoomPanel = requireView().findViewById<RelativeLayout>(R.id.createRoomPanel)
+            addRoomPanel = requireView().findViewById<RelativeLayout>(R.id.addRoomPanel)
+            saveRoomButton = requireView().findViewById<Button>(R.id.saveRoomButton)
+            backCreateRoomButton = requireView().findViewById<Button>(R.id.backCreateRoomButton)
+            createNameRoom = requireView().findViewById<EditText>(R.id.createNameRoom)
+            createPasswordRoom = requireView().findViewById<EditText>(R.id.createPasswordRoom)
+            getRoomButton = requireView().findViewById<Button>(R.id.getRoomButton)
+            backAddRoomButton = requireView().findViewById<Button>(R.id.backAddRoomButton)
+            addIdRoom = requireView().findViewById<EditText>(R.id.addIdRoom)
+            addPasswordRoom = requireView().findViewById<EditText>(R.id.addPasswordRoom)
+            roomLayout = requireView().findViewById<LinearLayout>(R.id.roomLayout)
+            showRoomPanel = requireView().findViewById<RelativeLayout>(R.id.showRoomPanel)
 
-        createUserPanel = requireView().findViewById<RelativeLayout>(R.id.createUserPanel)
-        saveUserButton = requireView().findViewById<Button>(R.id.saveUserButton)
-        passwordUser = requireView().findViewById<EditText>(R.id.passwordUser)
-        loginUser = requireView().findViewById<EditText>(R.id.loginUser)
-        loginUserButton = requireView().findViewById<Button>(R.id.loginUserButton)
+            createUserPanel = requireView().findViewById<RelativeLayout>(R.id.createUserPanel)
+            saveUserButton = requireView().findViewById<Button>(R.id.saveUserButton)
+            passwordUser = requireView().findViewById<EditText>(R.id.passwordUser)
+            loginUser = requireView().findViewById<EditText>(R.id.loginUser)
+            loginUserButton = requireView().findViewById<Button>(R.id.loginUserButton)
 
-        createImagePanel = requireView().findViewById<RelativeLayout>(R.id.createImagePanel)
-        imageTextView = requireView().findViewById<TextView>(R.id.imageTextView)
-        backImageButton = requireView().findViewById<Button>(R.id.backImageButton)
-        dateImage = requireView().findViewById<EditText>(R.id.dateImage)
-        timeImage = requireView().findViewById<EditText>(R.id.timeImage)
-        saveImageButton = requireView().findViewById<Button>(R.id.saveImageButton)
-        chooseImageButton = requireView().findViewById<Button>(R.id.chooseImageButton)
-        imageIcon = requireView().findViewById<ImageView>(R.id.imageIcon)
+            createImagePanel = requireView().findViewById<RelativeLayout>(R.id.createImagePanel)
+            imageTextView = requireView().findViewById<TextView>(R.id.imageTextView)
+            backImageButton = requireView().findViewById<Button>(R.id.backImageButton)
+            dateImage = requireView().findViewById<EditText>(R.id.dateImage)
+            timeImage = requireView().findViewById<EditText>(R.id.timeImage)
+            saveImageButton = requireView().findViewById<Button>(R.id.saveImageButton)
+            chooseImageButton = requireView().findViewById<Button>(R.id.chooseImageButton)
+            imageIcon = requireView().findViewById<ImageView>(R.id.imageIcon)
 
-        createFilePanel = requireView().findViewById<RelativeLayout>(R.id.createFilePanel)
-        fileTextView = requireView().findViewById<TextView>(R.id.fileTextView)
-        backFileButton = requireView().findViewById<Button>(R.id.backFileButton)
-        dateFile = requireView().findViewById<EditText>(R.id.dateFile)
-        timeFile = requireView().findViewById<EditText>(R.id.timeFile)
-        saveFileButton = requireView().findViewById<Button>(R.id.saveFileButton)
-        chooseFileButton = requireView().findViewById<Button>(R.id.chooseFileButton)
-        fileIconName = requireView().findViewById<TextView>(R.id.fileIconName)
+            createFilePanel = requireView().findViewById<RelativeLayout>(R.id.createFilePanel)
+            fileTextView = requireView().findViewById<TextView>(R.id.fileTextView)
+            backFileButton = requireView().findViewById<Button>(R.id.backFileButton)
+            dateFile = requireView().findViewById<EditText>(R.id.dateFile)
+            timeFile = requireView().findViewById<EditText>(R.id.timeFile)
+            saveFileButton = requireView().findViewById<Button>(R.id.saveFileButton)
+            chooseFileButton = requireView().findViewById<Button>(R.id.chooseFileButton)
+            fileIconName = requireView().findViewById<TextView>(R.id.fileIconName)
 
-        calendarView = requireView().findViewById<CalendarView>(R.id.calendarView)
-        mainCalendarView = requireView().findViewById<CalendarView>(R.id.mainCalendarView)
-        plug = requireView().findViewById<LinearLayout>(R.id.plug)
-        sortButton = requireView().findViewById<ImageButton>(R.id.sortButton)
+            calendarView = requireView().findViewById<CalendarView>(R.id.calendarView)
+            mainCalendarView = requireView().findViewById<CalendarView>(R.id.mainCalendarView)
+            plug = requireView().findViewById<LinearLayout>(R.id.plug)
+            sortButton = requireView().findViewById<ImageButton>(R.id.sortButton)
 
-        showUsersButton = requireView().findViewById<ImageButton>(R.id.showUsersButton)
-        usersPanel = requireView().findViewById<RelativeLayout>(R.id.usersPanel)
-        userScrView = requireView().findViewById<ScrollView>(R.id.userScrView)
+            showUsersButton = requireView().findViewById<ImageButton>(R.id.showUsersButton)
+            usersPanel = requireView().findViewById<RelativeLayout>(R.id.usersPanel)
+            userScrView = requireView().findViewById<ScrollView>(R.id.userScrView)
 
-        //Небольшая заглушка, т.к. календарь не мог появлятся, если изначально был в GONE
-        calendarView.visibility = View.GONE
-        mainCalendarView.visibility = View.GONE
+            //Небольшая заглушка, т.к. календарь не мог появлятся, если изначально был в GONE
+            calendarView.visibility = View.GONE
+            mainCalendarView.visibility = View.GONE
 
-        settingsRoomButton = requireView().findViewById<ImageButton>(R.id.settingsRoomButton)
-        roomTextView = requireView().findViewById<TextView>(R.id.roomTextView)
-        settingsRoomButton.setImageResource(R.drawable.ic_settings)
+            settingsRoomButton = requireView().findViewById<ImageButton>(R.id.settingsRoomButton)
+            roomTextView = requireView().findViewById<TextView>(R.id.roomTextView)
+            settingsRoomButton.setImageResource(R.drawable.ic_settings)
+
+            showQrButton = requireView().findViewById<ImageButton>(R.id.showQrButton)
+            qrCodeImageView = requireView().findViewById<ImageView>(R.id.qrCodeImageView)
+            qrCodePanel = requireView().findViewById<LinearLayout>(R.id.qrCodePanel)
+            closeQrPaneButton = requireView().findViewById<Button>(R.id.closeQrPaneButton)
+        }
     }
 
     protected open fun setUpButtons() {
@@ -332,6 +347,7 @@ open class ParentFragment : Fragment() {
 
 
     protected fun defSetup() {
+        if(isNotFragmentDestroyed)
         dbHelper = DBHelper(requireContext())
         initDefElements()
         secretKey = loadKey()
@@ -458,10 +474,6 @@ open class ParentFragment : Fragment() {
         return view
     }
 
-    override fun onResume() {
-        super.onResume()
-    }
-
 
     private fun startRepeatingTask() {
         runnable = object : Runnable {
@@ -518,13 +530,13 @@ open class ParentFragment : Fragment() {
                     }
 
                     override fun onFailure(message: String) {
-                        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                        createError(message)
                     }
                 })
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                createError(message)
             }
         })
     }
@@ -549,7 +561,8 @@ open class ParentFragment : Fragment() {
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                if(isNotFragmentDestroyed)
+                    createError(message)
             }
         })
     }
@@ -565,7 +578,8 @@ open class ParentFragment : Fragment() {
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                if(isNotFragmentDestroyed)
+                    createError(message)
             }
         })
 
@@ -583,7 +597,8 @@ open class ParentFragment : Fragment() {
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                if(isNotFragmentDestroyed)
+                    createError(message)
             }
         })
     }
@@ -609,13 +624,15 @@ open class ParentFragment : Fragment() {
                     }
 
                     override fun onFailure(message: String) {
-                        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                        if(isNotFragmentDestroyed)
+                            createError(message)
                     }
                 })
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                if(isNotFragmentDestroyed)
+                    createError(message)
             }
         })
     }
@@ -640,7 +657,7 @@ open class ParentFragment : Fragment() {
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                createError(message)
             }
         })
     }
@@ -656,7 +673,7 @@ open class ParentFragment : Fragment() {
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                createError(message)
             }
         })
     }
@@ -674,7 +691,7 @@ open class ParentFragment : Fragment() {
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                createError(message)
             }
         })
     }
@@ -692,13 +709,13 @@ open class ParentFragment : Fragment() {
                     }
 
                     override fun onFailure(message: String) {
-                        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                        createError(message)
                     }
                 })
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                createError(message)
             }
         })
     }
@@ -722,7 +739,7 @@ open class ParentFragment : Fragment() {
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                createError(message)
             }
         })
     }
@@ -764,7 +781,7 @@ open class ParentFragment : Fragment() {
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), "Ошибка удаления", Toast.LENGTH_LONG).show()
+                createError(message)
             }
         })
     }
@@ -784,13 +801,13 @@ open class ParentFragment : Fragment() {
                     }
 
                     override fun onFailure(message: String) {
-                        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                        createError(message)
                     }
                 })
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                createError(message)
             }
         })
     }
@@ -814,7 +831,7 @@ open class ParentFragment : Fragment() {
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                createError(message)
             }
         })
     }
@@ -855,7 +872,7 @@ open class ParentFragment : Fragment() {
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), "Ошибка удаления", Toast.LENGTH_LONG).show()
+                createError(message)
             }
         })
     }
@@ -956,6 +973,7 @@ open class ParentFragment : Fragment() {
         )
 
         // Проверяем размер файла
+
         val inputStream = requireContext().contentResolver.openInputStream(selectedImageUri!!)
         val fileSizeInBytes = inputStream?.available()?.toLong() ?: 0
         val fileSizeInMB = fileSizeInBytes / (1024 * 1024)
@@ -1505,7 +1523,7 @@ open class ParentFragment : Fragment() {
                     .build()
 
                 // Открываем InputStream для файла
-                val inputStream = requireContext().contentResolver.openInputStream(imageUri!!)
+                val inputStream = requireContext().contentResolver.openInputStream(imageUri)
 
                 // Получаем имя файла из Uri
 
@@ -1986,16 +2004,14 @@ open class ParentFragment : Fragment() {
                         editButton.visibility = View.GONE
 
                         downloadImage(images[id])
-                        Toast.makeText(
-                            requireContext(),
-                            "Изображение сохранено в галерею",
-                            Toast.LENGTH_LONG
-                        ).show()
+
+                        createError("Изображение сохранено в галерею")
                     }
                 }
 
             true
         }
+
         setListeners(view)
     }
 
@@ -2147,8 +2163,8 @@ open class ParentFragment : Fragment() {
                     timeTask.setText(task.time)
                 }
 
-                val checkBoxesFromTask = task.checkBoxes.split("|") as List<String>
-                val pointsFromTask = task.points.split("|") as List<String>
+                val checkBoxesFromTask = task.checkBoxes.split("|")
+                val pointsFromTask = task.points.split("|")
                 var checkBoxes: List<String> = ArrayList()
 
                 if (pointsFromTask.count() == newPoints.count()) {
@@ -2159,7 +2175,7 @@ open class ParentFragment : Fragment() {
                             checkBoxes += "false"
                         } else {
                             if (pointsFromTask[i] == newPoints[i]) {
-                                checkBoxes += checkBoxesFromTask[i] as String
+                                checkBoxes += checkBoxesFromTask[i]
                             } else {
                                 checkBoxes += "false"
                             }
@@ -2227,7 +2243,7 @@ open class ParentFragment : Fragment() {
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                createError(message)
             }
         })
     }
@@ -2251,7 +2267,7 @@ open class ParentFragment : Fragment() {
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                createError(message)
             }
         })
     }
@@ -2550,7 +2566,7 @@ open class ParentFragment : Fragment() {
             workManager.enqueue(workRequest)
         } else {
             // Логируем, если уведомление невозможно запланировать
-            android.util.Log.w(
+            Log.w(
                 "NotificationScheduler",
                 "Слишком поздно для уведомления о $eventType: $eventName"
             )
@@ -2599,7 +2615,6 @@ open class ParentFragment : Fragment() {
         val validEventIds = events.map { it.idEvent }.toSet()
         val validTaskIds = tasks.map { it.idTask }.toSet()
 
-        // Удаляем устаревшие уведомления
         removeStaleNotifications(requireContext(), validEventIds, validTaskIds)
 
         // Планируем уведомления для событий
@@ -2646,5 +2661,10 @@ open class ParentFragment : Fragment() {
                 }
             }
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        handler.removeCallbacksAndMessages(null) // Удаление всех задач
     }
 }

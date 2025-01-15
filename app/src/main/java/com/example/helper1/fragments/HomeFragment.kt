@@ -7,7 +7,6 @@ import android.view.View
 import android.widget.RelativeLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.Toast
 import com.example.helper1.R
 import com.example.helper1.dataBase.CreateRoomCallback
 import com.example.helper1.dataBase.CreateUserCallback
@@ -178,7 +177,7 @@ class HomeFragment : ParentFragment(){
                         }
 
                         override fun onFailure(message: String) {
-                            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                            createError(message)
                         }
                     })
                 }
@@ -190,11 +189,8 @@ class HomeFragment : ParentFragment(){
             }
 
             override fun onFailure(isExist: Boolean) {
-                Toast.makeText(
-                    requireContext(),
-                    "Ошибка! Пользователь не найден",
-                    Toast.LENGTH_LONG
-                ).show()
+
+                createError("Ошибка! Пользователь не найден")
             }
         })
     }
@@ -216,14 +212,14 @@ class HomeFragment : ParentFragment(){
                     addButton.visibility = View.VISIBLE
                     dataPickerButton.visibility = View.VISIBLE
                 }else{
-                    Toast.makeText(requireContext(), "Неверный пароль!", Toast.LENGTH_LONG)
-                        .show()
+
+                    createError("Неверный пароль!")
                 }
             }
 
 
             override fun onFailure(isExist: Boolean) {
-                Toast.makeText(requireContext(),"Ошибка! Пользователь не найден", Toast.LENGTH_LONG).show()
+                createError("Ошибка! Пользователь не найден")
             }
         })
 
@@ -242,8 +238,8 @@ class HomeFragment : ParentFragment(){
         )
         userManager.getUser(loginUser.text.toString().trim(), object : GetUserCallback {
             override fun onSuccess(user: User) {
+                createError("Ошибка! Такой логин уже существует!")
                 //Проверка на уникальность логина
-                Toast.makeText(requireContext(),"Ошибка! Такой логин уже существует!", Toast.LENGTH_LONG).show()
             }
 
             override fun onFailure(isExist: Boolean) {
@@ -262,7 +258,7 @@ class HomeFragment : ParentFragment(){
         )
         userManager.createUser(newUser, object : CreateUserCallback {
             override fun onSuccess(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                createError(message)
             }
 
             override fun onUserCreated(user: User) {
@@ -276,7 +272,7 @@ class HomeFragment : ParentFragment(){
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                createError(message)
             }
         })
     }
@@ -304,14 +300,16 @@ class HomeFragment : ParentFragment(){
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                createError(message)
             }
         })
     }
 
     override fun setListeners(view: View){
-        setTouchListenerForButtons(view)
-        setTouchListenerForButtons(mainLayout)
-        setTouchListenerForButtons(requireView().findViewById(R.id.conLayout))
+        if(this.view != null) {
+            setTouchListenerForButtons(view)
+            setTouchListenerForButtons(mainLayout)
+            setTouchListenerForButtons(requireView().findViewById(R.id.conLayout))
+        }
     }
 }

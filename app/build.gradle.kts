@@ -49,7 +49,7 @@ dependencies {
     testImplementation(libs.junit)
     implementation (libs.jbcrypt)
     implementation ("androidx.work:work-runtime-ktx:2.8.0")
-
+    implementation ("com.journeyapps:zxing-android-embedded:4.3.0")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     implementation(libs.retrofit)

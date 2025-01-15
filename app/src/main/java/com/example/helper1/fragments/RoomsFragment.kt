@@ -2,6 +2,7 @@ package com.example.helper1.fragments
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.view.MotionEvent
 import android.view.View
@@ -9,7 +10,6 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
-import android.widget.Toast
 import com.example.helper1.R
 import com.example.helper1.dataBase.CreateMessageCallback
 import com.example.helper1.dataBase.CreateRoomCallback
@@ -18,11 +18,19 @@ import com.example.helper1.dataBase.GetRoomCallback
 import com.example.helper1.dataBase.GetUserCallback
 import com.example.helper1.dataBase.Room
 import com.example.helper1.dataBase.User
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.WriterException
+import com.google.zxing.qrcode.QRCodeWriter
+import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 
 @Suppress("NAME_SHADOWING", "DEPRECATION")
 class RoomsFragment : ParentFragment() {
     //TODO: перенести метод с обновлением пароля пользователя в settingsFragment
     private lateinit var nowRoom: Room
+
+
+
     override fun setUpButtons() {
         setKey()
         settingsRoomButton.setOnClickListener{
@@ -65,6 +73,13 @@ class RoomsFragment : ParentFragment() {
             addIdRoom.setText("")
             addPasswordRoom.setText("")
         }
+        showQrButton.setOnClickListener{
+            setQrCode()
+            qrCodePanel.visibility = View.VISIBLE
+        }
+        closeQrPaneButton.setOnClickListener{
+            qrCodePanel.visibility = View.GONE
+        }
     }
 
 
@@ -80,6 +95,46 @@ class RoomsFragment : ParentFragment() {
         setTouchListenerForButtons(requireView().findViewById(R.id.scrView))
     }
 
+    private fun setQrCode(){
+        val qrCodeBitmap: Bitmap? = generateQrCode()
+        qrCodeBitmap?.let {
+            qrCodeImageView.setImageBitmap(it)
+        }
+    }
+
+    fun generateQrCode(): Bitmap? {
+        val data = "hr://addroom?id=${nowRoom.idRoom}&password=${nowRoom.password}"
+        val qrCodeWriter = QRCodeWriter()
+        return try {
+            // Создаем матрицу QR-кода с размерами 512x512 пикселей
+            val bitMatrix = qrCodeWriter.encode(data, BarcodeFormat.QR_CODE, 512, 512)
+            val width = bitMatrix.width
+            val height = bitMatrix.height
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+
+            // Заполняем bitmap на основе матрицы
+            for (x in 0 until width) {
+                for (y in 0 until height) {
+                    bitmap.setPixel(x, y, if (bitMatrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+                }
+            }
+            bitmap
+        } catch (e: WriterException) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    // Проверка валидности QR-кода
+    private fun isQrCodeValid(jsonData: String): Boolean {
+        val data = JSONObject(jsonData)
+        val timestamp = data.getLong("timestamp")
+        val currentTimestamp = System.currentTimeMillis() / 1000 // Текущая временная метка (в секундах)
+
+        // Проверяем, что QR-код создан не более 2 часов назад
+        return currentTimestamp - timestamp <= TimeUnit.HOURS.toSeconds(2)
+    }
+
     private fun createRoomForAPI(newRoom: Room) {
         roomManger.getAllRooms(object : GetAllRoomsCallback {
             override fun onSuccess(rooms: List<Room>) {
@@ -87,7 +142,7 @@ class RoomsFragment : ParentFragment() {
                 newRoom.idRoom = idRoom
                 roomManger.createRoom(newRoom, object : CreateRoomCallback {
                     override fun onSuccess(message: String) {
-                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                        createError(message)
                         if(user!!.availableRooms != "") {
                             user!!.availableRooms += "|${newRoom.idRoom}"
                         }else{
@@ -98,7 +153,7 @@ class RoomsFragment : ParentFragment() {
                     }
 
                     override fun onFailure(message: String) {
-                        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                        createError(message)
                     }
 
                     override fun onRoomCreated(idRoom: Int) {
@@ -108,7 +163,7 @@ class RoomsFragment : ParentFragment() {
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                createError(message)
             }
         })
     }
@@ -158,22 +213,18 @@ class RoomsFragment : ParentFragment() {
                                 createError("Дверь в эту комнату вам закрыта")
                             }
                         } else {
-                            Toast.makeText(
-                                requireContext(),
-                                "Ошибка! Данные не верны!",
-                                Toast.LENGTH_LONG
-                            )
-                                .show()
+
+                            createError("Ошибка! Данные не верны!")
                         }
                     }
                 }else{
-                    Toast.makeText(requireContext(), "Ошибка! комната не найдена!", Toast.LENGTH_LONG).show()
+                    createError("Ошибка! комната не найдена!")
                 }
             }
 
             override fun onFailure(message: String) {
                 if (!isForText) {
-                    Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                    createError(message)
                 }
             }
         })
@@ -187,7 +238,7 @@ class RoomsFragment : ParentFragment() {
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                createError(message)
             }
         })
     }
@@ -196,7 +247,6 @@ class RoomsFragment : ParentFragment() {
         newUser.password = hashPassword(newUser.password)
         userManager.updateUser(newUser, object : CreateMessageCallback {
             override fun onSuccess(message: String) {
-                //Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
                 user!!.password = unHashPassword(newUser.password)
                 dbHelper.updateUser(user!!)
                 dbHelper.updateRoomId(idRoomDef)
@@ -204,7 +254,7 @@ class RoomsFragment : ParentFragment() {
             }
 
             override fun onFailure(message: String) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                createError(message)
             }
         }, true)
     }
@@ -266,8 +316,12 @@ class RoomsFragment : ParentFragment() {
     @SuppressLint("ResourceType")
     private fun showUsersPanel(){
         userScrView.visibility = View.VISIBLE
-        val usersInRoom: List<String> = nowRoom.users.splitToSequence("|").toMutableList()
-
+        var usersInRoom: List<String> = ArrayList<String>().toMutableList()
+        if (!nowRoom.users.isNullOrEmpty()) {
+            usersInRoom = nowRoom.users.splitToSequence("|").toMutableList()
+        } else {
+            usersInRoom = emptyList()
+        }
         showUsersButton.setOnClickListener{
             hideUsersPanel()
         }
@@ -275,6 +329,12 @@ class RoomsFragment : ParentFragment() {
         if(usersInRoom.isEmpty() || usersInRoom[0] == ""){
             val textView = createTextView("Здесь еще никого нет...")
             usersPanel.addView(textView)
+            val params = RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT
+            )
+            params.addRule(RelativeLayout.BELOW,R.id.showQrButton)
+            textView.setLayoutParams(params)
             return
         }
 
@@ -288,7 +348,7 @@ class RoomsFragment : ParentFragment() {
             RelativeLayout.LayoutParams.WRAP_CONTENT,
             RelativeLayout.LayoutParams.WRAP_CONTENT
         )
-        params.addRule(RelativeLayout.ALIGN_PARENT_TOP)
+        params.addRule(RelativeLayout.BELOW,R.id.showQrButton)
         textView.setLayoutParams(params)
 
         val params2 = RelativeLayout.LayoutParams(
@@ -418,11 +478,7 @@ class RoomsFragment : ParentFragment() {
             }
 
             override fun onFailure(isExist: Boolean) {
-                Toast.makeText(
-                    requireContext(),
-                    "Ошибка! Пользователь не найден",
-                    Toast.LENGTH_LONG
-                ).show()
+                createError("Ошибка! Пользователь не найден")
             }
         })
 
@@ -451,7 +507,7 @@ class RoomsFragment : ParentFragment() {
 
 
     private fun hideUsersPanel(){
-        usersPanel.removeAllViews()
+        usersPanel.removeViews(1,usersPanel.childCount-1)
         userScrView.visibility = View.GONE
         showUsersButton.setOnClickListener{
             showUsersPanel()
